@@ -1,0 +1,80 @@
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { ArrowRight, ShieldCheck, Banknote, LineChart, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+export const Route = createFileRoute("/")({
+  component: Landing,
+});
+
+function Landing() {
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6">
+        <div className="flex items-center gap-2">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elegant)]">
+            <Banknote className="h-5 w-5" />
+          </div>
+          <span className="text-lg font-bold tracking-tight">KUPVA BB</span>
+        </div>
+        <Button asChild size="sm">
+          <Link to="/auth">
+            Masuk <ArrowRight className="ml-1 h-4 w-4" />
+          </Link>
+        </Button>
+      </header>
+
+      <main className="mx-auto max-w-7xl px-6 pb-24 pt-16">
+        <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            Terlisensi Bank Indonesia
+          </div>
+          <h1 className="text-balance text-5xl font-extrabold tracking-tight sm:text-6xl">
+            Sistem Informasi{" "}
+            <span className="bg-[image:var(--gradient-glow)] bg-clip-text text-transparent">
+              Money Changer
+            </span>{" "}
+            KUPVA BB
+          </h1>
+          <p className="mt-6 text-pretty text-lg text-muted-foreground">
+            Platform terintegrasi untuk KYC/CDD, transaksi jual-beli valuta asing,
+            manajemen kas, inventaris mata uang, dan pelaporan sesuai regulasi
+            APU-PPT Bank Indonesia.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Button asChild size="lg">
+              <Link to="/auth">
+                Masuk ke Sistem <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <div className="mt-20 grid gap-4 sm:grid-cols-3">
+          {[
+            { icon: ShieldCheck, title: "KYC & CDD Terpadu", desc: "Verifikasi identitas dan uji tuntas nasabah otomatis." },
+            { icon: Banknote, title: "Manajemen Kas & Inventaris", desc: "Pantau saldo kas dan stok mata uang real-time." },
+            { icon: LineChart, title: "Pelaporan Regulator", desc: "Laporan harian, bulanan, dan audit trail lengkap." },
+          ].map((f) => (
+            <div key={f.title} className="rounded-2xl border bg-card p-6 shadow-[var(--shadow-card)]">
+              <div className="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-primary/10 text-primary">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <h3 className="font-semibold">{f.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+      </main>
+
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-6 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Lock className="h-3.5 w-3.5" /> Enkripsi & audit trail sesuai standar BI
+          </span>
+          <span>&copy; {new Date().getFullYear()} KUPVA BB</span>
+        </div>
+      </footer>
+    </div>
+  );
+}
