@@ -24,22 +24,91 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import type { AppRole } from "@/integrations/supabase/client";
+import { ROLE_LABELS } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const primary = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Transaksi", url: "/transactions", icon: ArrowLeftRight },
-  { title: "Nasabah", url: "/customers", icon: Users },
-  { title: "Kas & Inventaris", url: "/cash", icon: Banknote },
-  { title: "Kurs Valuta", url: "/rates", icon: LineChart },
-  { title: "Mata Uang", url: "/currencies", icon: Coins },
+type NavItem = {
+  title: string;
+  url: string;
+  icon: typeof LayoutDashboard;
+  roles: AppRole[]; // roles allowed to see this item
+};
+
+const ALL: AppRole[] = [
+  "super_admin",
+  "branch_manager",
+  "teller",
+  "auditor",
+  "owner",
 ];
 
-const admin = [
-  { title: "Cabang", url: "/branches", icon: Building2 },
-  { title: "Laporan", url: "/reports", icon: FileText },
-  { title: "Persetujuan", url: "/approvals", icon: ClipboardList },
-  { title: "Audit Trail", url: "/audit", icon: ShieldCheck },
-  { title: "Pengaturan", url: "/settings", icon: Settings },
+const primary: NavItem[] = [
+  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard, roles: ALL },
+  {
+    title: "Transaksi",
+    url: "/transactions",
+    icon: ArrowLeftRight,
+    roles: ["super_admin", "branch_manager", "teller", "owner"],
+  },
+  {
+    title: "Nasabah",
+    url: "/customers",
+    icon: Users,
+    roles: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
+  },
+  {
+    title: "Kas & Inventaris",
+    url: "/cash",
+    icon: Banknote,
+    roles: ["super_admin", "branch_manager", "teller", "owner"],
+  },
+  {
+    title: "Kurs Valuta",
+    url: "/rates",
+    icon: LineChart,
+    roles: ["super_admin", "branch_manager", "owner"],
+  },
+  {
+    title: "Mata Uang",
+    url: "/currencies",
+    icon: Coins,
+    roles: ["super_admin", "owner"],
+  },
+];
+
+const admin: NavItem[] = [
+  {
+    title: "Cabang",
+    url: "/branches",
+    icon: Building2,
+    roles: ["super_admin", "owner"],
+  },
+  {
+    title: "Laporan",
+    url: "/reports",
+    icon: FileText,
+    roles: ["super_admin", "branch_manager", "auditor", "owner"],
+  },
+  {
+    title: "Persetujuan",
+    url: "/approvals",
+    icon: ClipboardList,
+    roles: ["super_admin", "branch_manager", "owner"],
+  },
+  {
+    title: "Audit Trail",
+    url: "/audit",
+    icon: ShieldCheck,
+    roles: ["super_admin", "auditor", "owner"],
+  },
+  {
+    title: "Pengaturan",
+    url: "/settings",
+    icon: Settings,
+    roles: ["super_admin"],
+  },
 ];
 
 export function AppSidebar() {
@@ -50,6 +119,12 @@ export function AppSidebar() {
   });
   const isActive = (url: string) =>
     currentPath === url || currentPath.startsWith(url + "/");
+  const { roles, loading } = useCurrentUser();
+  const canSee = (item: NavItem) =>
+    item.roles.some((r) => roles.includes(r));
+  const visiblePrimary = primary.filter(canSee);
+  const visibleAdmin = admin.filter(canSee);
+  const primaryRole = roles[0];
 
   return (
     <Sidebar collapsible="icon">
@@ -64,7 +139,11 @@ export function AppSidebar() {
                 KUPVA BB
               </div>
               <div className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/60">
-                Money Changer System
+                {loading
+                  ? "Memuat…"
+                  : primaryRole
+                    ? ROLE_LABELS[primaryRole]
+                    : "Belum ada peran"}
               </div>
             </div>
           )}
@@ -72,11 +151,20 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel>Operasional</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {primary.map((item) => (
+        {loading ? (
+          <div className="space-y-2 px-2 py-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-8 w-full" />
+            ))}
+          </div>
+        ) : (
+          <>
+          {visiblePrimary.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Operasional</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visiblePrimary.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
@@ -89,16 +177,18 @@ export function AppSidebar() {
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel>Administrasi</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {admin.map((item) => (
+          {visibleAdmin.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Administrasi</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleAdmin.map((item) => (
                 <SidebarMenuItem key={item.url}>
                   <SidebarMenuButton
                     asChild
@@ -111,10 +201,13 @@ export function AppSidebar() {
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          )}
+          </>
+        )}
       </SidebarContent>
     </Sidebar>
   );
