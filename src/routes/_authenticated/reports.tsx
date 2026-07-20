@@ -1,0 +1,619 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Download, FileText, AlertTriangle, Flag, Printer } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
+import { MasterPageHeader } from "@/components/master-data/page-header";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+export const Route = createFileRoute("/_authenticated/reports")({
+  component: ReportsPage,
+});
+
+interface TrxRow {
+  id: string;
+  transaction_no: string;
+  transaction_type: "buy" | "sell";
+  transaction_date: string;
+  rate: number;
+  foreign_amount: number;
+  idr_amount: number;
+  payment_method: string;
+  status: string;
+  is_suspicious: boolean;
+  suspicious_reason: string | null;
+  ltkm_report_no: string | null;
+  ltkm_reported_at: string | null;
+  currencies?: { code: string } | null;
+  customers?: { customer_code: string; full_name: string; id_number: string } | null;
+  branches?: { code: string; name: string } | null;
+}
+
+interface Branch { id: string; code: string; name: string }
+
+const LTKT_THRESHOLD = 500_000_000;
+
+function fmtIDR(n: number) {
+  return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
+}
+function fmtDate(s: string) {
+  return new Date(s).toLocaleString("id-ID");
+}
+function todayISO(offsetDays = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().slice(0, 10);
+}
+
+function exportCSV(filename: string, rows: TrxRow[]) {
+  if (rows.length === 0) {
+    toast.info("Tidak ada data untuk diunduh");
+    return;
+  }
+  const header = [
+    "No. Transaksi",
+    "Tanggal",
+    "Jenis",
+    "Cabang",
+    "Nasabah",
+    "No. Identitas",
+    "Mata Uang",
+    "Kurs",
+    "Nominal Valas",
+    "Nominal IDR",
+    "Metode",
+    "Status",
+    "Mencurigakan",
+    "Alasan LTKM",
+  ];
+  const csv = [header.join(",")]
+    .concat(
+      rows.map((r) =>
+        [
+          r.transaction_no,
+          new Date(r.transaction_date).toISOString(),
+          r.transaction_type === "buy" ? "Beli" : "Jual",
+          r.branches?.code ?? "",
+          (r.customers?.full_name ?? "").replace(/"/g, '""'),
+          r.customers?.id_number ?? "",
+          r.currencies?.code ?? "",
+          r.rate,
+          r.foreign_amount,
+          r.idr_amount,
+          r.payment_method,
+          r.status,
+          r.is_suspicious ? "Ya" : "Tidak",
+          (r.suspicious_reason ?? "").replace(/"/g, '""'),
+        ]
+          .map((v) => `"${String(v ?? "")}"`)
+          .join(","),
+      ),
+    )
+    .join("\n");
+  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function ReportsPage() {
+  const { roles, user } = useCurrentUser();
+  const canFlag = hasAnyRole(roles, [
+    "super_admin",
+    "branch_manager",
+    "auditor",
+    "owner",
+  ]);
+
+  const [tab, setTab] = useState<"harian" | "bulanan" | "ltkt" | "ltkm">(
+    "harian",
+  );
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchId, setBranchId] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>(todayISO(-6));
+  const [dateTo, setDateTo] = useState<string>(todayISO(0));
+  const [rows, setRows] = useState<TrxRow[] | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const [flagOpen, setFlagOpen] = useState(false);
+  const [flagTarget, setFlagTarget] = useState<TrxRow | null>(null);
+  const [flagReason, setFlagReason] = useState("");
+  const [flagSaving, setFlagSaving] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("branches")
+      .select("id, code, name")
+      .order("code")
+      .then(({ data }) => setBranches((data as Branch[]) ?? []));
+  }, []);
+
+  async function load() {
+    setLoading(true);
+    setRows(null);
+    let q = supabase
+      .from("transactions")
+      .select(
+        "id, transaction_no, transaction_type, transaction_date, rate, foreign_amount, idr_amount, payment_method, status, is_suspicious, suspicious_reason, ltkm_report_no, ltkm_reported_at, currencies(code), customers(customer_code, full_name, id_number), branches(code, name)",
+      )
+      .gte("transaction_date", dateFrom + "T00:00:00")
+      .lte("transaction_date", dateTo + "T23:59:59")
+      .order("transaction_date", { ascending: false })
+      .limit(1000);
+
+    if (branchId !== "all") q = q.eq("branch_id", branchId);
+    if (tab === "ltkt") {
+      q = q
+        .eq("payment_method", "cash")
+        .eq("status", "completed")
+        .gte("idr_amount", LTKT_THRESHOLD);
+    } else if (tab === "ltkm") {
+      q = q.eq("is_suspicious", true);
+    }
+
+    const { data, error } = await q;
+    setLoading(false);
+    if (error) {
+      toast.error("Gagal memuat laporan", { description: error.message });
+      return;
+    }
+    setRows((data as unknown as TrxRow[]) ?? []);
+  }
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, branchId, dateFrom, dateTo]);
+
+  const totals = useMemo(() => {
+    const r = rows ?? [];
+    return {
+      count: r.length,
+      buy: r
+        .filter((x) => x.transaction_type === "buy" && x.status === "completed")
+        .reduce((s, x) => s + Number(x.idr_amount), 0),
+      sell: r
+        .filter((x) => x.transaction_type === "sell" && x.status === "completed")
+        .reduce((s, x) => s + Number(x.idr_amount), 0),
+      suspicious: r.filter((x) => x.is_suspicious).length,
+    };
+  }, [rows]);
+
+  function openFlag(row: TrxRow) {
+    setFlagTarget(row);
+    setFlagReason(row.suspicious_reason ?? "");
+    setFlagOpen(true);
+  }
+
+  async function saveFlag(mark: boolean) {
+    if (!flagTarget) return;
+    if (mark && flagReason.trim().length < 10) {
+      toast.error("Alasan LTKM wajib diisi (minimal 10 karakter)");
+      return;
+    }
+    setFlagSaving(true);
+    const patch: Record<string, unknown> = mark
+      ? {
+          is_suspicious: true,
+          suspicious_reason: flagReason.trim(),
+          flagged_by: user?.id ?? null,
+          flagged_at: new Date().toISOString(),
+        }
+      : {
+          is_suspicious: false,
+          suspicious_reason: null,
+          flagged_by: null,
+          flagged_at: null,
+          ltkm_reported_at: null,
+          ltkm_report_no: null,
+        };
+    const { error } = await supabase
+      .from("transactions")
+      .update(patch)
+      .eq("id", flagTarget.id);
+    setFlagSaving(false);
+    if (error) {
+      toast.error("Gagal menyimpan", { description: error.message });
+      return;
+    }
+    toast.success(mark ? "Transaksi ditandai LTKM" : "Penandaan LTKM dibatalkan");
+    setFlagOpen(false);
+    load();
+  }
+
+  async function markReported() {
+    if (!flagTarget) return;
+    const no = window.prompt("Nomor Laporan PPATK (LTKM):");
+    if (!no || no.trim().length === 0) return;
+    const { error } = await supabase
+      .from("transactions")
+      .update({
+        ltkm_report_no: no.trim(),
+        ltkm_reported_at: new Date().toISOString(),
+      })
+      .eq("id", flagTarget.id);
+    if (error) {
+      toast.error("Gagal menyimpan", { description: error.message });
+      return;
+    }
+    toast.success("Nomor laporan PPATK dicatat");
+    setFlagOpen(false);
+    load();
+  }
+
+  const title =
+    tab === "harian"
+      ? "Laporan Harian"
+      : tab === "bulanan"
+        ? "Laporan Bulanan"
+        : tab === "ltkt"
+          ? "LTKT (Transaksi Keuangan Tunai ≥ Rp 500 jt)"
+          : "LTKM (Transaksi Keuangan Mencurigakan)";
+
+  return (
+    <div className="flex flex-col gap-6 p-6">
+      <MasterPageHeader
+        title="Laporan"
+        description="Laporan transaksi, LTKT, dan LTKM sesuai kewajiban pelaporan PPATK untuk KUPVA BB."
+        canWrite={false}
+      />
+
+      <Card>
+        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-4 pt-6">
+          <div className="space-y-2">
+            <Label>Dari Tanggal</Label>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Sampai Tanggal</Label>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Cabang</Label>
+            <Select value={branchId} onValueChange={setBranchId}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Cabang</SelectItem>
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-end gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 gap-2"
+              onClick={() =>
+                exportCSV(
+                  `laporan-${tab}-${dateFrom}-sd-${dateTo}.csv`,
+                  rows ?? [],
+                )
+              }
+            >
+              <Download className="h-4 w-4" /> Unduh CSV
+            </Button>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => window.print()}
+            >
+              <Printer className="h-4 w-4" /> Cetak
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Total Transaksi</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totals.count}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Nilai Beli</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{fmtIDR(totals.buy)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Nilai Jual</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{fmtIDR(totals.sell)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm flex items-center gap-1">
+              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+              LTKM Ditandai
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totals.suspicious}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+        <TabsList>
+          <TabsTrigger value="harian">Harian</TabsTrigger>
+          <TabsTrigger value="bulanan">Bulanan</TabsTrigger>
+          <TabsTrigger value="ltkt">LTKT</TabsTrigger>
+          <TabsTrigger value="ltkm">LTKM</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value={tab} className="mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                {title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>No. Trx</TableHead>
+                    <TableHead>Tanggal</TableHead>
+                    <TableHead>Jenis</TableHead>
+                    <TableHead>Nasabah</TableHead>
+                    <TableHead>Valas</TableHead>
+                    <TableHead className="text-right">Nominal Valas</TableHead>
+                    <TableHead className="text-right">Nominal IDR</TableHead>
+                    <TableHead>Metode</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="w-24 text-right">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {loading || rows === null ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <TableRow key={i}>
+                        <TableCell colSpan={10}>
+                          <Skeleton className="h-6 w-full" />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : rows.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={10} className="text-center py-12 text-sm text-muted-foreground">
+                        Tidak ada transaksi pada periode & filter ini.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    rows.map((r) => (
+                      <TableRow
+                        key={r.id}
+                        className={r.is_suspicious ? "bg-amber-50/50" : ""}
+                      >
+                        <TableCell className="font-mono text-xs">
+                          {r.transaction_no}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {fmtDate(r.transaction_date)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={r.transaction_type === "buy" ? "default" : "secondary"}
+                          >
+                            {r.transaction_type === "buy" ? "Beli" : "Jual"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {r.customers?.full_name ?? "—"}
+                          {r.customers?.id_number && (
+                            <div className="text-muted-foreground">
+                              {r.customers.id_number}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {r.currencies?.code}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {new Intl.NumberFormat("id-ID").format(
+                            Number(r.foreign_amount),
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {fmtIDR(Number(r.idr_amount))}
+                        </TableCell>
+                        <TableCell className="capitalize text-xs">
+                          {r.payment_method}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-1">
+                            <Badge
+                              variant={
+                                r.status === "completed"
+                                  ? "default"
+                                  : r.status === "voided"
+                                    ? "destructive"
+                                    : "secondary"
+                              }
+                            >
+                              {r.status}
+                            </Badge>
+                            {r.is_suspicious && (
+                              <Badge
+                                variant="outline"
+                                className="gap-1 border-amber-400 text-amber-700"
+                              >
+                                <AlertTriangle className="h-3 w-3" />
+                                LTKM
+                              </Badge>
+                            )}
+                            {r.ltkm_report_no && (
+                              <span className="text-[10px] text-muted-foreground font-mono">
+                                #{r.ltkm_report_no}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {canFlag && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => openFlag(r)}
+                              className="gap-1"
+                            >
+                              <Flag className="h-3.5 w-3.5" />
+                              {r.is_suspicious ? "Kelola" : "Tandai"}
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      <Dialog open={flagOpen} onOpenChange={setFlagOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Tandai Transaksi Mencurigakan (LTKM)</DialogTitle>
+            <DialogDescription>
+              Cantumkan alasan yang jelas dan spesifik. Data ini menjadi dasar
+              Laporan Transaksi Keuangan Mencurigakan kepada PPATK.
+            </DialogDescription>
+          </DialogHeader>
+          {flagTarget && (
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between rounded-md bg-muted p-3">
+                <span className="font-mono">{flagTarget.transaction_no}</span>
+                <span>{fmtIDR(Number(flagTarget.idr_amount))}</span>
+              </div>
+              <div className="space-y-2">
+                <Label>Alasan / Red Flag *</Label>
+                <Textarea
+                  rows={4}
+                  value={flagReason}
+                  onChange={(e) => setFlagReason(e.target.value)}
+                  placeholder="mis. Nominal tidak sesuai profil ekonomi nasabah; transaksi terpecah (structuring) untuk menghindari ambang LTKT; identitas nasabah mencurigakan; dll."
+                  maxLength={1000}
+                />
+              </div>
+              {flagTarget.is_suspicious && (
+                <div className="rounded-md border border-amber-300 bg-amber-50 p-3 text-xs">
+                  <div className="font-medium text-amber-900">
+                    Status: Ditandai sebagai LTKM
+                  </div>
+                  {flagTarget.ltkm_report_no ? (
+                    <div className="mt-1 text-amber-800">
+                      Sudah dilaporkan — No. Laporan{" "}
+                      <span className="font-mono">
+                        {flagTarget.ltkm_report_no}
+                      </span>{" "}
+                      pada{" "}
+                      {flagTarget.ltkm_reported_at &&
+                        fmtDate(flagTarget.ltkm_reported_at)}
+                    </div>
+                  ) : (
+                    <div className="mt-1 text-amber-800">
+                      Belum dilaporkan ke PPATK.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter className="flex-col gap-2 sm:flex-row">
+            {flagTarget?.is_suspicious && (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={markReported}
+                  disabled={flagSaving}
+                >
+                  Catat No. Laporan PPATK
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => saveFlag(false)}
+                  disabled={flagSaving}
+                >
+                  Batalkan Penandaan
+                </Button>
+              </>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setFlagOpen(false)}
+              disabled={flagSaving}
+            >
+              Tutup
+            </Button>
+            <Button
+              onClick={() => saveFlag(true)}
+              disabled={flagSaving}
+              className="gap-2"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              {flagTarget?.is_suspicious ? "Perbarui Alasan" : "Tandai LTKM"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
