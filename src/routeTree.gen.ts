@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCurrenciesRouteImport } from './routes/_authenticated/currencies'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 
@@ -41,6 +42,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedCurrenciesRoute = AuthenticatedCurrenciesRouteImport.update({
   id: '/currencies',
   path: '/currencies',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/currencies': typeof AuthenticatedCurrenciesRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/rates': typeof AuthenticatedRatesRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/branches': typeof AuthenticatedBranchesRoute
   '/currencies': typeof AuthenticatedCurrenciesRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/rates': typeof AuthenticatedRatesRoute
 }
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
   '/_authenticated/currencies': typeof AuthenticatedCurrenciesRoute
+  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
 }
@@ -85,10 +94,18 @@ export interface FileRouteTypes {
     | '/auth'
     | '/branches'
     | '/currencies'
+    | '/customers'
     | '/dashboard'
     | '/rates'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/branches' | '/currencies' | '/dashboard' | '/rates'
+  to:
+    | '/'
+    | '/auth'
+    | '/branches'
+    | '/currencies'
+    | '/customers'
+    | '/dashboard'
+    | '/rates'
   id:
     | '__root__'
     | '/'
@@ -96,6 +113,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/branches'
     | '/_authenticated/currencies'
+    | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/rates'
   fileRoutesById: FileRoutesById
@@ -143,6 +161,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/customers': {
+      id: '/_authenticated/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof AuthenticatedCustomersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/currencies': {
       id: '/_authenticated/currencies'
       path: '/currencies'
@@ -163,6 +188,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
   AuthenticatedCurrenciesRoute: typeof AuthenticatedCurrenciesRoute
+  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
 }
@@ -170,6 +196,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
   AuthenticatedCurrenciesRoute: AuthenticatedCurrenciesRoute,
+  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
 }
