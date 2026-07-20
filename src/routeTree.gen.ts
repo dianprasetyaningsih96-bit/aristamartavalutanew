@@ -13,6 +13,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCurrenciesRouteImport } from './routes/_authenticated/currencies'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 
 const AuthRoute = AuthRouteImport.update({
@@ -34,6 +35,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCurrenciesRoute = AuthenticatedCurrenciesRouteImport.update({
+  id: '/currencies',
+  path: '/currencies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
   id: '/branches',
   path: '/branches',
@@ -44,12 +50,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/branches': typeof AuthenticatedBranchesRoute
+  '/currencies': typeof AuthenticatedCurrenciesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/branches': typeof AuthenticatedBranchesRoute
+  '/currencies': typeof AuthenticatedCurrenciesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRoutesById {
@@ -58,19 +66,21 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
+  '/_authenticated/currencies': typeof AuthenticatedCurrenciesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/branches' | '/dashboard'
+  fullPaths: '/' | '/auth' | '/branches' | '/currencies' | '/dashboard'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/branches' | '/dashboard'
+  to: '/' | '/auth' | '/branches' | '/currencies' | '/dashboard'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/branches'
+    | '/_authenticated/currencies'
     | '/_authenticated/dashboard'
   fileRoutesById: FileRoutesById
 }
@@ -110,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/currencies': {
+      id: '/_authenticated/currencies'
+      path: '/currencies'
+      fullPath: '/currencies'
+      preLoaderRoute: typeof AuthenticatedCurrenciesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/branches': {
       id: '/_authenticated/branches'
       path: '/branches'
@@ -122,11 +139,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
+  AuthenticatedCurrenciesRoute: typeof AuthenticatedCurrenciesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
+  AuthenticatedCurrenciesRoute: AuthenticatedCurrenciesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
 }
 
