@@ -12,7 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCurrenciesRouteImport } from './routes/_authenticated/currencies'
+import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -28,40 +31,73 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
+  id: '/rates',
+  path: '/rates',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCurrenciesRoute = AuthenticatedCurrenciesRouteImport.update({
+  id: '/currencies',
+  path: '/currencies',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedBranchesRoute = AuthenticatedBranchesRouteImport.update({
+  id: '/branches',
+  path: '/branches',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/branches': typeof AuthenticatedBranchesRoute
+  '/currencies': typeof AuthenticatedCurrenciesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/rates': typeof AuthenticatedRatesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/branches': typeof AuthenticatedBranchesRoute
+  '/currencies': typeof AuthenticatedCurrenciesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/rates': typeof AuthenticatedRatesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/branches': typeof AuthenticatedBranchesRoute
+  '/_authenticated/currencies': typeof AuthenticatedCurrenciesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/rates': typeof AuthenticatedRatesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/branches'
+    | '/currencies'
+    | '/dashboard'
+    | '/rates'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard'
+  to: '/' | '/auth' | '/branches' | '/currencies' | '/dashboard' | '/rates'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/branches'
+    | '/_authenticated/currencies'
     | '/_authenticated/dashboard'
+    | '/_authenticated/rates'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,6 +129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/rates': {
+      id: '/_authenticated/rates'
+      path: '/rates'
+      fullPath: '/rates'
+      preLoaderRoute: typeof AuthenticatedRatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -100,15 +143,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/currencies': {
+      id: '/_authenticated/currencies'
+      path: '/currencies'
+      fullPath: '/currencies'
+      preLoaderRoute: typeof AuthenticatedCurrenciesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/branches': {
+      id: '/_authenticated/branches'
+      path: '/branches'
+      fullPath: '/branches'
+      preLoaderRoute: typeof AuthenticatedBranchesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedBranchesRoute: typeof AuthenticatedBranchesRoute
+  AuthenticatedCurrenciesRoute: typeof AuthenticatedCurrenciesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedBranchesRoute: AuthenticatedBranchesRoute,
+  AuthenticatedCurrenciesRoute: AuthenticatedCurrenciesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedRatesRoute: AuthenticatedRatesRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
