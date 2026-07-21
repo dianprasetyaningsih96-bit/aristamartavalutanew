@@ -869,7 +869,7 @@ function TransactionsPage() {
               variant="outline"
               className="gap-2"
               onClick={() =>
-                generateReceiptPdf({
+                viewing && generateReceiptPdf({
                   transaction_no: viewing.transaction_no,
                   transaction_date: viewing.transaction_date,
                   transaction_type: viewing.transaction_type,
