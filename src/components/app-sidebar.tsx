@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Settings,
   ClipboardList,
+  UserCog,
 } from "lucide-react";
 import {
   Sidebar,
@@ -102,6 +103,12 @@ const admin: NavItem[] = [
     url: "/audit",
     icon: ShieldCheck,
     roles: ["super_admin", "auditor", "owner"],
+  },
+  {
+    title: "Manajemen User",
+    url: "/users",
+    icon: UserCog,
+    roles: ["super_admin", "owner"],
   },
   {
     title: "Pengaturan",
