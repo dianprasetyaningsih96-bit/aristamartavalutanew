@@ -570,6 +570,14 @@ function CustomersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setDocsCustomer(row)}
+                          title="Dokumen KYC"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
                         {canWrite && (
                           <Button
                             size="icon"
