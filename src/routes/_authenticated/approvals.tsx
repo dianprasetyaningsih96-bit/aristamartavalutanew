@@ -219,15 +219,10 @@ function ApprovalsPage() {
   return (
     <div className="space-y-6">
       <MasterPageHeader
-        icon={ClipboardList}
         title="Persetujuan"
         description="Alur kerja permintaan persetujuan manajemen untuk aksi sensitif."
-        action={
-          <Button onClick={() => setCreateOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Ajukan Permintaan
-          </Button>
-        }
+        onAdd={() => setCreateOpen(true)}
+        addLabel="Ajukan Permintaan"
       />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
