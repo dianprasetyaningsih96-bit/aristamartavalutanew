@@ -24,6 +24,7 @@ import { Route as AuthenticatedCashRouteImport } from './routes/_authenticated/c
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
+import { Route as AuthenticatedUsersUserIdRouteImport } from './routes/_authenticated/users.$userId'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -101,6 +102,12 @@ const AuthenticatedApprovalsRoute = AuthenticatedApprovalsRouteImport.update({
   path: '/approvals',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedUsersUserIdRoute =
+  AuthenticatedUsersUserIdRouteImport.update({
+    id: '/$userId',
+    path: '/$userId',
+    getParentRoute: () => AuthenticatedUsersRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -116,7 +123,8 @@ export interface FileRoutesByFullPath {
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
-  '/users': typeof AuthenticatedUsersRoute
+  '/users': typeof AuthenticatedUsersRouteWithChildren
+  '/users/$userId': typeof AuthenticatedUsersUserIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -132,7 +140,8 @@ export interface FileRoutesByTo {
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
-  '/users': typeof AuthenticatedUsersRoute
+  '/users': typeof AuthenticatedUsersRouteWithChildren
+  '/users/$userId': typeof AuthenticatedUsersUserIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -150,7 +159,8 @@ export interface FileRoutesById {
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
-  '/_authenticated/users': typeof AuthenticatedUsersRoute
+  '/_authenticated/users': typeof AuthenticatedUsersRouteWithChildren
+  '/_authenticated/users/$userId': typeof AuthenticatedUsersUserIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -169,6 +179,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/transactions'
     | '/users'
+    | '/users/$userId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -185,6 +196,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/transactions'
     | '/users'
+    | '/users/$userId'
   id:
     | '__root__'
     | '/'
@@ -202,6 +214,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/transactions'
     | '/_authenticated/users'
+    | '/_authenticated/users/$userId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -317,8 +330,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedApprovalsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/users/$userId': {
+      id: '/_authenticated/users/$userId'
+      path: '/$userId'
+      fullPath: '/users/$userId'
+      preLoaderRoute: typeof AuthenticatedUsersUserIdRouteImport
+      parentRoute: typeof AuthenticatedUsersRoute
+    }
   }
 }
+
+interface AuthenticatedUsersRouteChildren {
+  AuthenticatedUsersUserIdRoute: typeof AuthenticatedUsersUserIdRoute
+}
+
+const AuthenticatedUsersRouteChildren: AuthenticatedUsersRouteChildren = {
+  AuthenticatedUsersUserIdRoute: AuthenticatedUsersUserIdRoute,
+}
+
+const AuthenticatedUsersRouteWithChildren =
+  AuthenticatedUsersRoute._addFileChildren(AuthenticatedUsersRouteChildren)
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedApprovalsRoute: typeof AuthenticatedApprovalsRoute
@@ -332,7 +363,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
-  AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
+  AuthenticatedUsersRoute: typeof AuthenticatedUsersRouteWithChildren
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -347,7 +378,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
-  AuthenticatedUsersRoute: AuthenticatedUsersRoute,
+  AuthenticatedUsersRoute: AuthenticatedUsersRouteWithChildren,
 }
 
 const AuthenticatedRouteRouteWithChildren =
