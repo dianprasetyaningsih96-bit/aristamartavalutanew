@@ -1,0 +1,83 @@
+import { useEffect, useState, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+export type NotificationSeverity = "info" | "warning" | "critical";
+export type NotificationCategory =
+  | "ltkt_threshold"
+  | "ltkm_suspicious"
+  | "blacklist_attempt"
+  | "low_cash"
+  | "approval_request"
+  | "approval_decision"
+  | "system";
+
+export interface NotificationRow {
+  id: string;
+  user_id: string | null;
+  target_roles: string[] | null;
+  category: NotificationCategory;
+  severity: NotificationSeverity;
+  title: string;
+  message: string;
+  link: string | null;
+  reference_table: string | null;
+  reference_id: string | null;
+  metadata: Record<string, unknown> | null;
+  read_by: string[] | null;
+  created_at: string;
+}
+
+export function useNotifications(limit = 50) {
+  const [items, setItems] = useState<NotificationRow[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const load = useCallback(async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    const uid = userData.user?.id ?? null;
+    setUserId(uid);
+    if (!uid) {
+      setItems([]);
+      setLoading(false);
+      return;
+    }
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(limit);
+    setItems((data as NotificationRow[]) ?? []);
+    setLoading(false);
+  }, [limit]);
+
+  useEffect(() => {
+    load();
+    const channel = supabase
+      .channel("notifications-feed")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications" },
+        () => load(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [load]);
+
+  const unread = userId
+    ? items.filter((n) => !(n.read_by ?? []).includes(userId))
+    : [];
+
+  const markRead = useCallback(async (id: string) => {
+    await supabase.rpc("mark_notification_read", { _id: id });
+    load();
+  }, [load]);
+
+  const markAllRead = useCallback(async () => {
+    await supabase.rpc("mark_all_notifications_read");
+    load();
+  }, [load]);
+
+  return { items, unread, loading, userId, markRead, markAllRead, refresh: load };
+}
