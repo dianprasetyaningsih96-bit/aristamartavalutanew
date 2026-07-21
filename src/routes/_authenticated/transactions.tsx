@@ -16,6 +16,7 @@ import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { generateReceiptPdf } from "@/lib/pdf-receipt";
 import { Card, CardContent } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -153,7 +154,7 @@ const fmtNum = (n: number, d = 2) =>
 const CDD_THRESHOLD_IDR = 100_000_000;
 
 function TransactionsPage() {
-  const { roles, user } = useCurrentUser();
+  const { roles, user, profile } = useCurrentUser();
   const canWrite = hasAnyRole(roles, [
     "super_admin",
     "owner",
@@ -171,6 +172,8 @@ function TransactionsPage() {
   const [branches, setBranches] = useState<BranchOpt[]>([]);
   const [customers, setCustomers] = useState<CustomerOpt[]>([]);
   const [rates, setRates] = useState<RateRow[]>([]);
+  // Set of branch ids (or "__hq__") that have a morning (pagi) shift opened today.
+  const [morningOpenBranches, setMorningOpenBranches] = useState<Set<string>>(new Set());
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | TxType>("all");
@@ -191,6 +194,7 @@ function TransactionsPage() {
       { data: br },
       { data: cust },
       { data: rt },
+      { data: sh },
     ] = await Promise.all([
       supabase
         .from("transactions")
@@ -220,6 +224,15 @@ function TransactionsPage() {
         .eq("is_active", true)
         .order("effective_date", { ascending: false })
         .limit(500),
+      (async () => {
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        return supabase
+          .from("shifts")
+          .select("branch_id, shift_type, opened_at")
+          .eq("shift_type", "pagi")
+          .gte("opened_at", start.toISOString());
+      })(),
     ]);
     if (error) {
       toast.error("Gagal memuat transaksi", { description: error.message });
@@ -230,6 +243,11 @@ function TransactionsPage() {
     setBranches((br as BranchOpt[]) ?? []);
     setCustomers((cust as CustomerOpt[]) ?? []);
     setRates((rt as RateRow[]) ?? []);
+    const set = new Set<string>();
+    ((sh as { branch_id: string | null }[] | null) ?? []).forEach((r) =>
+      set.add(r.branch_id ?? HQ),
+    );
+    setMorningOpenBranches(set);
   }
 
   useEffect(() => {
@@ -269,8 +287,20 @@ function TransactionsPage() {
   const requiresCDD = idrAmount >= CDD_THRESHOLD_IDR;
   const selectedCustomer = customers.find((c) => c.id === form.customer_id);
   const blacklistBlock = selectedCustomer?.is_blacklisted;
+  const morningOpenForForm = morningOpenBranches.has(form.branch_id);
+  const userBranchKey = profile?.branch_id ?? HQ;
+  const morningOpenForUserBranch = morningOpenBranches.has(userBranchKey);
+  const userBranchName =
+    branches.find((b) => b.id === profile?.branch_id)?.name ??
+    (profile?.branch_id ? "cabang Anda" : "HQ");
 
   function openCreate(type: TxType) {
+    if (!morningOpenForUserBranch) {
+      toast.error("Shif pagi belum dibuka", {
+        description: `Buka shif pagi di ${userBranchName} terlebih dahulu sebelum melakukan transaksi.`,
+      });
+      return;
+    }
     setForm({ ...emptyForm(), transaction_type: type });
     setOpen(true);
   }
@@ -293,6 +323,13 @@ function TransactionsPage() {
       toast.error("CDD wajib", {
         description:
           "Transaksi ≥ Rp 100 juta wajib mencantumkan nasabah terdaftar.",
+      });
+      return;
+    }
+    if (!morningOpenBranches.has(parsed.data.branch_id)) {
+      toast.error("Shif pagi belum dibuka", {
+        description:
+          "Transaksi hanya dapat dilakukan setelah shif pagi dibuka pada cabang terkait.",
       });
       return;
     }
@@ -403,6 +440,7 @@ function TransactionsPage() {
                 onClick={() => openCreate("buy")}
                 variant="outline"
                 className="gap-2"
+                disabled={!morningOpenForUserBranch}
               >
                 <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
                 Beli Valas
@@ -410,6 +448,7 @@ function TransactionsPage() {
               <Button
                 onClick={() => openCreate("sell")}
                 className="gap-2"
+                disabled={!morningOpenForUserBranch}
               >
                 <ArrowUpCircle className="h-4 w-4" />
                 Jual Valas
@@ -418,6 +457,20 @@ function TransactionsPage() {
           )
         }
       />
+
+      {canWrite && !morningOpenForUserBranch && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-semibold">Shif pagi belum dibuka</div>
+            <div className="text-xs opacity-90">
+              Transaksi di {userBranchName} baru dapat dilakukan setelah shif
+              pagi hari ini dibuka. Buka shif pagi di menu{" "}
+              <b>Shif Kerja</b> terlebih dahulu.
+            </div>
+          </div>
+        </div>
+      )}
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -786,7 +839,10 @@ function TransactionsPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button onClick={save} disabled={saving || blacklistBlock}>
+            <Button
+              onClick={save}
+              disabled={saving || blacklistBlock || !morningOpenForForm}
+            >
               {saving ? "Menyimpan…" : "Simpan Transaksi"}
             </Button>
           </DialogFooter>
