@@ -1,0 +1,212 @@
+import type jsPDF from "jspdf";
+import {
+  portraitDoc,
+  landscapeDoc,
+  drawHeader,
+  drawFooter,
+  table,
+  openPdf,
+  fmtIDR,
+  BRAND,
+} from "./pdf";
+
+export interface ReportTrxRow {
+  transaction_no: string;
+  transaction_type: "buy" | "sell";
+  transaction_date: string;
+  rate: number;
+  foreign_amount: number;
+  idr_amount: number;
+  payment_method: string;
+  status: string;
+  is_suspicious: boolean;
+  suspicious_reason: string | null;
+  ltkm_report_no: string | null;
+  currencies?: { code: string } | null;
+  customers?: { customer_code: string; full_name: string; id_number: string } | null;
+  branches?: { code: string; name: string } | null;
+}
+
+export interface ReportMeta {
+  title: string;
+  variant: "harian" | "bulanan" | "ltkt" | "ltkm";
+  branchLabel: string;
+  dateFrom: string;
+  dateTo: string;
+  totals: { count: number; buy: number; sell: number; suspicious: number };
+}
+
+function summaryBox(doc: jsPDF, y: number, meta: ReportMeta) {
+  const w = doc.internal.pageSize.getWidth();
+  const boxW = (w - 24 - 9) / 4;
+  const items: [string, string][] = [
+    ["Total Transaksi", String(meta.totals.count)],
+    ["Nilai Beli", fmtIDR(meta.totals.buy)],
+    ["Nilai Jual", fmtIDR(meta.totals.sell)],
+    ["LTKM Ditandai", String(meta.totals.suspicious)],
+  ];
+  items.forEach(([k, v], i) => {
+    const x = 12 + i * (boxW + 3);
+    doc.setFillColor(248, 250, 252);
+    doc.setDrawColor(...BRAND.line);
+    doc.roundedRect(x, y, boxW, 16, 1.5, 1.5, "FD");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7.5);
+    doc.setTextColor(...BRAND.muted);
+    doc.text(k, x + 3, y + 5.5);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(10.5);
+    doc.setTextColor(...BRAND.primary);
+    doc.text(v, x + 3, y + 12);
+  });
+  return y + 20;
+}
+
+function metaBox(doc: jsPDF, y: number, meta: ReportMeta) {
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...BRAND.muted);
+  const line = `Periode: ${meta.dateFrom} s/d ${meta.dateTo}   ·   Cabang: ${meta.branchLabel}`;
+  doc.text(line, 12, y);
+  return y + 4;
+}
+
+export function generateReportPdf(meta: ReportMeta, rows: ReportTrxRow[]) {
+  const doc = landscapeDoc();
+  let y = drawHeader(doc, meta.title, "Laporan KUPVA BB");
+  y = metaBox(doc, y + 2, meta);
+  y = summaryBox(doc, y + 2, meta);
+
+  const includeLtkm = meta.variant === "ltkm";
+
+  const body = rows.map((r) => {
+    const base = [
+      r.transaction_no,
+      new Date(r.transaction_date).toLocaleString("id-ID"),
+      r.transaction_type === "buy" ? "Beli" : "Jual",
+      r.branches?.code ?? "-",
+      r.customers?.full_name ?? "Walk-in",
+      r.customers?.id_number ?? "-",
+      r.currencies?.code ?? "-",
+      new Intl.NumberFormat("id-ID").format(Number(r.foreign_amount)),
+      new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      }).format(Number(r.rate)),
+      fmtIDR(Number(r.idr_amount)),
+      r.payment_method,
+      r.status + (r.is_suspicious ? " · LTKM" : ""),
+    ];
+    if (includeLtkm) {
+      base.push(r.ltkm_report_no ?? "-");
+      base.push(r.suspicious_reason ?? "-");
+    }
+    return base;
+  });
+
+  const head = [
+    [
+      "No. Trx",
+      "Tanggal",
+      "Jenis",
+      "Cabang",
+      "Nasabah",
+      "No. Identitas",
+      "Valas",
+      "Nominal",
+      "Kurs",
+      "IDR",
+      "Metode",
+      "Status",
+      ...(includeLtkm ? ["No. LTKM", "Alasan"] : []),
+    ],
+  ];
+
+  table(doc, {
+    startY: y + 2,
+    head,
+    body,
+    styles: { fontSize: 7.5, cellPadding: 1.4 },
+    columnStyles: {
+      0: { fontStyle: "bold" },
+      7: { halign: "right" },
+      8: { halign: "right" },
+      9: { halign: "right", fontStyle: "bold" },
+    },
+    didParseCell: (data) => {
+      if (data.section === "body") {
+        const raw = rows[data.row.index];
+        if (raw?.is_suspicious) {
+          data.cell.styles.fillColor = [254, 249, 195];
+        }
+        if (raw?.status === "voided") {
+          data.cell.styles.textColor = [180, 83, 9];
+        }
+      }
+    },
+  });
+
+  drawFooter(
+    doc,
+    "Laporan bersifat rahasia — untuk keperluan internal & pelaporan PPATK",
+  );
+
+  const fname = `laporan-${meta.variant}-${meta.dateFrom}-sd-${meta.dateTo}.pdf`;
+  openPdf(doc, fname);
+}
+
+export function generateLtkmReportPdf(meta: ReportMeta, rows: ReportTrxRow[]) {
+  const suspicious = rows.filter((r) => r.is_suspicious);
+  const doc = portraitDoc();
+  let y = drawHeader(doc, "LAPORAN LTKM", "PPATK — Transaksi Keuangan Mencurigakan");
+  y = metaBox(doc, y + 2, { ...meta, title: "LTKM" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(15, 23, 42);
+  doc.text(
+    `Jumlah transaksi ditandai: ${suspicious.length}`,
+    12,
+    y + 4,
+  );
+
+  const body = suspicious.map((r) => [
+    r.transaction_no,
+    new Date(r.transaction_date).toLocaleString("id-ID"),
+    r.transaction_type === "buy" ? "Beli" : "Jual",
+    r.customers?.full_name ?? "Walk-in",
+    r.customers?.id_number ?? "-",
+    (r.currencies?.code ?? "-") +
+      " " +
+      new Intl.NumberFormat("id-ID").format(Number(r.foreign_amount)),
+    fmtIDR(Number(r.idr_amount)),
+    r.ltkm_report_no ?? "-",
+    r.suspicious_reason ?? "-",
+  ]);
+
+  table(doc, {
+    startY: y + 8,
+    head: [
+      [
+        "No. Trx",
+        "Tanggal",
+        "Jenis",
+        "Nasabah",
+        "No. Identitas",
+        "Valas",
+        "IDR",
+        "No. LTKM",
+        "Alasan",
+      ],
+    ],
+    body,
+    styles: { fontSize: 7.5, cellPadding: 1.4 },
+    columnStyles: {
+      6: { halign: "right", fontStyle: "bold" },
+      8: { cellWidth: 45 },
+    },
+  });
+
+  drawFooter(doc, "Dokumen rahasia — hanya untuk PPATK & auditor");
+  openPdf(doc, `LTKM-${meta.dateFrom}-sd-${meta.dateTo}.pdf`);
+}
