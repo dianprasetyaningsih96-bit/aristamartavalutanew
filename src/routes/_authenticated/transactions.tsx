@@ -14,6 +14,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
+import { generateReceiptPdf } from "@/lib/pdf-receipt";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -867,10 +868,23 @@ function TransactionsPage() {
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => window.print()}
+              onClick={() =>
+                generateReceiptPdf({
+                  transaction_no: viewing.transaction_no,
+                  transaction_date: viewing.transaction_date,
+                  transaction_type: viewing.transaction_type,
+                  branch: viewing.branches ?? null,
+                  customer: viewing.customers ?? null,
+                  currency: viewing.currencies?.code ?? "-",
+                  foreign_amount: Number(viewing.foreign_amount),
+                  rate: Number(viewing.rate),
+                  idr_amount: Number(viewing.idr_amount),
+                  payment_method: viewing.payment_method,
+                })
+              }
             >
               <Printer className="h-4 w-4" />
-              Cetak
+              Cetak PDF
             </Button>
             <Button onClick={() => setViewing(null)}>Tutup</Button>
           </DialogFooter>
