@@ -2,11 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
-  ClipboardList,
   CheckCircle2,
   XCircle,
   Clock,
-  Plus,
   Search,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
