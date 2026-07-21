@@ -189,6 +189,7 @@ function ShiftsPage() {
           branches={branches}
           defaultBranchId={profile?.branch_id ?? null}
           userId={user?.id ?? ""}
+          lockBranch={!isManager}
         />
       )}
 
