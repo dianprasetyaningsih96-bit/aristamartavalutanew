@@ -1079,6 +1079,15 @@ function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {docsCustomer && (
+        <CustomerDocumentsDialog
+          open={!!docsCustomer}
+          onOpenChange={(o) => !o && setDocsCustomer(null)}
+          customerId={docsCustomer.id}
+          customerName={docsCustomer.full_name}
+          customerCode={docsCustomer.customer_code}
+        />
+      )}
     </div>
   );
 }
