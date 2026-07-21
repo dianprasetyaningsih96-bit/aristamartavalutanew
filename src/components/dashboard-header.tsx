@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Bell, LogOut, Search, User as UserIcon } from "lucide-react";
+import { LogOut, Search, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,8 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { NotificationsBell } from "@/components/notifications-bell";
 
 export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
   const navigate = useNavigate();
@@ -53,15 +53,7 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
         <Input placeholder="Cari nasabah, transaksi..." className="pl-9" />
       </div>
       <div className="ml-auto flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <Badge
-            className="absolute -right-0.5 -top-0.5 h-4 min-w-4 px-1 text-[10px]"
-            variant="destructive"
-          >
-            3
-          </Badge>
-        </Button>
+        <NotificationsBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 rounded-full p-1 pr-3 transition-colors hover:bg-muted">
