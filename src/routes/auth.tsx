@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
+import { useAppSettings } from "@/hooks/use-app-settings";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -15,6 +16,8 @@ export const Route = createFileRoute("/auth")({
 
 function AuthPage() {
   const navigate = useNavigate();
+  const { settings } = useAppSettings();
+  const companyName = settings?.company_name || "KUPVA BB";
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -62,7 +65,7 @@ function AuthPage() {
           <div className="grid h-10 w-10 place-items-center rounded-xl bg-white/15 backdrop-blur">
             <Banknote className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold">KUPVA BB</span>
+          <span className="text-lg font-bold">{companyName}</span>
         </div>
         <div className="space-y-6">
           <h2 className="text-4xl font-extrabold leading-tight">
@@ -78,7 +81,7 @@ function AuthPage() {
           </div>
         </div>
         <div className="text-xs text-primary-foreground/60">
-          &copy; {new Date().getFullYear()} KUPVA BB — Money Changer Information System
+          &copy; {new Date().getFullYear()} {companyName} — Money Changer Information System
         </div>
       </div>
 
@@ -89,7 +92,7 @@ function AuthPage() {
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground">
               <Banknote className="h-5 w-5" />
             </div>
-            <span className="text-lg font-bold">KUPVA BB</span>
+            <span className="text-lg font-bold">{companyName}</span>
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight">Selamat datang</h1>
