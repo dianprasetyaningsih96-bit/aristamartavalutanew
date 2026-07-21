@@ -10,10 +10,12 @@ import {
   ShieldCheck,
   ShieldAlert,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
+import { CustomerDocumentsDialog } from "@/components/customers/customer-documents-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -241,6 +243,7 @@ function CustomersPage() {
   const [deleting, setDeleting] = useState<Customer | null>(null);
   const [form, setForm] = useState<CustomerForm>(empty);
   const [saving, setSaving] = useState(false);
+  const [docsCustomer, setDocsCustomer] = useState<Customer | null>(null);
 
   async function load() {
     const [{ data: c, error }, { data: b }] = await Promise.all([
@@ -567,6 +570,14 @@ function CustomersPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setDocsCustomer(row)}
+                          title="Dokumen KYC"
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
                         {canWrite && (
                           <Button
                             size="icon"
@@ -1068,6 +1079,15 @@ function CustomersPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      {docsCustomer && (
+        <CustomerDocumentsDialog
+          open={!!docsCustomer}
+          onOpenChange={(o) => !o && setDocsCustomer(null)}
+          customerId={docsCustomer.id}
+          customerName={docsCustomer.full_name}
+          customerCode={docsCustomer.customer_code}
+        />
+      )}
     </div>
   );
 }
