@@ -440,6 +440,7 @@ function TransactionsPage() {
                 onClick={() => openCreate("buy")}
                 variant="outline"
                 className="gap-2"
+                disabled={!morningOpenForUserBranch}
               >
                 <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
                 Beli Valas
@@ -447,6 +448,7 @@ function TransactionsPage() {
               <Button
                 onClick={() => openCreate("sell")}
                 className="gap-2"
+                disabled={!morningOpenForUserBranch}
               >
                 <ArrowUpCircle className="h-4 w-4" />
                 Jual Valas
@@ -455,6 +457,20 @@ function TransactionsPage() {
           )
         }
       />
+
+      {canWrite && !morningOpenForUserBranch && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-300/70 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-100">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+          <div>
+            <div className="font-semibold">Shif pagi belum dibuka</div>
+            <div className="text-xs opacity-90">
+              Transaksi di {userBranchName} baru dapat dilakukan setelah shif
+              pagi hari ini dibuka. Buka shif pagi di menu{" "}
+              <b>Shif Kerja</b> terlebih dahulu.
+            </div>
+          </div>
+        </div>
+      )}
 
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
