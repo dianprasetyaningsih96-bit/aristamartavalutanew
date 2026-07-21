@@ -3,9 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface AppSettings {
   company_name: string;
+  shift_pagi_start: string;
+  shift_pagi_end: string;
+  shift_siang_start: string;
+  shift_siang_end: string;
 }
 
-const DEFAULT: AppSettings = { company_name: "KUPVA BB" };
+const DEFAULT: AppSettings = {
+  company_name: "KUPVA BB",
+  shift_pagi_start: "08:00",
+  shift_pagi_end: "15:00",
+  shift_siang_start: "15:00",
+  shift_siang_end: "22:00",
+};
 
 let cache: AppSettings | null = null;
 const listeners = new Set<(s: AppSettings) => void>();
@@ -13,11 +23,20 @@ const listeners = new Set<(s: AppSettings) => void>();
 async function fetchSettings(): Promise<AppSettings> {
   const { data } = await supabase
     .from("app_settings")
-    .select("company_name")
+    .select(
+      "company_name, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end",
+    )
     .eq("id", true)
     .maybeSingle();
+  const trim = (v: unknown) =>
+    typeof v === "string" ? v.slice(0, 5) : undefined;
   const next: AppSettings = {
     company_name: (data?.company_name as string) || DEFAULT.company_name,
+    shift_pagi_start: trim(data?.shift_pagi_start) || DEFAULT.shift_pagi_start,
+    shift_pagi_end: trim(data?.shift_pagi_end) || DEFAULT.shift_pagi_end,
+    shift_siang_start:
+      trim(data?.shift_siang_start) || DEFAULT.shift_siang_start,
+    shift_siang_end: trim(data?.shift_siang_end) || DEFAULT.shift_siang_end,
   };
   cache = next;
   listeners.forEach((l) => l(next));
