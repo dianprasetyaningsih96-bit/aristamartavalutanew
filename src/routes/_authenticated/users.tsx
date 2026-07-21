@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Users, Search, Shield, UserCog } from "lucide-react";
+import { Users, Search, Shield, UserCog, UserPlus } from "lucide-react";
+import { createClient } from "@supabase/supabase-js";
 import {
   supabase,
   ROLE_LABELS,
@@ -76,6 +77,10 @@ const ROLE_STYLES: Record<AppRole, string> = {
   auditor: "bg-amber-500/15 text-amber-700 border-amber-500/30",
 };
 
+const SUPABASE_URL = "https://vbmdlqwplfomtzrhafrc.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY =
+  "sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id";
+
 function UsersPage() {
   const { user, roles: myRoles, loading: userLoading } = useCurrentUser();
   const canManage = hasAnyRole(myRoles, ["super_admin", "owner"]);
@@ -91,6 +96,128 @@ function UsersPage() {
   const [branchId, setBranchId] = useState<string>("");
   const [isActive, setIsActive] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Create-user dialog state
+  const [createOpen, setCreateOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newFullName, setNewFullName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
+  const [newBranchId, setNewBranchId] = useState("");
+  const [newRoles, setNewRoles] = useState<Set<AppRole>>(new Set(["teller"]));
+  const [creating, setCreating] = useState(false);
+
+  function resetCreateForm() {
+    setNewEmail("");
+    setNewPassword("");
+    setNewFullName("");
+    setNewPhone("");
+    setNewBranchId("");
+    setNewRoles(new Set(["teller"]));
+  }
+
+  function toggleNewRole(role: AppRole) {
+    setNewRoles((prev) => {
+      const next = new Set(prev);
+      if (next.has(role)) next.delete(role);
+      else next.add(role);
+      return next;
+    });
+  }
+
+  async function createUser() {
+    if (!user) return;
+    const email = newEmail.trim().toLowerCase();
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      toast.error("Email tidak valid");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Password minimal 8 karakter");
+      return;
+    }
+    if (!newFullName.trim()) {
+      toast.error("Nama lengkap wajib diisi");
+      return;
+    }
+    if (newRoles.size === 0) {
+      toast.error("Pilih minimal satu peran");
+      return;
+    }
+    setCreating(true);
+
+    // Use an isolated Supabase client (no session persistence) so the
+    // signUp call does NOT overwrite the current admin's session.
+    const tempClient = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data, error } = await tempClient.auth.signUp({
+      email,
+      password: newPassword,
+      options: {
+        data: { full_name: newFullName.trim() },
+      },
+    });
+    if (error || !data.user) {
+      setCreating(false);
+      toast.error("Gagal membuat user", {
+        description: error?.message ?? "Coba lagi",
+      });
+      return;
+    }
+    const newUserId = data.user.id;
+
+    // Trigger handle_new_user() sudah membuat profile + default role 'teller'.
+    // Perbarui profile (nama, telepon, cabang) — pakai koneksi admin saat ini.
+    const { error: pErr } = await supabase
+      .from("profiles")
+      .update({
+        full_name: newFullName.trim(),
+        phone: newPhone.trim() || null,
+        branch_id: newBranchId || null,
+      })
+      .eq("id", newUserId);
+    if (pErr) {
+      toast.error("User dibuat, tapi gagal simpan profil", {
+        description: pErr.message,
+      });
+    }
+
+    // Selaraskan role: hapus default yang tidak dipilih, tambah role lain.
+    const desired = new Set(newRoles);
+    if (!desired.has("teller")) {
+      await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", newUserId)
+        .eq("role", "teller");
+    }
+    const extra = [...desired].filter((r) => r !== "teller");
+    if (extra.length > 0) {
+      const { error: rErr } = await supabase.from("user_roles").insert(
+        extra.map((role) => ({
+          user_id: newUserId,
+          role,
+          assigned_by: user.id,
+        })),
+      );
+      if (rErr) {
+        toast.error("User dibuat, tapi gagal menambah role", {
+          description: rErr.message,
+        });
+      }
+    }
+
+    setCreating(false);
+    toast.success("User baru berhasil dibuat", {
+      description:
+        "Bagikan email & password ke pengguna. Bila konfirmasi email aktif, minta ia cek inbox.",
+    });
+    setCreateOpen(false);
+    resetCreateForm();
+    load();
+  }
 
   async function load() {
     setLoading(true);
@@ -243,6 +370,12 @@ function UsersPage() {
       <MasterPageHeader
         title="Manajemen User"
         description="Kelola profil, peran, cabang, dan status aktif pengguna sistem."
+        canWrite={canManage && hasAnyRole(myRoles, ["super_admin"])}
+        onAdd={() => {
+          resetCreateForm();
+          setCreateOpen(true);
+        }}
+        addLabel="Tambah User"
       />
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -391,12 +524,118 @@ function UsersPage() {
             </Table>
           </div>
           <p className="text-xs text-muted-foreground">
-            User baru muncul di sini setelah mendaftar melalui halaman
-            <code className="mx-1">/auth</code>. Kirim tautan pendaftaran ke
-            karyawan yang ingin ditambahkan.
+            Super Admin dapat menambahkan user baru langsung dari tombol
+            <b className="mx-1">Tambah User</b>. Pengguna juga dapat mendaftar
+            sendiri melalui halaman <code className="mx-1">/auth</code>.
           </p>
         </CardContent>
       </Card>
+
+      <Dialog
+        open={createOpen}
+        onOpenChange={(o) => {
+          setCreateOpen(o);
+          if (!o) resetCreateForm();
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5 text-primary" />
+              Tambah User Baru
+            </DialogTitle>
+            <DialogDescription>
+              Buat akun karyawan lengkap dengan peran dan cabang. Password
+              awal akan dibagikan langsung ke pengguna.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Nama Lengkap *</Label>
+                <Input
+                  value={newFullName}
+                  onChange={(e) => setNewFullName(e.target.value)}
+                  placeholder="Budi Santoso"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input
+                  type="email"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  placeholder="budi@kupvabb.co.id"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Telepon</Label>
+                <Input
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                  placeholder="0812xxxxxxxx"
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Password Awal * (min. 8 karakter)</Label>
+                <Input
+                  type="text"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Password sementara"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Sarankan pengguna mengganti password setelah login pertama.
+                </p>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Cabang</Label>
+                <select
+                  value={newBranchId}
+                  onChange={(e) => setNewBranchId(e.target.value)}
+                  className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm"
+                >
+                  <option value="">— Tidak ditugaskan —</option>
+                  {branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.code} · {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Peran (bisa lebih dari satu) *</Label>
+              <div className="grid grid-cols-1 gap-2 rounded-md border p-3 sm:grid-cols-2">
+                {ALL_ROLES.map((r) => (
+                  <label
+                    key={r}
+                    className="flex items-center gap-2 text-sm"
+                  >
+                    <Checkbox
+                      checked={newRoles.has(r)}
+                      onCheckedChange={() => toggleNewRole(r)}
+                    />
+                    <span>{ROLE_LABELS[r]}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="ghost"
+              onClick={() => setCreateOpen(false)}
+              disabled={creating}
+            >
+              Batal
+            </Button>
+            <Button onClick={createUser} disabled={creating}>
+              {creating ? "Membuat…" : "Buat User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!editTarget}
