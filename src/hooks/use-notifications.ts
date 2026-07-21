@@ -53,7 +53,7 @@ export function useNotifications(limit = 50) {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel("notifications-feed")
+      .channel(`notifications-feed-${Math.random().toString(36).slice(2)}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications" },
