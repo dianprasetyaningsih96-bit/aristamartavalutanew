@@ -10,10 +10,12 @@ import {
   ShieldCheck,
   ShieldAlert,
   AlertTriangle,
+  FileText,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
+import { CustomerDocumentsDialog } from "@/components/customers/customer-documents-dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
