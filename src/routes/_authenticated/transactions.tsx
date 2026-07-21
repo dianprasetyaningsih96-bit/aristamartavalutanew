@@ -839,7 +839,10 @@ function TransactionsPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button onClick={save} disabled={saving || blacklistBlock}>
+            <Button
+              onClick={save}
+              disabled={saving || blacklistBlock || !morningOpenForForm}
+            >
               {saving ? "Menyimpan…" : "Simpan Transaksi"}
             </Button>
           </DialogFooter>
