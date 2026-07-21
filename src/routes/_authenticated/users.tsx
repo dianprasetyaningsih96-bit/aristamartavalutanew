@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Users, Search, Shield, UserCog } from "lucide-react";
@@ -364,6 +365,15 @@ function UsersPage() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                          <Button asChild size="sm" variant="ghost">
+                            <Link
+                              to="/users/$userId"
+                              params={{ userId: p.id }}
+                            >
+                              Detail
+                            </Link>
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -371,6 +381,7 @@ function UsersPage() {
                           >
                             Kelola
                           </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
