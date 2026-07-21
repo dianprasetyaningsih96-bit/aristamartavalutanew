@@ -12,6 +12,7 @@ import {
   Settings,
   ClipboardList,
   UserCog,
+  Bell,
 } from "lucide-react";
 import {
   Sidebar,
@@ -97,6 +98,12 @@ const admin: NavItem[] = [
     url: "/approvals",
     icon: ClipboardList,
     roles: ["super_admin", "branch_manager", "owner"],
+  },
+  {
+    title: "Notifikasi",
+    url: "/notifications",
+    icon: Bell,
+    roles: ALL,
   },
   {
     title: "Audit Trail",
