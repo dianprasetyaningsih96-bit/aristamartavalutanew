@@ -16,6 +16,7 @@ import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authenticated/transactions'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCurrenciesRouteImport } from './routes/_authenticated/currencies'
@@ -59,6 +60,12 @@ const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
   path: '/rates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedNotificationsRoute =
+  AuthenticatedNotificationsRouteImport.update({
+    id: '/notifications',
+    path: '/notifications',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -105,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/currencies': typeof AuthenticatedCurrenciesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
@@ -120,6 +128,7 @@ export interface FileRoutesByTo {
   '/currencies': typeof AuthenticatedCurrenciesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/notifications': typeof AuthenticatedNotificationsRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/transactions': typeof AuthenticatedTransactionsRoute
@@ -137,6 +146,7 @@ export interface FileRoutesById {
   '/_authenticated/currencies': typeof AuthenticatedCurrenciesRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/transactions': typeof AuthenticatedTransactionsRoute
@@ -154,6 +164,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/customers'
     | '/dashboard'
+    | '/notifications'
     | '/rates'
     | '/reports'
     | '/transactions'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/customers'
     | '/dashboard'
+    | '/notifications'
     | '/rates'
     | '/reports'
     | '/transactions'
@@ -185,6 +197,7 @@ export interface FileRouteTypes {
     | '/_authenticated/currencies'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/notifications'
     | '/_authenticated/rates'
     | '/_authenticated/reports'
     | '/_authenticated/transactions'
@@ -248,6 +261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -308,6 +328,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCurrenciesRoute: typeof AuthenticatedCurrenciesRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedTransactionsRoute: typeof AuthenticatedTransactionsRoute
@@ -322,6 +343,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCurrenciesRoute: AuthenticatedCurrenciesRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedTransactionsRoute: AuthenticatedTransactionsRoute,
