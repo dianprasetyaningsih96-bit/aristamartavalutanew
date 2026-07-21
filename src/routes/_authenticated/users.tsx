@@ -168,6 +168,18 @@ function UsersPage() {
     }
     const newUserId = data.user.id;
 
+    // Tandai email terkonfirmasi otomatis (RPC SECURITY DEFINER — cek role
+    // super_admin/owner di server), agar user baru langsung bisa login
+    // tanpa perlu verifikasi email.
+    const { error: cErr } = await supabase.rpc("admin_confirm_user", {
+      _user_id: newUserId,
+    });
+    if (cErr) {
+      toast.error("User dibuat, tapi gagal auto-konfirmasi email", {
+        description: cErr.message,
+      });
+    }
+
     // Trigger handle_new_user() sudah membuat profile + default role 'teller'.
     // Perbarui profile (nama, telepon, cabang) — pakai koneksi admin saat ini.
     const { error: pErr } = await supabase
@@ -212,7 +224,7 @@ function UsersPage() {
     setCreating(false);
     toast.success("User baru berhasil dibuat", {
       description:
-        "Bagikan email & password ke pengguna. Bila konfirmasi email aktif, minta ia cek inbox.",
+        "Email otomatis terkonfirmasi — bagikan email & password ke pengguna, langsung bisa login.",
     });
     setCreateOpen(false);
     resetCreateForm();
