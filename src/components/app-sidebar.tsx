@@ -30,6 +30,16 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import type { AppRole } from "@/integrations/supabase/client";
 import { ROLE_LABELS } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAppSettings } from "@/hooks/use-app-settings";
+
+// Prioritas peran untuk ditampilkan (tertinggi → terendah)
+const ROLE_PRIORITY: AppRole[] = [
+  "super_admin",
+  "owner",
+  "branch_manager",
+  "auditor",
+  "teller",
+];
 
 type NavItem = {
   title: string;
@@ -138,7 +148,8 @@ export function AppSidebar() {
     item.roles.some((r) => roles.includes(r));
   const visiblePrimary = primary.filter(canSee);
   const visibleAdmin = admin.filter(canSee);
-  const primaryRole = roles[0];
+  const displayRoles = ROLE_PRIORITY.filter((r) => roles.includes(r));
+  const { settings } = useAppSettings();
 
   return (
     <Sidebar collapsible="icon">
@@ -150,13 +161,13 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="min-w-0">
               <div className="truncate text-sm font-bold text-sidebar-foreground">
-                KUPVA BB
+                {settings.company_name}
               </div>
               <div className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/60">
                 {loading
                   ? "Memuat…"
-                  : primaryRole
-                    ? ROLE_LABELS[primaryRole]
+                  : displayRoles.length
+                    ? displayRoles.map((r) => ROLE_LABELS[r]).join(" · ")
                     : "Belum ada peran"}
               </div>
             </div>
