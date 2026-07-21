@@ -207,23 +207,29 @@ function ShiftsPage() {
 }
 
 function OpenShiftDialog({
-  onClose, onSaved, branches, defaultBranchId, userId,
+  onClose, onSaved, branches, defaultBranchId, userId, lockBranch,
 }: {
   onClose: () => void; onSaved: () => void;
   branches: Branch[]; defaultBranchId: string | null; userId: string;
+  lockBranch: boolean;
 }) {
-  const [branchId, setBranchId] = useState<string>(defaultBranchId ?? branches[0]?.id ?? "");
+  const [branchId, setBranchId] = useState<string>(defaultBranchId ?? (lockBranch ? "" : branches[0]?.id ?? ""));
   const [shiftType, setShiftType] = useState<ShiftType>("pagi");
   const [openingCapital, setOpeningCapital] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!branchId && branches.length) setBranchId(branches[0].id);
-  }, [branches, branchId]);
+    if (!branchId && !lockBranch && branches.length) setBranchId(branches[0].id);
+  }, [branches, branchId, lockBranch]);
+
+  const assignedBranch = branches.find((b) => b.id === defaultBranchId);
 
   async function submit() {
-    if (!branchId) { toast.error("Pilih cabang"); return; }
+    if (!branchId) {
+      toast.error(lockBranch ? "Anda belum memiliki cabang penugasan. Hubungi admin." : "Pilih cabang");
+      return;
+    }
     if (!userId) { toast.error("Sesi tidak valid"); return; }
     const capital = shiftType === "pagi" ? Number(openingCapital.replace(/[^\d]/g, "")) || 0 : 0;
     if (shiftType === "pagi" && capital <= 0) {
@@ -254,14 +260,23 @@ function OpenShiftDialog({
         <div className="space-y-4">
           <div className="space-y-2">
             <Label>Cabang</Label>
-            <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
-              <SelectContent>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {lockBranch ? (
+              <>
+                <Input value={assignedBranch?.name ?? "Belum ada cabang penugasan"} disabled />
+                <p className="text-xs text-muted-foreground">
+                  Anda hanya bisa membuka shif di cabang penugasan Anda.
+                </p>
+              </>
+            ) : (
+              <Select value={branchId} onValueChange={setBranchId}>
+                <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
+                <SelectContent>
+                  {branches.map((b) => (
+                    <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Jenis Shif</Label>
