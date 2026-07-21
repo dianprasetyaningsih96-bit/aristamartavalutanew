@@ -57,7 +57,7 @@ const DOC_TYPE_OPTIONS: { value: string; label: string }[] = [
   { value: "company_deed", label: "Akta Perusahaan" },
   { value: "siup", label: "SIUP / NIB" },
   { value: "other", label: "Lainnya" },
-};
+];
 
 const BUCKET = "kyc-docs";
 const MAX_MB = 10;
