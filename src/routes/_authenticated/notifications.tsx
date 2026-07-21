@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { formatDistanceToNow, format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 import {
-  Bell,
   CheckCheck,
   AlertCircle,
   AlertTriangle,
@@ -114,10 +113,10 @@ function NotificationsPage() {
   return (
     <div className="space-y-6">
       <MasterPageHeader
-        icon={Bell}
         title="Notifikasi"
         description="Peringatan ambang batas, LTKT/LTKM, saldo kas, dan alur persetujuan."
-        action={
+        canWrite={false}
+        extra={
           <Button
             variant="outline"
             onClick={() => markAllRead()}
