@@ -20,11 +20,19 @@ function SettingsPage() {
   const canEdit = hasAnyRole(roles, ["super_admin", "owner"]);
   const { settings, refresh, loading } = useAppSettings();
   const [companyName, setCompanyName] = useState(settings.company_name);
+  const [pagiStart, setPagiStart] = useState(settings.shift_pagi_start);
+  const [pagiEnd, setPagiEnd] = useState(settings.shift_pagi_end);
+  const [siangStart, setSiangStart] = useState(settings.shift_siang_start);
+  const [siangEnd, setSiangEnd] = useState(settings.shift_siang_end);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setCompanyName(settings.company_name);
-  }, [settings.company_name]);
+    setPagiStart(settings.shift_pagi_start);
+    setPagiEnd(settings.shift_pagi_end);
+    setSiangStart(settings.shift_siang_start);
+    setSiangEnd(settings.shift_siang_end);
+  }, [settings]);
 
   useEffect(() => {
     if (!userLoading && !canEdit) {
@@ -45,6 +53,10 @@ function SettingsPage() {
       .from("app_settings")
       .update({
         company_name: name,
+        shift_pagi_start: pagiStart,
+        shift_pagi_end: pagiEnd,
+        shift_siang_start: siangStart,
+        shift_siang_end: siangEnd,
         updated_at: new Date().toISOString(),
         updated_by: userRes.user?.id ?? null,
       })
@@ -95,6 +107,62 @@ function SettingsPage() {
             <Button onClick={handleSave} disabled={saving || loading} className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Menyimpan…" : "Simpan"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle>Jam Shif Operasional (WITA)</CardTitle>
+          <CardDescription>
+            Default jam buka/tutup shif. Bersifat informatif — teller tetap bisa
+            buka shif di luar jam ini bila diperlukan.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Shif Pagi — Mulai</Label>
+              <Input
+                type="time"
+                value={pagiStart}
+                onChange={(e) => setPagiStart(e.target.value)}
+                disabled={loading || saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Shif Pagi — Selesai</Label>
+              <Input
+                type="time"
+                value={pagiEnd}
+                onChange={(e) => setPagiEnd(e.target.value)}
+                disabled={loading || saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Shif Siang — Mulai</Label>
+              <Input
+                type="time"
+                value={siangStart}
+                onChange={(e) => setSiangStart(e.target.value)}
+                disabled={loading || saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Shif Siang — Selesai</Label>
+              <Input
+                type="time"
+                value={siangEnd}
+                onChange={(e) => setSiangEnd(e.target.value)}
+                disabled={loading || saving}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={saving || loading} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Menyimpan…" : "Simpan Jam Shif"}
             </Button>
           </div>
         </CardContent>

@@ -13,6 +13,7 @@ import {
   ClipboardList,
   UserCog,
   Bell,
+  Clock,
 } from "lucide-react";
 import {
   Sidebar,
@@ -74,6 +75,12 @@ const primary: NavItem[] = [
     title: "Kas & Inventaris",
     url: "/cash",
     icon: Banknote,
+    roles: ["super_admin", "branch_manager", "teller", "owner"],
+  },
+  {
+    title: "Shif Kerja",
+    url: "/shifts",
+    icon: Clock,
     roles: ["super_admin", "branch_manager", "teller", "owner"],
   },
   {
