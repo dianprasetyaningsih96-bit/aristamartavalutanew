@@ -243,6 +243,7 @@ function CustomersPage() {
   const [deleting, setDeleting] = useState<Customer | null>(null);
   const [form, setForm] = useState<CustomerForm>(empty);
   const [saving, setSaving] = useState(false);
+  const [docsCustomer, setDocsCustomer] = useState<Customer | null>(null);
 
   async function load() {
     const [{ data: c, error }, { data: b }] = await Promise.all([
