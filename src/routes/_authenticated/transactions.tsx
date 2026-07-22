@@ -867,82 +867,149 @@ function TransactionsPage() {
       </Dialog>
 
       {/* Receipt dialog */}
-      <Dialog open={!!viewing} onOpenChange={(o) => !o && setViewing(null)}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Receipt className="h-5 w-5" /> Struk Transaksi
+      <Dialog
+        open={!!viewing}
+        onOpenChange={(o) => {
+          if (o) return;
+          if (mustPrint && !printed) {
+            toast.error("Cetak struk wajib", {
+              description:
+                "Transaksi baru selesai setelah struk dicetak. Klik 'Cetak Struk' untuk menyelesaikan.",
+            });
+            return;
+          }
+          setViewing(null);
+          setMustPrint(false);
+          setPrinted(false);
+        }}
+      >
+        <DialogContent
+          className="max-w-[22rem] p-0 gap-0 bg-muted/40"
+          onEscapeKeyDown={(e) => {
+            if (mustPrint && !printed) e.preventDefault();
+          }}
+          onPointerDownOutside={(e) => {
+            if (mustPrint && !printed) e.preventDefault();
+          }}
+          onInteractOutside={(e) => {
+            if (mustPrint && !printed) e.preventDefault();
+          }}
+        >
+          <DialogHeader className="px-4 pt-4 pb-2">
+            <DialogTitle className="flex items-center gap-2 text-sm">
+              <Receipt className="h-4 w-4" /> Struk Transaksi
+              {mustPrint && !printed && (
+                <Badge variant="destructive" className="ml-auto text-[10px]">
+                  Wajib Cetak
+                </Badge>
+              )}
             </DialogTitle>
+            <DialogDescription className="text-xs">
+              {mustPrint && !printed
+                ? "Cetak struk untuk menyelesaikan transaksi."
+                : "Pratinjau struk thermal 80mm."}
+            </DialogDescription>
           </DialogHeader>
           {viewing && (
-            <div id="receipt" className="space-y-3 text-sm">
-              <div className="text-center border-b pb-3">
-                <div className="font-bold">KUPVA BB</div>
-                <div className="text-xs text-muted-foreground">
-                  Money Changer — Bukan Bank
+            <div className="px-4 pb-3">
+              <div
+                id="receipt"
+                className="mx-auto w-[280px] bg-white text-slate-900 shadow-sm border border-dashed border-slate-300 px-3 py-4 font-mono text-[11px] leading-tight"
+                style={{ fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace" }}
+              >
+                <div className="text-center">
+                  <div className="font-bold text-[13px] tracking-wide uppercase">
+                    {settings.company_name}
+                  </div>
+                  <div className="text-[10px] opacity-70">
+                    Money Changer — Bukan Bank
+                  </div>
+                  {viewing.branches && (
+                    <div className="text-[10px] opacity-70">
+                      {viewing.branches.code} · {viewing.branches.name}
+                    </div>
+                  )}
                 </div>
-              </div>
-              <ReceiptRow label="No. Transaksi" value={viewing.transaction_no} mono />
-              <ReceiptRow
-                label="Tanggal"
-                value={new Date(viewing.transaction_date).toLocaleString("id-ID")}
-              />
-              <ReceiptRow
-                label="Tipe"
-                value={viewing.transaction_type === "buy" ? "Beli Valas" : "Jual Valas"}
-              />
-              <ReceiptRow
-                label="Cabang"
-                value={
-                  viewing.branches
-                    ? `${viewing.branches.code} · ${viewing.branches.name}`
-                    : "HQ"
-                }
-              />
-              <ReceiptRow
-                label="Nasabah"
-                value={
-                  viewing.customers
-                    ? `${viewing.customers.customer_code} · ${viewing.customers.full_name}`
-                    : "Walk-in"
-                }
-              />
-              <div className="border-t pt-3 space-y-2">
-                <ReceiptRow
-                  label="Mata Uang"
-                  value={viewing.currencies?.code ?? "-"}
-                  mono
+                <ThermalDivider />
+                <div className="text-center font-bold text-[11px]">
+                  STRUK TRANSAKSI
+                </div>
+                <div className="text-center text-[10px] opacity-80">
+                  {viewing.transaction_type === "buy"
+                    ? "BELI VALAS (Nasabah → Kas)"
+                    : "JUAL VALAS (Kas → Nasabah)"}
+                </div>
+                <ThermalDivider />
+                <ThermalRow k="No. Trx" v={viewing.transaction_no} />
+                <ThermalRow
+                  k="Tanggal"
+                  v={new Date(viewing.transaction_date).toLocaleString("id-ID", {
+                    dateStyle: "short",
+                    timeStyle: "short",
+                  })}
                 />
-                <ReceiptRow
-                  label="Nominal Valas"
-                  value={fmtNum(Number(viewing.foreign_amount))}
-                  mono
+                <ThermalRow
+                  k="Nasabah"
+                  v={
+                    viewing.customers
+                      ? `${viewing.customers.customer_code}`
+                      : "Walk-in"
+                  }
                 />
-                <ReceiptRow
-                  label="Kurs"
-                  value={fmtNum(Number(viewing.rate), 4)}
-                  mono
+                {viewing.customers && (
+                  <div className="text-[10px] opacity-80 text-right -mt-0.5">
+                    {viewing.customers.full_name}
+                  </div>
+                )}
+                <ThermalDivider />
+                <ThermalRow k="Mata Uang" v={viewing.currencies?.code ?? "-"} />
+                <ThermalRow
+                  k="Nominal Valas"
+                  v={fmtNum(Number(viewing.foreign_amount))}
                 />
-              </div>
-              <div className="border-t pt-3 flex items-center justify-between">
-                <span className="font-semibold">
-                  Total {viewing.transaction_type === "buy" ? "Dibayar" : "Diterima"}
-                </span>
-                <span className="font-bold font-mono text-lg">
-                  {fmtIDR(Number(viewing.idr_amount))}
-                </span>
-              </div>
-              <div className="text-[10px] text-center text-muted-foreground pt-2">
-                Terima kasih atas transaksi Anda.
+                <ThermalRow k="Kurs" v={fmtNum(Number(viewing.rate), 4)} />
+                <ThermalRow
+                  k="Metode Bayar"
+                  v={(viewing.payment_method ?? "cash").toUpperCase()}
+                />
+                <ThermalDivider />
+                <div className="flex justify-between items-baseline font-bold">
+                  <span className="text-[10px]">
+                    {viewing.transaction_type === "buy"
+                      ? "TOTAL DIBAYAR"
+                      : "TOTAL DITERIMA"}
+                  </span>
+                  <span className="text-[13px]">
+                    {fmtIDR(Number(viewing.idr_amount))}
+                  </span>
+                </div>
+                <ThermalDivider />
+                <div className="text-center text-[9px] opacity-70 space-y-0.5">
+                  <div>Simpan struk ini sebagai bukti transaksi.</div>
+                  <div>Terima kasih atas kepercayaan Anda.</div>
+                  <div className="pt-1">** KUPVA BB · Bank Indonesia **</div>
+                </div>
               </div>
             </div>
           )}
-          <DialogFooter>
+          <DialogFooter className="px-4 pb-4 pt-2 gap-2 sm:gap-2">
+            {(!mustPrint || printed) && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setViewing(null);
+                  setMustPrint(false);
+                  setPrinted(false);
+                }}
+              >
+                Tutup
+              </Button>
+            )}
             <Button
-              variant="outline"
               className="gap-2"
-              onClick={() =>
-                viewing && generateReceiptPdf({
+              onClick={() => {
+                if (!viewing) return;
+                generateReceiptPdf({
                   transaction_no: viewing.transaction_no,
                   transaction_date: viewing.transaction_date,
                   transaction_type: viewing.transaction_type,
@@ -953,13 +1020,19 @@ function TransactionsPage() {
                   rate: Number(viewing.rate),
                   idr_amount: Number(viewing.idr_amount),
                   payment_method: viewing.payment_method,
-                })
-              }
+                  company_name: settings.company_name,
+                });
+                setPrinted(true);
+                if (mustPrint) {
+                  toast.success("Struk dicetak", {
+                    description: "Transaksi selesai. Anda dapat menutup pratinjau.",
+                  });
+                }
+              }}
             >
               <Printer className="h-4 w-4" />
-              Cetak PDF
+              {mustPrint && !printed ? "Cetak Struk (Wajib)" : "Cetak Ulang"}
             </Button>
-            <Button onClick={() => setViewing(null)}>Tutup</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
