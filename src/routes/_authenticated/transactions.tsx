@@ -460,6 +460,32 @@ function TransactionsPage() {
         }
       />
 
+      {canWrite && !activeShift && (
+        <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+          <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium">Shif belum dibuka</p>
+            <p className="opacity-90">
+              Anda belum membuka shif kerja. Transaksi tidak dapat dilakukan
+              sampai shif (Pagi atau Siang/Sore) dibuka di menu{" "}
+              <span className="font-semibold">Shif Kerja</span>.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {canWrite && activeShift && (
+        <div className="text-xs text-muted-foreground">
+          Shif aktif:{" "}
+          <span className="font-semibold text-foreground">
+            {activeShift.shift_type === "morning" ? "Pagi" : "Siang/Sore"}
+          </span>
+          {activeShift.branches ? ` · ${activeShift.branches.code} — ${activeShift.branches.name}` : ""}
+          {" · dibuka "}
+          {new Date(activeShift.opened_at).toLocaleString("id-ID")}
+        </div>
+      )}
+
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard label="Transaksi Hari Ini" value={String(stats.count)} />
