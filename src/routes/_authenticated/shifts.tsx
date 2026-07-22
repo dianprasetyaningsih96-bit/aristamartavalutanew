@@ -81,13 +81,28 @@ function ShiftsPage() {
       supabase.from("currencies").select("id, code, name, decimals").eq("is_active", true).order("code"),
       supabase
         .from("shifts")
-        .select("id, branch_id, user_id, shift_type, status, opening_capital, opened_at, closed_at, notes, branch:branches(name), user:profiles(full_name, email)")
+        .select("id, branch_id, user_id, shift_type, status, opening_capital, opened_at, closed_at, notes, branch:branches(name)")
         .order("opened_at", { ascending: false })
         .limit(100),
     ]);
+    if (s.error) {
+      toast.error("Gagal memuat shif: " + s.error.message);
+    }
     setBranches((b.data as Branch[]) ?? []);
     setCurrencies((c.data as Currency[]) ?? []);
-    const rows = (s.data as unknown as ShiftRow[]) ?? [];
+    let rows = (s.data as unknown as ShiftRow[]) ?? [];
+    const userIds = Array.from(new Set(rows.map((r) => r.user_id)));
+    if (userIds.length > 0) {
+      const { data: profs } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+      const map = new Map<string, { full_name: string | null; email: string | null }>();
+      (profs ?? []).forEach((p: { id: string; full_name: string | null; email: string | null }) =>
+        map.set(p.id, { full_name: p.full_name, email: p.email }),
+      );
+      rows = rows.map((r) => ({ ...r, user: map.get(r.user_id) ?? null }));
+    }
     setShifts(rows);
     setMyOpenShift(rows.find((r) => r.user_id === user?.id && r.status === "open") ?? null);
     setLoading(false);
