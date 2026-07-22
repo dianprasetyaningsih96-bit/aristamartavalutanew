@@ -424,6 +424,9 @@ function CashPage() {
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(m.created_at).toLocaleString("id-ID")}
                       </TableCell>
+                      <TableCell className="text-xs">
+                        {m.branches ? `${m.branches.code}` : "—"}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant={isIn ? "default" : "secondary"}
