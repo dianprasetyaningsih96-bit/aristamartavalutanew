@@ -261,12 +261,20 @@ function DashboardPage() {
   );
 
   const kpi = useMemo(() => {
-    const today = new Date();
-    const yesterday = subDays(today, 1);
-    const isToday = (d: string) => isSameDay(new Date(d), today);
-    const isYesterday = (d: string) => isSameDay(new Date(d), yesterday);
-    const todays = filteredTxs.filter((t) => isToday(t.transaction_date));
-    const yestQ = filteredTxs.filter((t) => isYesterday(t.transaction_date));
+    const now = new Date();
+    const curStart = startOfDay(subDays(now, days - 1));
+    const prevStart = startOfDay(subDays(now, days * 2 - 1));
+    const prevEnd = startOfDay(subDays(now, days));
+    const inRange = (d: string, a: Date, b: Date) => {
+      const x = new Date(d).getTime();
+      return x >= a.getTime() && x <= b.getTime();
+    };
+    const todays = filteredTxs.filter((t) =>
+      inRange(t.transaction_date, curStart, endOfDay(now)),
+    );
+    const yestQ = filteredTxs.filter((t) =>
+      inRange(t.transaction_date, prevStart, prevEnd),
+    );
 
     const sum = (rows: TransactionRow[], t: string) =>
       rows
@@ -297,7 +305,7 @@ function DashboardPage() {
       profit: profitToday,
       profitDelta: pct(profitToday, profitYest),
     };
-  }, [filteredTxs]);
+  }, [filteredTxs, days]);
 
   const trendData = useMemo(() => {
     const now = new Date();
@@ -391,11 +399,11 @@ function DashboardPage() {
 
   const kpiCards = [
     {
-      label: "Transaksi Hari Ini",
+      label: `Transaksi ${days} Hari`,
       value: nfmt(kpi.count),
       delta: kpi.countDelta,
       icon: ClipboardList,
-      hint: "vs kemarin",
+      hint: "vs periode sebelumnya",
     },
     {
       label: "Total Beli",
