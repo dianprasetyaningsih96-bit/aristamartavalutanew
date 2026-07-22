@@ -25,10 +25,6 @@ function Landing() {
 
       <main className="mx-auto max-w-7xl px-6 pb-24 pt-16">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            Terlisensi Bank Indonesia
-          </div>
           <h1 className="text-balance text-5xl font-extrabold tracking-tight sm:text-6xl">
             Sistem Informasi{" "}
             <span className="bg-[image:var(--gradient-glow)] bg-clip-text text-transparent">
