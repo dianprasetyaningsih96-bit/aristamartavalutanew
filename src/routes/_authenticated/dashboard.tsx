@@ -178,7 +178,7 @@ function DashboardPage() {
     const monthlyStart = startOfMonth(subMonths(now, 11)).toISOString();
 
     const txSel =
-      "id, transaction_number, transaction_date, transaction_type, currency_code, foreign_amount, idr_amount, status, branch_id, customer_id";
+      "id, transaction_no, transaction_date, transaction_type, currency_id, foreign_amount, idr_amount, status, branch_id, customer_id";
 
     const txQ = supabase
       .from("transactions")
@@ -194,12 +194,13 @@ function DashboardPage() {
       .limit(20000);
     const rateQ = supabase
       .from("exchange_rates")
-      .select("currency_code, buying_rate, selling_rate, effective_date")
+      .select("currency_id, buy_rate, sell_rate, effective_date")
       .order("effective_date", { ascending: false })
       .limit(200);
     const cashQ = supabase
       .from("cash_balances")
-      .select("currency_code, balance, branch_id");
+      .select("currency_id, balance, branch_id");
+    const currencyQ = supabase.from("currencies").select("id, code");
     const approvalQ = supabase
       .from("approval_requests")
       .select("id", { count: "exact", head: true })
@@ -213,20 +214,53 @@ function DashboardPage() {
       .select("id", { count: "exact", head: true })
       .eq("is_suspicious", true);
 
-    const [txR, mR, rR, cR, aR, hR, sR] = await Promise.all([
+    const [txR, mR, rR, cR, curR, aR, hR, sR] = await Promise.all([
       txQ,
       monthlyQ,
       rateQ,
       cashQ,
+      currencyQ,
       approvalQ,
       highRiskQ,
       susQ,
     ]);
 
-    setTxs((txR.data as TransactionRow[]) ?? []);
-    setMonthlyTxs((mR.data as TransactionRow[]) ?? []);
-    setRates((rR.data as RateRow[]) ?? []);
-    setCash((cR.data as CashRow[]) ?? []);
+    const curMap = new Map<string, string>();
+    for (const c of (curR.data as { id: string; code: string }[]) ?? []) {
+      curMap.set(c.id, c.code);
+    }
+    const codeOf = (id: string | null) => (id ? curMap.get(id) ?? "?" : "?");
+
+    setTxs(
+      ((txR.data as any[]) ?? []).map((t) => ({
+        id: t.id,
+        transaction_number: t.transaction_no,
+        transaction_date: t.transaction_date,
+        transaction_type: t.transaction_type,
+        currency_code: codeOf(t.currency_id),
+        foreign_amount: Number(t.foreign_amount),
+        idr_amount: Number(t.idr_amount),
+        status: t.status,
+        branch_id: t.branch_id,
+        customer_id: t.customer_id,
+      })),
+    );
+    setMonthlyTxs(((mR.data as any[]) ?? []) as TransactionRow[]);
+    setRates(
+      ((rR.data as any[]) ?? []).map((r) => ({
+        currency_code: codeOf(r.currency_id),
+        buying_rate: Number(r.buy_rate),
+        selling_rate: Number(r.sell_rate),
+        effective_date: r.effective_date,
+      })),
+    );
+    setCash(
+      ((cR.data as any[]) ?? []).map((c) => ({
+        currency_code: codeOf(c.currency_id),
+        balance: Number(c.balance),
+        branch_id: c.branch_id,
+      })),
+    );
     setPendingApprovals(aR.count ?? 0);
     setHighRiskCount(hR.count ?? 0);
     setSuspiciousCount(sR.count ?? 0);
