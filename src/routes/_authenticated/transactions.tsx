@@ -10,6 +10,7 @@ import {
   Search,
   Ban,
   Printer,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
@@ -108,6 +109,15 @@ interface RateRow {
   effective_date: string;
 }
 
+interface ActiveShift {
+  id: string;
+  branch_id: string;
+  shift_type: string;
+  status: string;
+  opened_at: string;
+  branches?: { code: string; name: string } | null;
+}
+
 const HQ = "__hq__";
 const NO_CUSTOMER = "__walkin__";
 
@@ -171,6 +181,7 @@ function TransactionsPage() {
   const [branches, setBranches] = useState<BranchOpt[]>([]);
   const [customers, setCustomers] = useState<CustomerOpt[]>([]);
   const [rates, setRates] = useState<RateRow[]>([]);
+  const [activeShift, setActiveShift] = useState<ActiveShift | null>(null);
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState<"all" | TxType>("all");
@@ -191,6 +202,7 @@ function TransactionsPage() {
       { data: br },
       { data: cust },
       { data: rt },
+      { data: sh },
     ] = await Promise.all([
       supabase
         .from("transactions")
@@ -220,6 +232,16 @@ function TransactionsPage() {
         .eq("is_active", true)
         .order("effective_date", { ascending: false })
         .limit(500),
+      user?.id
+        ? supabase
+            .from("shifts")
+            .select("id, branch_id, shift_type, status, opened_at, branches(code, name)")
+            .eq("user_id", user.id)
+            .eq("status", "open")
+            .order("opened_at", { ascending: false })
+            .limit(1)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
     if (error) {
       toast.error("Gagal memuat transaksi", { description: error.message });
@@ -230,11 +252,13 @@ function TransactionsPage() {
     setBranches((br as BranchOpt[]) ?? []);
     setCustomers((cust as CustomerOpt[]) ?? []);
     setRates((rt as RateRow[]) ?? []);
+    setActiveShift((sh as ActiveShift | null) ?? null);
   }
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   // Auto-suggest rate ketika mata uang / cabang / tipe berubah
   useEffect(() => {
@@ -271,11 +295,28 @@ function TransactionsPage() {
   const blacklistBlock = selectedCustomer?.is_blacklisted;
 
   function openCreate(type: TxType) {
-    setForm({ ...emptyForm(), transaction_type: type });
+    if (!activeShift) {
+      toast.error("Shif belum dibuka", {
+        description:
+          "Buka shif kerja terlebih dahulu di menu Shif Kerja sebelum memulai transaksi.",
+      });
+      return;
+    }
+    setForm({
+      ...emptyForm(),
+      transaction_type: type,
+      branch_id: activeShift.branch_id,
+    });
     setOpen(true);
   }
 
   async function save() {
+    if (!activeShift) {
+      toast.error("Shif belum dibuka", {
+        description: "Buka shif kerja dahulu sebelum menyimpan transaksi.",
+      });
+      return;
+    }
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       toast.error("Data tidak valid", {
