@@ -326,6 +326,7 @@ function CashPage() {
               <TableRow>
                 <TableHead>Kode</TableHead>
                 <TableHead>Nama</TableHead>
+                <TableHead>Cabang</TableHead>
                 <TableHead className="text-right">Saldo</TableHead>
                 <TableHead>Terakhir Diperbarui</TableHead>
               </TableRow>
@@ -334,14 +335,14 @@ function CashPage() {
               {balances === null ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-6 w-full" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : balances.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12">
+                  <TableCell colSpan={5} className="text-center py-12">
                     <Banknote className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
                       Belum ada saldo. Catat saldo awal untuk memulai.
@@ -362,6 +363,9 @@ function CashPage() {
                         {b.currencies?.code}
                       </TableCell>
                       <TableCell>{b.currencies?.name}</TableCell>
+                      <TableCell className="text-xs">
+                        {b.branches ? `${b.branches.code} — ${b.branches.name}` : "—"}
+                      </TableCell>
                       <TableCell
                         className={`text-right font-mono ${b.balance < 0 ? "text-destructive" : ""}`}
                       >
@@ -387,6 +391,7 @@ function CashPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Waktu</TableHead>
+                <TableHead>Cabang</TableHead>
                 <TableHead>Jenis</TableHead>
                 <TableHead>Mata Uang</TableHead>
                 <TableHead className="text-right">Nominal</TableHead>
@@ -398,14 +403,14 @@ function CashPage() {
               {movements === null ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-6 w-full" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : movements.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <p className="text-sm text-muted-foreground">
                       Belum ada mutasi kas.
                     </p>
