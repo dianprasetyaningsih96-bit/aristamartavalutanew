@@ -21,16 +21,16 @@ export function MasterPageHeader({
 }: Props) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
+      <div className="min-w-0">
+        <h1 className="text-xl font-bold tracking-tight sm:text-2xl">{title}</h1>
         {description && (
-          <p className="text-sm text-muted-foreground mt-1">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {extra}
         {canWrite && onAdd && (
-          <Button onClick={onAdd} className="gap-2">
+          <Button onClick={onAdd} className="gap-2 shrink-0">
             <Plus className="h-4 w-4" />
             {addLabel}
           </Button>
