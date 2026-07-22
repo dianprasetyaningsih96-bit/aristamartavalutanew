@@ -618,12 +618,14 @@ function CustomersPage() {
           </DialogHeader>
 
           <Tabs defaultValue="identity" className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="identity">Identitas</TabsTrigger>
-              <TabsTrigger value="contact">Alamat & Kontak</TabsTrigger>
-              <TabsTrigger value="profile">Profil Ekonomi</TabsTrigger>
-              <TabsTrigger value="kyc">KYC & Risiko</TabsTrigger>
-            </TabsList>
+            <div className="-mx-1 overflow-x-auto sm:mx-0">
+              <TabsList className="inline-flex w-max min-w-full gap-1 sm:grid sm:w-full sm:grid-cols-4 sm:gap-0">
+                <TabsTrigger value="identity" className="whitespace-nowrap text-xs sm:text-sm">Identitas</TabsTrigger>
+                <TabsTrigger value="contact" className="whitespace-nowrap text-xs sm:text-sm">Alamat & Kontak</TabsTrigger>
+                <TabsTrigger value="profile" className="whitespace-nowrap text-xs sm:text-sm">Profil Ekonomi</TabsTrigger>
+                <TabsTrigger value="kyc" className="whitespace-nowrap text-xs sm:text-sm">KYC & Risiko</TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="identity" className="space-y-4 pt-4">
               <div className="grid grid-cols-2 gap-4">
