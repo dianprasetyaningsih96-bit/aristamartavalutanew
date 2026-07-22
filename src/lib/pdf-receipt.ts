@@ -19,6 +19,7 @@ export interface ReceiptData {
   idr_amount: number;
   payment_method?: string;
   teller_name?: string;
+  company_name?: string;
 }
 
 export function generateReceiptPdf(r: ReceiptData) {
@@ -29,7 +30,7 @@ export function generateReceiptPdf(r: ReceiptData) {
   doc.setFont("helvetica", "bold");
   doc.setFontSize(11);
   doc.setTextColor(...BRAND.primary);
-  doc.text(BRAND.name, W / 2, y, { align: "center" });
+  doc.text(r.company_name || BRAND.name, W / 2, y, { align: "center" });
   y += 4;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(7);
