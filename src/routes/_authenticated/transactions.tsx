@@ -1121,3 +1121,21 @@ function ReceiptRow({
     </div>
   );
 }
+
+function ThermalDivider() {
+  return (
+    <div
+      className="my-1.5 border-t border-dashed border-slate-400"
+      aria-hidden
+    />
+  );
+}
+
+function ThermalRow({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex justify-between gap-2">
+      <span className="opacity-80">{k}</span>
+      <span className="font-semibold text-right">{v}</span>
+    </div>
+  );
+}
