@@ -65,6 +65,7 @@ interface Balance {
   balance: number;
   updated_at: string;
   currencies?: Currency | null;
+  branches?: { code: string; name: string } | null;
 }
 interface Movement {
   id: string;
@@ -77,6 +78,7 @@ interface Movement {
   notes: string | null;
   created_at: string;
   currencies?: { code: string } | null;
+  branches?: { code: string; name: string } | null;
 }
 
 type MovementKind = "deposit" | "withdrawal" | "adjustment" | "opening";
@@ -151,22 +153,23 @@ function CashPage() {
   }
 
   async function loadData(bId: string) {
-    if (!bId) return;
     setBalances(null);
     setMovements(null);
+    const isAll = bId === "__all__" || !bId;
+    let balQ = supabase
+      .from("cash_balances")
+      .select("*, currencies(id, code, name, decimals), branches(code, name)");
+    let mvQ = supabase
+      .from("cash_movements")
+      .select("*, currencies(code), branches(code, name)")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (!isAll) {
+      balQ = balQ.eq("branch_id", bId);
+      mvQ = mvQ.eq("branch_id", bId);
+    }
     const [{ data: bal, error: e1 }, { data: mv, error: e2 }] =
-      await Promise.all([
-        supabase
-          .from("cash_balances")
-          .select("*, currencies(id, code, name, decimals)")
-          .eq("branch_id", bId),
-        supabase
-          .from("cash_movements")
-          .select("*, currencies(code)")
-          .eq("branch_id", bId)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
+      await Promise.all([balQ, mvQ]);
     if (e1) toast.error("Gagal memuat saldo", { description: e1.message });
     if (e2) toast.error("Gagal memuat mutasi", { description: e2.message });
     setBalances((bal as Balance[]) ?? []);
@@ -255,6 +258,7 @@ function CashPage() {
               <SelectValue placeholder="Pilih cabang" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__all__">Semua Cabang</SelectItem>
               {branches.map((b) => (
                 <SelectItem key={b.id} value={b.id}>
                   {b.code} — {b.name}
@@ -322,6 +326,7 @@ function CashPage() {
               <TableRow>
                 <TableHead>Kode</TableHead>
                 <TableHead>Nama</TableHead>
+                <TableHead>Cabang</TableHead>
                 <TableHead className="text-right">Saldo</TableHead>
                 <TableHead>Terakhir Diperbarui</TableHead>
               </TableRow>
@@ -330,14 +335,14 @@ function CashPage() {
               {balances === null ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={4}>
+                    <TableCell colSpan={5}>
                       <Skeleton className="h-6 w-full" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : balances.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-12">
+                  <TableCell colSpan={5} className="text-center py-12">
                     <Banknote className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                     <p className="text-sm text-muted-foreground">
                       Belum ada saldo. Catat saldo awal untuk memulai.
@@ -358,6 +363,9 @@ function CashPage() {
                         {b.currencies?.code}
                       </TableCell>
                       <TableCell>{b.currencies?.name}</TableCell>
+                      <TableCell className="text-xs">
+                        {b.branches ? `${b.branches.code} — ${b.branches.name}` : "—"}
+                      </TableCell>
                       <TableCell
                         className={`text-right font-mono ${b.balance < 0 ? "text-destructive" : ""}`}
                       >
@@ -383,6 +391,7 @@ function CashPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Waktu</TableHead>
+                <TableHead>Cabang</TableHead>
                 <TableHead>Jenis</TableHead>
                 <TableHead>Mata Uang</TableHead>
                 <TableHead className="text-right">Nominal</TableHead>
@@ -394,14 +403,14 @@ function CashPage() {
               {movements === null ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    <TableCell colSpan={6}>
+                    <TableCell colSpan={7}>
                       <Skeleton className="h-6 w-full" />
                     </TableCell>
                   </TableRow>
                 ))
               ) : movements.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={7} className="text-center py-12">
                     <p className="text-sm text-muted-foreground">
                       Belum ada mutasi kas.
                     </p>
@@ -414,6 +423,9 @@ function CashPage() {
                     <TableRow key={m.id}>
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(m.created_at).toLocaleString("id-ID")}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {m.branches ? `${m.branches.code}` : "—"}
                       </TableCell>
                       <TableCell>
                         <Badge
