@@ -258,6 +258,7 @@ function CashPage() {
               <SelectValue placeholder="Pilih cabang" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="__all__">Semua Cabang</SelectItem>
               {branches.map((b) => (
                 <SelectItem key={b.id} value={b.id}>
                   {b.code} — {b.name}
