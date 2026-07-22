@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
+import { useAppSettings } from "@/hooks/use-app-settings";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { generateReceiptPdf } from "@/lib/pdf-receipt";
 import { Card, CardContent } from "@/components/ui/card";
@@ -164,6 +165,7 @@ const CDD_THRESHOLD_IDR = 100_000_000;
 
 function TransactionsPage() {
   const { roles, user } = useCurrentUser();
+  const { settings } = useAppSettings();
   const canWrite = hasAnyRole(roles, [
     "super_admin",
     "owner",
@@ -192,6 +194,8 @@ function TransactionsPage() {
   const [saving, setSaving] = useState(false);
 
   const [viewing, setViewing] = useState<Transaction | null>(null);
+  const [mustPrint, setMustPrint] = useState(false);
+  const [printed, setPrinted] = useState(false);
   const [voiding, setVoiding] = useState<Transaction | null>(null);
   const [voidReason, setVoidReason] = useState("");
 
@@ -371,6 +375,8 @@ function TransactionsPage() {
     });
     setOpen(false);
     setViewing(data as Transaction);
+    setMustPrint(true);
+    setPrinted(false);
     load();
   }
 
