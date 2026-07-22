@@ -29,10 +29,10 @@ begin
   end if;
 
   insert into public.cash_movements (branch_id, currency_id, movement_type, amount, reference_id, reference_no, notes, created_by)
-  values (new.branch_id, new.currency_id, new.transaction_type::public.cash_movement_type, v_foreign, new.id, new.transaction_no, 'Auto dari transaksi', new.teller_id);
+  values (new.branch_id, new.currency_id, new.transaction_type::text::public.cash_movement_type, v_foreign, new.id, new.transaction_no, 'Auto dari transaksi', new.teller_id);
 
   insert into public.cash_movements (branch_id, currency_id, movement_type, amount, reference_id, reference_no, notes, created_by)
-  values (new.branch_id, idr_id, new.transaction_type::public.cash_movement_type, v_idr, new.id, new.transaction_no, 'Auto dari transaksi (IDR)', new.teller_id);
+  values (new.branch_id, idr_id, new.transaction_type::text::public.cash_movement_type, v_idr, new.id, new.transaction_no, 'Auto dari transaksi (IDR)', new.teller_id);
 
   return new;
 end $$;
@@ -107,9 +107,9 @@ begin
     end if;
 
     insert into public.cash_movements (branch_id, currency_id, movement_type, amount, reference_id, reference_no, notes, created_by, created_at)
-    values (t.branch_id, t.currency_id, t.transaction_type::public.cash_movement_type, v_foreign, t.id, t.transaction_no, 'Backfill dari transaksi', t.teller_id, t.transaction_date);
+    values (t.branch_id, t.currency_id, t.transaction_type::text::public.cash_movement_type, v_foreign, t.id, t.transaction_no, 'Backfill dari transaksi', t.teller_id, t.transaction_date);
 
     insert into public.cash_movements (branch_id, currency_id, movement_type, amount, reference_id, reference_no, notes, created_by, created_at)
-    values (t.branch_id, idr_id, t.transaction_type::public.cash_movement_type, v_idr, t.id, t.transaction_no, 'Backfill dari transaksi (IDR)', t.teller_id, t.transaction_date);
+    values (t.branch_id, idr_id, t.transaction_type::text::public.cash_movement_type, v_idr, t.id, t.transaction_no, 'Backfill dari transaksi (IDR)', t.teller_id, t.transaction_date);
   end loop;
 end $$;
