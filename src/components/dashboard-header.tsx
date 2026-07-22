@@ -20,11 +20,13 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState<string>("");
   const [name, setName] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       const u = data.user;
       if (u) {
+        setUserId(u.id);
         setEmail(u.email ?? "");
         setName((u.user_metadata?.full_name as string) ?? u.email ?? "Pengguna");
       }
@@ -71,7 +73,12 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>Akun Saya</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={(e) => {
+                e.preventDefault();
+                if (userId) navigate({ to: "/users/$userId", params: { userId } });
+              }}
+            >
               <UserIcon className="mr-2 h-4 w-4" /> Profil
             </DropdownMenuItem>
             <DropdownMenuSeparator />
