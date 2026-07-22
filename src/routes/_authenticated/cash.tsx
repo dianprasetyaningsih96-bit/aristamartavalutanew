@@ -65,6 +65,7 @@ interface Balance {
   balance: number;
   updated_at: string;
   currencies?: Currency | null;
+  branches?: { code: string; name: string } | null;
 }
 interface Movement {
   id: string;
@@ -77,6 +78,7 @@ interface Movement {
   notes: string | null;
   created_at: string;
   currencies?: { code: string } | null;
+  branches?: { code: string; name: string } | null;
 }
 
 type MovementKind = "deposit" | "withdrawal" | "adjustment" | "opening";
@@ -151,22 +153,23 @@ function CashPage() {
   }
 
   async function loadData(bId: string) {
-    if (!bId) return;
     setBalances(null);
     setMovements(null);
+    const isAll = bId === "__all__" || !bId;
+    let balQ = supabase
+      .from("cash_balances")
+      .select("*, currencies(id, code, name, decimals), branches(code, name)");
+    let mvQ = supabase
+      .from("cash_movements")
+      .select("*, currencies(code), branches(code, name)")
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (!isAll) {
+      balQ = balQ.eq("branch_id", bId);
+      mvQ = mvQ.eq("branch_id", bId);
+    }
     const [{ data: bal, error: e1 }, { data: mv, error: e2 }] =
-      await Promise.all([
-        supabase
-          .from("cash_balances")
-          .select("*, currencies(id, code, name, decimals)")
-          .eq("branch_id", bId),
-        supabase
-          .from("cash_movements")
-          .select("*, currencies(code)")
-          .eq("branch_id", bId)
-          .order("created_at", { ascending: false })
-          .limit(50),
-      ]);
+      await Promise.all([balQ, mvQ]);
     if (e1) toast.error("Gagal memuat saldo", { description: e1.message });
     if (e2) toast.error("Gagal memuat mutasi", { description: e2.message });
     setBalances((bal as Balance[]) ?? []);
