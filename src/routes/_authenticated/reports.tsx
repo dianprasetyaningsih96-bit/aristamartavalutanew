@@ -631,10 +631,52 @@ function ReportsPage() {
         <TabsContent value={tab} className="mt-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                {title}
-              </CardTitle>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-4 w-4" />
+                  {title}
+                </CardTitle>
+                {tab === "bulanan" && (
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="gap-2"
+                      onClick={exportLkubCSV}
+                    >
+                      <Download className="h-4 w-4" /> Unduh CSV LKUB
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        if (lkubRows.length === 0) {
+                          toast.info("Tidak ada data untuk dicetak");
+                          return;
+                        }
+                        const label =
+                          branchId === "all"
+                            ? "Semua Cabang"
+                            : branches.find((b) => b.id === branchId)?.name ?? "-";
+                        const range = monthRange(monthPeriod);
+                        generateLkubReportPdf(
+                          {
+                            title,
+                            variant: "bulanan",
+                            branchLabel: label,
+                            dateFrom: range.from,
+                            dateTo: range.to,
+                            totals,
+                          },
+                          lkubRows,
+                        );
+                      }}
+                    >
+                      <Printer className="h-4 w-4" /> Cetak PDF LKUB
+                    </Button>
+                  </div>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {tab === "bulanan" ? (
