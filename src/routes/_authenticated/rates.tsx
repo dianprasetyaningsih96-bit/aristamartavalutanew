@@ -176,6 +176,13 @@ function RatesPage() {
     return { s, pct };
   }, [form.buy_rate, form.sell_rate]);
 
+  const filteredRows = useMemo(() => {
+    if (!rows) return [];
+    if (branchFilter === ALL) return rows;
+    if (branchFilter === HQ) return rows.filter((r) => r.branch_id === null);
+    return rows.filter((r) => r.branch_id === branchFilter);
+  }, [rows, branchFilter]);
+
   function openCreate() {
     setEditing(null);
     setForm(empty());
