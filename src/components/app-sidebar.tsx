@@ -15,6 +15,7 @@ import {
   Bell,
   Clock,
   Scale,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
