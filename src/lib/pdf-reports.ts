@@ -36,6 +36,15 @@ export interface ReportMeta {
   totals: { count: number; buy: number; sell: number; suspicious: number };
 }
 
+export interface LkubReportRow {
+  currency_code: string;
+  buy_foreign: number;
+  buy_idr: number;
+  sell_foreign: number;
+  sell_idr: number;
+  mid_rate: number | null;
+}
+
 function summaryBox(doc: jsPDF, y: number, meta: ReportMeta) {
   const w = doc.internal.pageSize.getWidth();
   const boxW = (w - 24 - 9) / 4;
@@ -209,4 +218,86 @@ export function generateLtkmReportPdf(meta: ReportMeta, rows: ReportTrxRow[]) {
 
   drawFooter(doc, "Dokumen rahasia — hanya untuk PPATK & auditor");
   openPdf(doc, `LTKM-${meta.dateFrom}-sd-${meta.dateTo}.pdf`);
+}
+
+export function generateLkubReportPdf(meta: ReportMeta, rows: LkubReportRow[]) {
+  const doc = landscapeDoc();
+  let y = drawHeader(
+    doc,
+    "LAPORAN KEGIATAN USAHA BULANAN",
+    "LKUB — KUPVA BB",
+  );
+  y = metaBox(doc, y + 2, meta);
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8.5);
+  doc.setTextColor(...BRAND.muted);
+  doc.text(
+    "Jenis Produk: 1 - UKA · Saldo awal dan saldo akhir mengikuti ketentuan laporan",
+    12,
+    y + 4,
+  );
+
+  const body = rows.map((r) => [
+    r.currency_code,
+    "1 - UKA",
+    "0",
+    "0",
+    new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(r.buy_foreign)),
+    fmtIDR(Number(r.buy_idr)),
+    new Intl.NumberFormat("id-ID", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(Number(r.sell_foreign)),
+    fmtIDR(Number(r.sell_idr)),
+    "0",
+    r.mid_rate === null
+      ? "-"
+      : new Intl.NumberFormat("id-ID", {
+          minimumFractionDigits: 4,
+          maximumFractionDigits: 4,
+        }).format(Number(r.mid_rate)),
+    "0",
+  ]);
+
+  table(doc, {
+    startY: y + 8,
+    head: [
+      [
+        "Jenis Valuta",
+        "Jenis Produk",
+        "Saldo Awal Dalam Valas",
+        "Saldo Awal Dalam Rupiah",
+        "Volume Pembelian Dalam Valas",
+        "Volume Pembelian Dalam Rupiah",
+        "Volume Penjualan Dalam Valas",
+        "Volume Penjualan Dalam Rupiah",
+        "Saldo Akhir Dalam Valas",
+        "Kurs Tengah",
+        "Saldo Akhir Dalam Rupiah",
+      ],
+    ],
+    body,
+    styles: { fontSize: 6.4, cellPadding: 1.1, overflow: "linebreak" },
+    headStyles: { fontSize: 6.2, cellPadding: 1.1 },
+    columnStyles: {
+      0: { fontStyle: "bold", cellWidth: 18 },
+      1: { cellWidth: 18 },
+      2: { halign: "right", cellWidth: 24 },
+      3: { halign: "right", cellWidth: 25 },
+      4: { halign: "right", cellWidth: 29 },
+      5: { halign: "right", cellWidth: 30 },
+      6: { halign: "right", cellWidth: 29 },
+      7: { halign: "right", cellWidth: 30 },
+      8: { halign: "right", cellWidth: 25 },
+      9: { halign: "right", cellWidth: 22 },
+      10: { halign: "right", cellWidth: 26 },
+    },
+  });
+
+  drawFooter(doc, "LKUB — dokumen internal dan pelaporan regulator");
+  openPdf(doc, `LKUB-${meta.dateFrom}-sd-${meta.dateTo}.pdf`);
 }
