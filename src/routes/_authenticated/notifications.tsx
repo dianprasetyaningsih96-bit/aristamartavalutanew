@@ -42,7 +42,7 @@ export const Route = createFileRoute("/_authenticated/notifications")({
 const CATEGORY_LABEL: Record<NotificationCategory, string> = {
   ltkt_threshold: "LTKT / Nilai Besar",
   ltkm_suspicious: "LTKM Mencurigakan",
-  blacklist_attempt: "Blacklist",
+  blacklist_attempt: "DTTOT",
   low_cash: "Saldo Kas",
   approval_request: "Permintaan Persetujuan",
   approval_decision: "Keputusan Persetujuan",

@@ -20,6 +20,7 @@ import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMidRatesRouteImport } from './routes/_authenticated/mid-rates'
+import { Route as AuthenticatedDttotRouteImport } from './routes/_authenticated/dttot'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedCurrenciesRouteImport } from './routes/_authenticated/currencies'
@@ -85,6 +86,11 @@ const AuthenticatedMidRatesRoute = AuthenticatedMidRatesRouteImport.update({
   path: '/mid-rates',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedDttotRoute = AuthenticatedDttotRouteImport.update({
+  id: '/dttot',
+  path: '/dttot',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -137,6 +143,7 @@ export interface FileRoutesByFullPath {
   '/currencies': typeof AuthenticatedCurrenciesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dttot': typeof AuthenticatedDttotRoute
   '/mid-rates': typeof AuthenticatedMidRatesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/rates': typeof AuthenticatedRatesRoute
@@ -157,6 +164,7 @@ export interface FileRoutesByTo {
   '/currencies': typeof AuthenticatedCurrenciesRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/dttot': typeof AuthenticatedDttotRoute
   '/mid-rates': typeof AuthenticatedMidRatesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/rates': typeof AuthenticatedRatesRoute
@@ -179,6 +187,7 @@ export interface FileRoutesById {
   '/_authenticated/currencies': typeof AuthenticatedCurrenciesRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/dttot': typeof AuthenticatedDttotRoute
   '/_authenticated/mid-rates': typeof AuthenticatedMidRatesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
@@ -201,6 +210,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/customers'
     | '/dashboard'
+    | '/dttot'
     | '/mid-rates'
     | '/notifications'
     | '/rates'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/currencies'
     | '/customers'
     | '/dashboard'
+    | '/dttot'
     | '/mid-rates'
     | '/notifications'
     | '/rates'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/_authenticated/currencies'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
+    | '/_authenticated/dttot'
     | '/_authenticated/mid-rates'
     | '/_authenticated/notifications'
     | '/_authenticated/rates'
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMidRatesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/dttot': {
+      id: '/_authenticated/dttot'
+      path: '/dttot'
+      fullPath: '/dttot'
+      preLoaderRoute: typeof AuthenticatedDttotRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -416,6 +435,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCurrenciesRoute: typeof AuthenticatedCurrenciesRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedDttotRoute: typeof AuthenticatedDttotRoute
   AuthenticatedMidRatesRoute: typeof AuthenticatedMidRatesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
@@ -434,6 +454,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCurrenciesRoute: AuthenticatedCurrenciesRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedDttotRoute: AuthenticatedDttotRoute,
   AuthenticatedMidRatesRoute: AuthenticatedMidRatesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,

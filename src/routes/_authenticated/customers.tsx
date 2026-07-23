@@ -563,7 +563,7 @@ function CustomersPage() {
                         )}
                         {row.is_blacklisted && (
                           <Badge variant="destructive" className="text-xs">
-                            Blacklist
+                            DTTOT
                           </Badge>
                         )}
                       </div>
@@ -1024,9 +1024,9 @@ function CustomersPage() {
                 <div className="col-span-2 rounded-lg border p-3 space-y-3">
                   <div className="flex items-center justify-between">
                     <div>
-                      <Label className="font-medium text-destructive">Daftar Hitam</Label>
+                      <Label className="font-medium text-destructive">DTTOT (Daftar Terduga Teroris)</Label>
                       <p className="text-xs text-muted-foreground">
-                        Transaksi akan ditolak untuk nasabah yang di-blacklist.
+                        Transaksi akan ditolak untuk nasabah yang masuk DTTOT.
                       </p>
                     </div>
                     <Switch

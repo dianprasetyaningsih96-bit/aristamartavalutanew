@@ -15,6 +15,7 @@ import {
   Bell,
   Clock,
   Scale,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
@@ -70,6 +71,12 @@ const primary: NavItem[] = [
     title: "Nasabah",
     url: "/customers",
     icon: Users,
+    roles: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
+  },
+  {
+    title: "DTTOT",
+    url: "/dttot",
+    icon: ShieldAlert,
     roles: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
   },
   {
