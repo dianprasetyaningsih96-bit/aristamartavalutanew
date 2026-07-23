@@ -14,6 +14,7 @@ import {
   UserCog,
   Bell,
   Clock,
+  Scale,
 } from "lucide-react";
 import {
   Sidebar,
@@ -87,6 +88,12 @@ const primary: NavItem[] = [
     title: "Kurs Valuta",
     url: "/rates",
     icon: LineChart,
+    roles: ["super_admin", "branch_manager", "owner"],
+  },
+  {
+    title: "Kurs Tengah",
+    url: "/mid-rates",
+    icon: Scale,
     roles: ["super_admin", "branch_manager", "owner"],
   },
   {
