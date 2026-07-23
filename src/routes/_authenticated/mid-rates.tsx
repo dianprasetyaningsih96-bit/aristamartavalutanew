@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Pencil, Trash2, Scale } from "lucide-react";
+import { Pencil, Trash2, Scale, Download, Upload } from "lucide-react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
@@ -112,6 +113,7 @@ function MidRatesPage() {
   const [deleting, setDeleting] = useState<MidRate | null>(null);
   const [form, setForm] = useState<Form>(empty());
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   async function load() {
     const [{ data: rateData, error }, { data: cur }] = await Promise.all([
@@ -201,6 +203,113 @@ function MidRatesPage() {
     load();
   }
 
+  function downloadTemplate() {
+    const headers = ["currency_code", "period_month", "mid_rate", "note"];
+    const sample = [
+      {
+        currency_code: "USD",
+        period_month: currentMonth(),
+        mid_rate: 16250,
+        note: "Contoh kurs tengah USD",
+      },
+      {
+        currency_code: "SGD",
+        period_month: currentMonth(),
+        mid_rate: 12100,
+        note: "",
+      },
+    ];
+    const ws = XLSX.utils.json_to_sheet(sample, { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "MidRates");
+    XLSX.writeFile(wb, "template-kurs-tengah.xlsx");
+  }
+
+  function normalizePeriod(v: unknown): string | null {
+    if (v == null || v === "") return null;
+    if (v instanceof Date) {
+      return `${v.getFullYear()}-${String(v.getMonth() + 1).padStart(2, "0")}`;
+    }
+    const s = String(v).trim();
+    const m = s.match(/^(\d{4})[-/](\d{1,2})/);
+    if (m) return `${m[1]}-${m[2].padStart(2, "0")}`;
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+    return null;
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImporting(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+        defval: "",
+      });
+      const byCode = new Map(
+        currencies.map((c) => [c.code.toUpperCase(), c.id]),
+      );
+      const payloads: Array<Record<string, unknown>> = [];
+      const errors: string[] = [];
+      json.forEach((r, idx) => {
+        const code = String(r.currency_code ?? "").trim().toUpperCase();
+        const currencyId = byCode.get(code);
+        if (!currencyId) {
+          errors.push(`Baris ${idx + 2}: mata uang '${code}' tidak ditemukan`);
+          return;
+        }
+        const period = normalizePeriod(r.period_month);
+        if (!period) {
+          errors.push(`Baris ${idx + 2}: periode tidak valid (gunakan YYYY-MM)`);
+          return;
+        }
+        const rate = Number(r.mid_rate);
+        if (!isFinite(rate) || rate <= 0) {
+          errors.push(`Baris ${idx + 2}: kurs tengah harus > 0`);
+          return;
+        }
+        payloads.push({
+          currency_id: currencyId,
+          period_month: period + "-01",
+          mid_rate: rate,
+          note: String(r.note ?? "").trim() || null,
+        });
+      });
+      if (payloads.length === 0) {
+        toast.error("Tidak ada baris valid untuk diimpor", {
+          description: errors[0],
+        });
+        setImporting(false);
+        return;
+      }
+      const { error } = await supabase
+        .from("mid_rates")
+        .upsert(payloads, { onConflict: "currency_id,period_month" });
+      if (error) {
+        toast.error("Gagal impor kurs tengah", { description: error.message });
+      } else {
+        toast.success(`Berhasil impor ${payloads.length} kurs tengah`, {
+          description:
+            errors.length > 0
+              ? `${errors.length} baris dilewati karena tidak valid`
+              : undefined,
+        });
+        load();
+      }
+    } catch (err) {
+      toast.error("Gagal membaca file", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+    setImporting(false);
+  }
+
   const grouped = useMemo(() => {
     if (!rows) return null;
     return rows;
@@ -214,6 +323,39 @@ function MidRatesPage() {
         onAdd={openCreate}
         addLabel="Tambah Kurs Tengah"
         canWrite={canWrite}
+        extra={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadTemplate}
+              className="gap-2"
+            >
+              <Download className="h-4 w-4" /> Template Excel
+            </Button>
+            {canWrite && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                disabled={importing}
+                className="gap-2"
+              >
+                <label className="cursor-pointer">
+                  <Upload className="h-4 w-4" />
+                  {importing ? "Mengimpor..." : "Import Excel"}
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    className="hidden"
+                    onChange={handleImport}
+                    disabled={importing}
+                  />
+                </label>
+              </Button>
+            )}
+          </>
+        }
       />
 
       <Card>
