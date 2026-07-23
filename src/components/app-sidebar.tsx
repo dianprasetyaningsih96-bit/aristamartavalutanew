@@ -74,6 +74,12 @@ const primary: NavItem[] = [
     roles: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
   },
   {
+    title: "DTTOT",
+    url: "/dttot",
+    icon: ShieldAlert,
+    roles: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
+  },
+  {
     title: "Kas & Inventaris",
     url: "/cash",
     icon: Banknote,
