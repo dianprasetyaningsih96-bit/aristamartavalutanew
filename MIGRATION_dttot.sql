@@ -81,3 +81,72 @@ DROP TRIGGER IF EXISTS trg_dttot_updated ON public.dttot_list;
 CREATE TRIGGER trg_dttot_updated
 BEFORE UPDATE ON public.dttot_list
 FOR EACH ROW EXECUTE FUNCTION public.dttot_set_updated_at();
+
+-- ============================================================================
+-- Perbarui judul notifikasi: "Blacklist" -> "DTTOT"
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.notify_transaction_event()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_customer_name text;
+  v_is_blacklist boolean := false;
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    SELECT full_name, is_blacklisted INTO v_customer_name, v_is_blacklist
+    FROM public.customers WHERE id = NEW.customer_id;
+
+    IF NEW.idr_amount >= 100000000 THEN
+      INSERT INTO public.notifications(
+        target_roles, category, severity, title, message, link,
+        reference_table, reference_id, metadata
+      ) VALUES (
+        ARRAY['branch_manager','super_admin','owner','auditor']::public.app_role[],
+        'ltkt_threshold',
+        CASE WHEN NEW.idr_amount >= 500000000 THEN 'critical' ELSE 'warning' END,
+        'Transaksi Nilai Besar: ' || NEW.transaction_number,
+        COALESCE(v_customer_name,'-') || ' — ' || NEW.transaction_type || ' Rp ' ||
+          to_char(NEW.idr_amount, 'FM999G999G999G999'),
+        '/transactions',
+        'transactions', NEW.id,
+        jsonb_build_object('idr_amount', NEW.idr_amount, 'currency', NEW.currency_code)
+      );
+    END IF;
+
+    IF v_is_blacklist THEN
+      INSERT INTO public.notifications(
+        target_roles, category, severity, title, message, link,
+        reference_table, reference_id
+      ) VALUES (
+        ARRAY['branch_manager','super_admin','owner','auditor']::public.app_role[],
+        'blacklist_attempt', 'critical',
+        'Transaksi Nasabah DTTOT',
+        COALESCE(v_customer_name,'-') || ' (masuk DTTOT) melakukan transaksi ' || NEW.transaction_number,
+        '/transactions',
+        'transactions', NEW.id
+      );
+    END IF;
+  END IF;
+
+  IF TG_OP = 'UPDATE'
+     AND COALESCE(OLD.is_suspicious,false) = false
+     AND COALESCE(NEW.is_suspicious,false) = true THEN
+    INSERT INTO public.notifications(
+      target_roles, category, severity, title, message, link,
+      reference_table, reference_id
+    ) VALUES (
+      ARRAY['branch_manager','super_admin','owner','auditor']::public.app_role[],
+      'ltkm_suspicious','critical',
+      'LTKM: ' || NEW.transaction_number,
+      'Transaksi ditandai mencurigakan. Segera tinjau untuk pelaporan PPATK.',
+      '/reports',
+      'transactions', NEW.id
+    );
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
