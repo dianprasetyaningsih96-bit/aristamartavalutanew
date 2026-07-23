@@ -473,7 +473,7 @@ function TransactionsPage() {
         }
       />
 
-      {canWrite && !activeShift && (
+      {canWrite && !activeShift && !shiftExempt && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="text-sm">
@@ -484,6 +484,12 @@ function TransactionsPage() {
               <span className="font-semibold">Shif Kerja</span>.
             </p>
           </div>
+        </div>
+      )}
+
+      {canWrite && !activeShift && shiftExempt && (
+        <div className="text-xs text-muted-foreground">
+          Mode Super Admin — transaksi tidak memerlukan shif aktif.
         </div>
       )}
 
