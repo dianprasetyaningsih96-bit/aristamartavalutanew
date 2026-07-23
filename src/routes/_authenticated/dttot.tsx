@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Pencil, Trash2, ShieldAlert, Search } from "lucide-react";
+import { Pencil, Trash2, ShieldAlert, Search, Upload, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
@@ -131,6 +132,7 @@ function DttotPage() {
   const [deleting, setDeleting] = useState<DttotRow | null>(null);
   const [form, setForm] = useState<FormShape>(empty);
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
 
   async function load() {
     const { data, error } = await supabase
@@ -246,6 +248,143 @@ function DttotPage() {
 
   const activeCount = rows?.filter((r) => r.is_active).length ?? 0;
 
+  function downloadTemplate() {
+    const headers = [
+      "reference_code",
+      "entity_type",
+      "full_name",
+      "aliases",
+      "identity_number",
+      "place_of_birth",
+      "date_of_birth",
+      "nationality",
+      "address",
+      "source",
+      "listed_at",
+      "notes",
+      "is_active",
+    ];
+    const sample = [
+      {
+        reference_code: "IDN-001",
+        entity_type: "individual",
+        full_name: "Contoh Nama",
+        aliases: "Alias1, Alias2",
+        identity_number: "1234567890",
+        place_of_birth: "Jakarta",
+        date_of_birth: "1980-01-31",
+        nationality: "Indonesia",
+        address: "Jl. Contoh No. 1",
+        source: "Perpol",
+        listed_at: "2024-01-15",
+        notes: "Catatan opsional",
+        is_active: true,
+      },
+      {
+        reference_code: "ORG-001",
+        entity_type: "organization",
+        full_name: "Contoh Organisasi",
+        aliases: "",
+        identity_number: "",
+        place_of_birth: "",
+        date_of_birth: "",
+        nationality: "",
+        address: "",
+        source: "DK-PBB",
+        listed_at: "2024-02-01",
+        notes: "",
+        is_active: true,
+      },
+    ];
+    const ws = XLSX.utils.json_to_sheet(sample, { header: headers });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DTTOT");
+    XLSX.writeFile(wb, "template-dttot.xlsx");
+  }
+
+  async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setImporting(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+        defval: "",
+      });
+      const payloads: Array<Record<string, unknown>> = [];
+      const errors: string[] = [];
+      json.forEach((r, idx) => {
+        const row = {
+          reference_code: String(r.reference_code ?? "").trim() || "",
+          entity_type: String(r.entity_type ?? "individual").trim(),
+          full_name: String(r.full_name ?? "").trim(),
+          aliases: String(r.aliases ?? "").trim(),
+          identity_number: String(r.identity_number ?? "").trim(),
+          place_of_birth: String(r.place_of_birth ?? "").trim(),
+          date_of_birth: String(r.date_of_birth ?? "").trim(),
+          nationality: String(r.nationality ?? "").trim(),
+          address: String(r.address ?? "").trim(),
+          source: String(r.source ?? "").trim(),
+          listed_at: String(r.listed_at ?? "").trim(),
+          notes: String(r.notes ?? "").trim(),
+          is_active:
+            r.is_active === false ||
+            String(r.is_active ?? "true").toLowerCase() === "false"
+              ? false
+              : true,
+        };
+        const parsed = schema.safeParse(row);
+        if (!parsed.success) {
+          errors.push(`Baris ${idx + 2}: ${parsed.error.issues[0]?.message}`);
+          return;
+        }
+        const d = parsed.data;
+        payloads.push({
+          reference_code: d.reference_code || null,
+          entity_type: d.entity_type,
+          full_name: d.full_name,
+          aliases: d.aliases || null,
+          identity_number: d.identity_number || null,
+          place_of_birth: d.place_of_birth || null,
+          date_of_birth: d.date_of_birth || null,
+          nationality: d.nationality || null,
+          address: d.address || null,
+          source: d.source || null,
+          listed_at: d.listed_at || null,
+          notes: d.notes || null,
+          is_active: d.is_active,
+        });
+      });
+      if (payloads.length === 0) {
+        toast.error("Tidak ada baris valid untuk diimpor", {
+          description: errors[0],
+        });
+        setImporting(false);
+        return;
+      }
+      const { error } = await supabase.from("dttot_list").insert(payloads);
+      if (error) {
+        toast.error("Gagal impor DTTOT", { description: error.message });
+      } else {
+        toast.success(`Berhasil impor ${payloads.length} entri`, {
+          description:
+            errors.length > 0
+              ? `${errors.length} baris dilewati karena tidak valid`
+              : undefined,
+        });
+        load();
+      }
+    } catch (err) {
+      toast.error("Gagal membaca file", {
+        description: err instanceof Error ? err.message : "Unknown error",
+      });
+    }
+    setImporting(false);
+  }
+
   return (
     <div className="flex flex-col gap-6 p-6">
       <MasterPageHeader
@@ -254,6 +393,34 @@ function DttotPage() {
         onAdd={openCreate}
         addLabel="Tambah Entri"
         canWrite={canWrite}
+        extra={
+          <>
+            <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2">
+              <Download className="h-4 w-4" /> Template Excel
+            </Button>
+            {canWrite && (
+              <Button
+                variant="outline"
+                size="sm"
+                asChild
+                disabled={importing}
+                className="gap-2"
+              >
+                <label className="cursor-pointer">
+                  <Upload className="h-4 w-4" />
+                  {importing ? "Mengimpor..." : "Import Excel"}
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls,.csv"
+                    className="hidden"
+                    onChange={handleImport}
+                    disabled={importing}
+                  />
+                </label>
+              </Button>
+            )}
+          </>
+        }
       />
 
       <Card>
@@ -401,7 +568,7 @@ function DttotPage() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {editing ? "Edit Entri DTTOT" : "Tambah Entri DTTOT"}
