@@ -110,13 +110,17 @@ function fmt(n: number, decimals = 2) {
 }
 
 function CashPage() {
-  const { roles, user } = useCurrentUser();
+  const { roles, user, profile } = useCurrentUser();
   const canWrite = hasAnyRole(roles, [
     "super_admin",
     "branch_manager",
     "teller",
     "owner",
   ]);
+  const isTellerOnly =
+    roles.length > 0 &&
+    roles.every((r) => r === "teller");
+  const lockedBranchId = isTellerOnly ? profile?.branch_id ?? null : null;
 
   const [branches, setBranches] = useState<Branch[]>([]);
   const [currencies, setCurrencies] = useState<Currency[]>([]);
@@ -135,12 +139,14 @@ function CashPage() {
   });
 
   async function loadRefs() {
+    let branchQ = supabase
+      .from("branches")
+      .select("id, code, name")
+      .eq("is_active", true)
+      .order("code");
+    if (lockedBranchId) branchQ = branchQ.eq("id", lockedBranchId);
     const [{ data: b }, { data: c }] = await Promise.all([
-      supabase
-        .from("branches")
-        .select("id, code, name")
-        .eq("is_active", true)
-        .order("code"),
+      branchQ,
       supabase
         .from("currencies")
         .select("id, code, name, decimals")
@@ -149,13 +155,17 @@ function CashPage() {
     ]);
     setBranches((b as Branch[]) ?? []);
     setCurrencies((c as Currency[]) ?? []);
-    if (!branchId && b && b.length > 0) setBranchId(b[0].id);
+    if (lockedBranchId) {
+      setBranchId(lockedBranchId);
+    } else if (!branchId && b && b.length > 0) {
+      setBranchId(b[0].id);
+    }
   }
 
   async function loadData(bId: string) {
     setBalances(null);
     setMovements(null);
-    const isAll = bId === "__all__" || !bId;
+    const isAll = !lockedBranchId && (bId === "__all__" || !bId);
     let balQ = supabase
       .from("cash_balances")
       .select("*, currencies(id, code, name, decimals), branches(code, name)");
@@ -179,7 +189,7 @@ function CashPage() {
   useEffect(() => {
     loadRefs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lockedBranchId]);
 
   useEffect(() => {
     if (branchId) loadData(branchId);
@@ -253,12 +263,18 @@ function CashPage() {
         addLabel="Catat Mutasi"
         canWrite={canWrite && branches.length > 0}
         extra={
-          <Select value={branchId} onValueChange={setBranchId}>
+          <Select
+            value={branchId}
+            onValueChange={setBranchId}
+            disabled={!!lockedBranchId}
+          >
             <SelectTrigger className="w-[220px]">
               <SelectValue placeholder="Pilih cabang" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="__all__">Semua Cabang</SelectItem>
+              {!lockedBranchId && (
+                <SelectItem value="__all__">Semua Cabang</SelectItem>
+              )}
               {branches.map((b) => (
                 <SelectItem key={b.id} value={b.id}>
                   {b.code} — {b.name}
