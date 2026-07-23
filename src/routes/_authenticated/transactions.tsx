@@ -867,6 +867,23 @@ function TransactionsPage() {
                 placeholder="Opsional"
               />
             </div>
+
+            {isSuperAdmin && (
+              <div className="space-y-2 col-span-2">
+                <Label>Tanggal Transaksi (Super Admin)</Label>
+                <Input
+                  type="datetime-local"
+                  value={form.transaction_date ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, transaction_date: e.target.value })
+                  }
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Kosongkan untuk memakai waktu saat ini. Super Admin dapat
+                  memilih tanggal yang sudah lewat untuk pencatatan mundur.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
