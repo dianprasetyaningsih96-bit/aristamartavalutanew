@@ -563,7 +563,7 @@ function CustomersPage() {
                         )}
                         {row.is_blacklisted && (
                           <Badge variant="destructive" className="text-xs">
-                            Blacklist
+                            DTTOT
                           </Badge>
                         )}
                       </div>
