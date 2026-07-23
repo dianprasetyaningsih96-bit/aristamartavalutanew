@@ -435,22 +435,77 @@ function RatesPage() {
             </div>
             <div className="space-y-2 col-span-1">
               <Label>Cabang</Label>
-              <Select
-                value={form.branch_id}
-                onValueChange={(v) => setForm({ ...form, branch_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={HQ}>HQ / Default (semua)</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.code} — {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {editing ? (
+                <Select
+                  value={form.branch_id}
+                  onValueChange={(v) => setForm({ ...form, branch_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={HQ}>HQ / Default (semua)</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.code} — {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="rounded-md border p-2 max-h-40 overflow-y-auto space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      className="text-primary hover:underline"
+                      onClick={() =>
+                        setMultiBranches([HQ, ...branches.map((b) => b.id)])
+                      }
+                    >
+                      Pilih semua
+                    </button>
+                    <span className="text-muted-foreground">·</span>
+                    <button
+                      type="button"
+                      className="text-primary hover:underline"
+                      onClick={() => setMultiBranches([])}
+                    >
+                      Kosongkan
+                    </button>
+                  </div>
+                  {[{ id: HQ, code: "HQ", name: "Default (fallback semua cabang)" }, ...branches].map(
+                    (b) => {
+                      const checked = multiBranches.includes(b.id);
+                      return (
+                        <label
+                          key={b.id}
+                          className="flex items-center gap-2 text-sm cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setMultiBranches((prev) =>
+                                v
+                                  ? [...prev, b.id]
+                                  : prev.filter((x) => x !== b.id),
+                              );
+                            }}
+                          />
+                          <span className="font-mono text-xs">{b.code}</span>
+                          <span className="text-muted-foreground">
+                            {b.name}
+                          </span>
+                        </label>
+                      );
+                    },
+                  )}
+                </div>
+              )}
+              {!editing && (
+                <p className="text-xs text-muted-foreground">
+                  Kurs akan dibuat terpisah untuk tiap cabang yang dipilih.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Kurs Beli *</Label>
