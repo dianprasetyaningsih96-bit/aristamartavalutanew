@@ -835,7 +835,7 @@ function TransactionsPage() {
               </Select>
               {blacklistBlock && (
                 <p className="text-xs text-destructive">
-                  Nasabah dalam daftar hitam — transaksi diblokir.
+                  Nasabah tercatat dalam DTTOT — transaksi diblokir.
                 </p>
               )}
             </div>
