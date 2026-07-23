@@ -79,7 +79,7 @@ const ACTION_LABELS: Record<ApprovalAction, string> = {
   high_value_transaction: "Transaksi Nilai Besar",
   kyc_override: "Override KYC",
   rate_override: "Override Kurs",
-  customer_unblacklist: "Cabut Blacklist Nasabah",
+  customer_unblacklist: "Cabut DTTOT Nasabah",
   cash_adjustment: "Penyesuaian Kas",
   other: "Lainnya",
 };
