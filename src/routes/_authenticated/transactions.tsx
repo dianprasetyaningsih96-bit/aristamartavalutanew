@@ -131,6 +131,7 @@ const schema = z.object({
   foreign_amount: z.coerce.number().positive("Nominal valas harus > 0"),
   payment_method: z.enum(["cash", "transfer", "other"]),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
+  transaction_date: z.string().optional().or(z.literal("")),
 });
 
 type Form = z.infer<typeof schema>;
@@ -144,6 +145,7 @@ const emptyForm = (): Form => ({
   foreign_amount: 0,
   payment_method: "cash",
   notes: "",
+  transaction_date: "",
 });
 
 const fmtIDR = (n: number) =>
@@ -177,6 +179,8 @@ function TransactionsPage() {
     "owner",
     "branch_manager",
   ]);
+  const isSuperAdmin = hasAnyRole(roles, ["super_admin"]);
+  const shiftExempt = isSuperAdmin;
 
   const [rows, setRows] = useState<Transaction[] | null>(null);
   const [currencies, setCurrencies] = useState<CurrencyOpt[]>([]);
@@ -299,7 +303,7 @@ function TransactionsPage() {
   const blacklistBlock = selectedCustomer?.is_blacklisted;
 
   function openCreate(type: TxType) {
-    if (!activeShift) {
+    if (!activeShift && !shiftExempt) {
       toast.error("Shif belum dibuka", {
         description:
           "Buka shif kerja terlebih dahulu di menu Shif Kerja sebelum memulai transaksi.",
@@ -309,13 +313,13 @@ function TransactionsPage() {
     setForm({
       ...emptyForm(),
       transaction_type: type,
-      branch_id: activeShift.branch_id,
+      branch_id: activeShift?.branch_id ?? HQ,
     });
     setOpen(true);
   }
 
   async function save() {
-    if (!activeShift) {
+    if (!activeShift && !shiftExempt) {
       toast.error("Shif belum dibuka", {
         description: "Buka shif kerja dahulu sebelum menyimpan transaksi.",
       });
@@ -357,6 +361,9 @@ function TransactionsPage() {
       status: "completed" as const,
       notes: parsed.data.notes || null,
       teller_id: user?.id ?? null,
+      ...(isSuperAdmin && parsed.data.transaction_date
+        ? { transaction_date: new Date(parsed.data.transaction_date).toISOString() }
+        : {}),
     };
     const { data, error } = await supabase
       .from("transactions")
@@ -466,7 +473,7 @@ function TransactionsPage() {
         }
       />
 
-      {canWrite && !activeShift && (
+      {canWrite && !activeShift && !shiftExempt && (
         <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
           <AlertTriangle className="h-5 w-5 mt-0.5 shrink-0" />
           <div className="text-sm">
@@ -477,6 +484,12 @@ function TransactionsPage() {
               <span className="font-semibold">Shif Kerja</span>.
             </p>
           </div>
+        </div>
+      )}
+
+      {canWrite && !activeShift && shiftExempt && (
+        <div className="text-xs text-muted-foreground">
+          Mode Super Admin — transaksi tidak memerlukan shif aktif.
         </div>
       )}
 
@@ -854,6 +867,23 @@ function TransactionsPage() {
                 placeholder="Opsional"
               />
             </div>
+
+            {isSuperAdmin && (
+              <div className="space-y-2 col-span-2">
+                <Label>Tanggal Transaksi (Super Admin)</Label>
+                <Input
+                  type="datetime-local"
+                  value={form.transaction_date ?? ""}
+                  onChange={(e) =>
+                    setForm({ ...form, transaction_date: e.target.value })
+                  }
+                />
+                <p className="text-[10px] text-muted-foreground">
+                  Kosongkan untuk memakai waktu saat ini. Super Admin dapat
+                  memilih tanggal yang sudah lewat untuk pencatatan mundur.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpen(false)}>
