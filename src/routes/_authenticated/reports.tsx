@@ -65,6 +65,46 @@ interface Branch { id: string; code: string; name: string }
 
 const LTKT_THRESHOLD = 500_000_000;
 
+interface MidRateRow {
+  currency_id: string;
+  mid_rate: number;
+}
+
+interface LkubRow {
+  currency_id: string;
+  currency_code: string;
+  buy_foreign: number;
+  buy_idr: number;
+  sell_foreign: number;
+  sell_idr: number;
+  mid_rate: number | null;
+}
+
+function currentMonthISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthRange(ym: string): { from: string; to: string; label: string } {
+  const [y, m] = ym.split("-").map(Number);
+  const first = new Date(y, m - 1, 1);
+  const last = new Date(y, m, 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const label = first.toLocaleDateString("id-ID", {
+    month: "long",
+    year: "numeric",
+  });
+  return { from: iso(first), to: iso(last), label };
+}
+
+function fmtNum(n: number, digits = 2) {
+  return new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(n);
+}
+
 function fmtIDR(n: number) {
   return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
 }
@@ -147,6 +187,8 @@ function ReportsPage() {
   const [branchId, setBranchId] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState<string>(todayISO(-6));
   const [dateTo, setDateTo] = useState<string>(todayISO(0));
+  const [monthPeriod, setMonthPeriod] = useState<string>(currentMonthISO());
+  const [midRates, setMidRates] = useState<MidRateRow[]>([]);
   const [rows, setRows] = useState<TrxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -166,13 +208,17 @@ function ReportsPage() {
   async function load() {
     setLoading(true);
     setRows(null);
+    const range =
+      tab === "bulanan"
+        ? monthRange(monthPeriod)
+        : { from: dateFrom, to: dateTo, label: "" };
     let q = supabase
       .from("transactions")
       .select(
         "id, transaction_no, transaction_type, transaction_date, rate, foreign_amount, idr_amount, payment_method, status, is_suspicious, suspicious_reason, ltkm_report_no, ltkm_reported_at, currencies(code), customers(customer_code, full_name, id_number), branches(code, name)",
       )
-      .gte("transaction_date", dateFrom + "T00:00:00")
-      .lte("transaction_date", dateTo + "T23:59:59")
+      .gte("transaction_date", range.from + "T00:00:00")
+      .lte("transaction_date", range.to + "T23:59:59")
       .order("transaction_date", { ascending: false })
       .limit(1000);
 
@@ -193,12 +239,21 @@ function ReportsPage() {
       return;
     }
     setRows((data as unknown as TrxRow[]) ?? []);
+
+    if (tab === "bulanan") {
+      const monthDate = monthPeriod + "-01";
+      const { data: mr } = await supabase
+        .from("mid_rates")
+        .select("currency_id, mid_rate")
+        .eq("period_month", monthDate);
+      setMidRates((mr as MidRateRow[]) ?? []);
+    }
   }
 
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, branchId, dateFrom, dateTo]);
+  }, [tab, branchId, dateFrom, dateTo, monthPeriod]);
 
   const totals = useMemo(() => {
     const r = rows ?? [];
@@ -280,10 +335,129 @@ function ReportsPage() {
     tab === "harian"
       ? "Laporan Harian"
       : tab === "bulanan"
-        ? "Laporan Bulanan"
+        ? `Laporan Kegiatan Usaha Bulanan (LKUB) — ${monthRange(monthPeriod).label}`
         : tab === "ltkt"
           ? "LTKT (Transaksi Keuangan Tunai ≥ Rp 500 jt)"
           : "LTKM (Transaksi Keuangan Mencurigakan)";
+
+  const lkubRows: LkubRow[] = useMemo(() => {
+    if (tab !== "bulanan" || !rows) return [];
+    const midByCur = new Map(
+      midRates.map((m) => [m.currency_id, Number(m.mid_rate)]),
+    );
+    const map = new Map<string, LkubRow>();
+    for (const r of rows) {
+      if (r.status !== "completed") continue;
+      // Reports uses embedded rows, but we grouped by currency code (id not in select).
+      // Fallback key: use currency code.
+      const code = r.currencies?.code ?? "-";
+      const key = code;
+      const existing =
+        map.get(key) ?? {
+          currency_id: key,
+          currency_code: code,
+          buy_foreign: 0,
+          buy_idr: 0,
+          sell_foreign: 0,
+          sell_idr: 0,
+          mid_rate: null,
+        };
+      if (r.transaction_type === "buy") {
+        existing.buy_foreign += Number(r.foreign_amount);
+        existing.buy_idr += Number(r.idr_amount);
+      } else {
+        existing.sell_foreign += Number(r.foreign_amount);
+        existing.sell_idr += Number(r.idr_amount);
+      }
+      map.set(key, existing);
+    }
+    // Match mid_rate by currency code by looking up currencies from midRates via a separate map.
+    // We only have currency_id in midRates, so build code→rate via currencies fetched below.
+    // For now, we resolve via a currencies lookup fetched on demand.
+    return Array.from(map.values())
+      .map((row) => ({
+        ...row,
+        mid_rate: midByCodeRef.current.get(row.currency_code) ?? null,
+      }))
+      .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
+  }, [tab, rows, midRates]);
+
+  // Resolve mid_rate currency_id → code via currencies table
+  const midByCodeRef = useMemo(() => ({ current: new Map<string, number>() }), []);
+  useEffect(() => {
+    if (tab !== "bulanan") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("currencies")
+        .select("id, code");
+      if (cancelled) return;
+      const idToCode = new Map<string, string>(
+        (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
+      );
+      midByCodeRef.current = new Map(
+        midRates
+          .map((m) => [idToCode.get(m.currency_id), Number(m.mid_rate)] as const)
+          .filter((x): x is readonly [string, number] => !!x[0]),
+      );
+      // Trigger re-render by touching rows dep (no-op set)
+      setRows((r) => (r ? [...r] : r));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, midRates]);
+
+  function exportLkubCSV() {
+    if (lkubRows.length === 0) {
+      toast.info("Tidak ada data untuk diunduh");
+      return;
+    }
+    const header = [
+      "Jenis Valuta",
+      "Jenis Produk",
+      "Saldo Awal (Valas)",
+      "Saldo Awal (Rupiah)",
+      "Volume Pembelian (Valas)",
+      "Volume Pembelian (Rupiah)",
+      "Volume Penjualan (Valas)",
+      "Volume Penjualan (Rupiah)",
+      "Saldo Akhir (Valas)",
+      "Kurs Tengah",
+      "Saldo Akhir (Rupiah)",
+    ];
+    const csv = [header.join(",")]
+      .concat(
+        lkubRows.map((r) =>
+          [
+            r.currency_code,
+            "1 - UKA",
+            0,
+            0,
+            r.buy_foreign,
+            r.buy_idr,
+            r.sell_foreign,
+            r.sell_idr,
+            0,
+            r.mid_rate ?? "",
+            0,
+          ]
+            .map((v) => `"${String(v ?? "")}"`)
+            .join(","),
+        ),
+      )
+      .join("\n");
+    const blob = new Blob(["\ufeff" + csv], {
+      type: "text/csv;charset=utf-8",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `LKUB-${monthPeriod}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -295,22 +469,35 @@ function ReportsPage() {
 
       <Card>
         <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-4 pt-6">
-          <div className="space-y-2">
-            <Label>Dari Tanggal</Label>
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Sampai Tanggal</Label>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-            />
-          </div>
+          {tab === "bulanan" ? (
+            <div className="space-y-2 sm:col-span-2">
+              <Label>Periode (Bulan)</Label>
+              <Input
+                type="month"
+                value={monthPeriod}
+                onChange={(e) => setMonthPeriod(e.target.value)}
+              />
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label>Dari Tanggal</Label>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Sampai Tanggal</Label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                />
+              </div>
+            </>
+          )}
           <div className="space-y-2">
             <Label>Cabang</Label>
             <Select value={branchId} onValueChange={setBranchId}>
@@ -332,10 +519,12 @@ function ReportsPage() {
               variant="outline"
               className="flex-1 gap-2"
               onClick={() =>
-                exportCSV(
-                  `laporan-${tab}-${dateFrom}-sd-${dateTo}.csv`,
-                  rows ?? [],
-                )
+                tab === "bulanan"
+                  ? exportLkubCSV()
+                  : exportCSV(
+                      `laporan-${tab}-${dateFrom}-sd-${dateTo}.csv`,
+                      rows ?? [],
+                    )
               }
             >
               <Download className="h-4 w-4" /> Unduh CSV
@@ -343,6 +532,7 @@ function ReportsPage() {
             <Button
               variant="outline"
               className="gap-2"
+              disabled={tab === "bulanan"}
               onClick={() => {
                 const label =
                   branchId === "all"
@@ -428,6 +618,78 @@ function ReportsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
+              {tab === "bulanan" ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Jenis Valuta</TableHead>
+                        <TableHead>Jenis Produk</TableHead>
+                        <TableHead className="text-right">Saldo Awal (Valas)</TableHead>
+                        <TableHead className="text-right">Saldo Awal (Rp)</TableHead>
+                        <TableHead className="text-right">Volume Beli (Valas)</TableHead>
+                        <TableHead className="text-right">Volume Beli (Rp)</TableHead>
+                        <TableHead className="text-right">Volume Jual (Valas)</TableHead>
+                        <TableHead className="text-right">Volume Jual (Rp)</TableHead>
+                        <TableHead className="text-right">Saldo Akhir (Valas)</TableHead>
+                        <TableHead className="text-right">Kurs Tengah</TableHead>
+                        <TableHead className="text-right">Saldo Akhir (Rp)</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {loading || rows === null ? (
+                        Array.from({ length: 4 }).map((_, i) => (
+                          <TableRow key={i}>
+                            <TableCell colSpan={11}>
+                              <Skeleton className="h-6 w-full" />
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : lkubRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={11} className="text-center py-12 text-sm text-muted-foreground">
+                            Tidak ada transaksi pada periode ini.
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        lkubRows.map((r) => (
+                          <TableRow key={r.currency_code}>
+                            <TableCell className="font-mono font-semibold">
+                              {r.currency_code}
+                            </TableCell>
+                            <TableCell>1 - UKA</TableCell>
+                            <TableCell className="text-right font-mono">0</TableCell>
+                            <TableCell className="text-right font-mono">0</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {fmtNum(r.buy_foreign)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {fmtIDR(r.buy_idr)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {fmtNum(r.sell_foreign)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">
+                              {fmtIDR(r.sell_idr)}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">0</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {r.mid_rate !== null ? (
+                                fmtNum(r.mid_rate, 4)
+                              ) : (
+                                <span className="text-amber-600 text-xs">
+                                  belum diisi
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-right font-mono">0</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -546,6 +808,7 @@ function ReportsPage() {
                   )}
                 </TableBody>
               </Table>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
