@@ -1026,7 +1026,7 @@ function CustomersPage() {
                     <div>
                       <Label className="font-medium text-destructive">Daftar Hitam</Label>
                       <p className="text-xs text-muted-foreground">
-                        Transaksi akan ditolak untuk nasabah yang di-blacklist.
+                        Transaksi akan ditolak untuk nasabah yang masuk DTTOT.
                       </p>
                     </div>
                     <Switch
