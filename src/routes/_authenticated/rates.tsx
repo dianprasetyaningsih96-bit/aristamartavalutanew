@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -77,6 +78,7 @@ interface BranchOpt {
 }
 
 const HQ = "__hq__";
+const ALL = "__all__";
 
 const schema = z
   .object({
@@ -129,6 +131,9 @@ function RatesPage() {
   const [deleting, setDeleting] = useState<Rate | null>(null);
   const [form, setForm] = useState<Form>(empty());
   const [saving, setSaving] = useState(false);
+  const [branchFilter, setBranchFilter] = useState<string>(ALL);
+  // Multi-branch targets when creating (checkbox list). Value HQ = default (null).
+  const [multiBranches, setMultiBranches] = useState<string[]>([HQ]);
 
   async function load() {
     const [{ data: rateData, error }, { data: cur }, { data: br }] =
@@ -171,9 +176,17 @@ function RatesPage() {
     return { s, pct };
   }, [form.buy_rate, form.sell_rate]);
 
+  const filteredRows = useMemo(() => {
+    if (!rows) return [];
+    if (branchFilter === ALL) return rows;
+    if (branchFilter === HQ) return rows.filter((r) => r.branch_id === null);
+    return rows.filter((r) => r.branch_id === branchFilter);
+  }, [rows, branchFilter]);
+
   function openCreate() {
     setEditing(null);
     setForm(empty());
+    setMultiBranches([branchFilter === ALL ? HQ : branchFilter]);
     setOpen(true);
   }
 
@@ -188,6 +201,7 @@ function RatesPage() {
       is_active: row.is_active,
       note: row.note ?? "",
     });
+    setMultiBranches([row.branch_id ?? HQ]);
     setOpen(true);
   }
 
@@ -199,10 +213,13 @@ function RatesPage() {
       });
       return;
     }
+    if (!editing && multiBranches.length === 0) {
+      toast.error("Pilih minimal satu cabang tujuan");
+      return;
+    }
     setSaving(true);
-    const payload = {
+    const base = {
       currency_id: parsed.data.currency_id,
-      branch_id: parsed.data.branch_id === HQ ? null : parsed.data.branch_id,
       buy_rate: parsed.data.buy_rate,
       sell_rate: parsed.data.sell_rate,
       effective_date: parsed.data.effective_date,
@@ -212,15 +229,28 @@ function RatesPage() {
     const { error } = editing
       ? await supabase
           .from("exchange_rates")
-          .update(payload)
+          .update({
+            ...base,
+            branch_id:
+              parsed.data.branch_id === HQ ? null : parsed.data.branch_id,
+          })
           .eq("id", editing.id)
-      : await supabase.from("exchange_rates").insert(payload);
+      : await supabase.from("exchange_rates").insert(
+          multiBranches.map((b) => ({
+            ...base,
+            branch_id: b === HQ ? null : b,
+          })),
+        );
     setSaving(false);
     if (error) {
       toast.error("Gagal menyimpan", { description: error.message });
       return;
     }
-    toast.success(editing ? "Kurs diperbarui" : "Kurs ditambahkan");
+    toast.success(
+      editing
+        ? "Kurs diperbarui"
+        : `Kurs ditambahkan untuk ${multiBranches.length} cabang/target`,
+    );
     setOpen(false);
     load();
   }
@@ -244,11 +274,29 @@ function RatesPage() {
     <div className="flex flex-col gap-6 p-6">
       <MasterPageHeader
         title="Kurs Valuta"
-        description="Kelola kurs beli & jual per cabang dan tanggal efektif."
+        description="Setiap cabang dapat memiliki kurs beli & jual sendiri. Jika cabang tidak memiliki kurs, transaksi memakai kurs HQ / Default."
         onAdd={openCreate}
         addLabel="Tambah Kurs"
         canWrite={canWrite}
       />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Label className="text-xs text-muted-foreground">Filter cabang:</Label>
+        <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <SelectTrigger className="w-64">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>Semua cabang</SelectItem>
+            <SelectItem value={HQ}>HQ / Default</SelectItem>
+            {branches.map((b) => (
+              <SelectItem key={b.id} value={b.id}>
+                {b.code} — {b.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <Card>
         <CardContent className="p-0">
@@ -274,7 +322,7 @@ function RatesPage() {
                     </TableCell>
                   </TableRow>
                 ))
-              ) : rows.length === 0 ? (
+              ) : filteredRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center py-12">
                     <LineChart className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
@@ -284,7 +332,7 @@ function RatesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row) => {
+                filteredRows.map((row) => {
                   const sp = Number(row.sell_rate) - Number(row.buy_rate);
                   return (
                     <TableRow key={row.id}>
@@ -387,22 +435,77 @@ function RatesPage() {
             </div>
             <div className="space-y-2 col-span-1">
               <Label>Cabang</Label>
-              <Select
-                value={form.branch_id}
-                onValueChange={(v) => setForm({ ...form, branch_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={HQ}>HQ / Default (semua)</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.code} — {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {editing ? (
+                <Select
+                  value={form.branch_id}
+                  onValueChange={(v) => setForm({ ...form, branch_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={HQ}>HQ / Default (semua)</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.code} — {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="rounded-md border p-2 max-h-40 overflow-y-auto space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <button
+                      type="button"
+                      className="text-primary hover:underline"
+                      onClick={() =>
+                        setMultiBranches([HQ, ...branches.map((b) => b.id)])
+                      }
+                    >
+                      Pilih semua
+                    </button>
+                    <span className="text-muted-foreground">·</span>
+                    <button
+                      type="button"
+                      className="text-primary hover:underline"
+                      onClick={() => setMultiBranches([])}
+                    >
+                      Kosongkan
+                    </button>
+                  </div>
+                  {[{ id: HQ, code: "HQ", name: "Default (fallback semua cabang)" }, ...branches].map(
+                    (b) => {
+                      const checked = multiBranches.includes(b.id);
+                      return (
+                        <label
+                          key={b.id}
+                          className="flex items-center gap-2 text-sm cursor-pointer"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(v) => {
+                              setMultiBranches((prev) =>
+                                v
+                                  ? [...prev, b.id]
+                                  : prev.filter((x) => x !== b.id),
+                              );
+                            }}
+                          />
+                          <span className="font-mono text-xs">{b.code}</span>
+                          <span className="text-muted-foreground">
+                            {b.name}
+                          </span>
+                        </label>
+                      );
+                    },
+                  )}
+                </div>
+              )}
+              {!editing && (
+                <p className="text-xs text-muted-foreground">
+                  Kurs akan dibuat terpisah untuk tiap cabang yang dipilih.
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Kurs Beli *</Label>
