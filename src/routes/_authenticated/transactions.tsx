@@ -131,6 +131,7 @@ const schema = z.object({
   foreign_amount: z.coerce.number().positive("Nominal valas harus > 0"),
   payment_method: z.enum(["cash", "transfer", "other"]),
   notes: z.string().trim().max(500).optional().or(z.literal("")),
+  transaction_date: z.string().optional().or(z.literal("")),
 });
 
 type Form = z.infer<typeof schema>;
@@ -144,6 +145,7 @@ const emptyForm = (): Form => ({
   foreign_amount: 0,
   payment_method: "cash",
   notes: "",
+  transaction_date: "",
 });
 
 const fmtIDR = (n: number) =>
@@ -177,6 +179,8 @@ function TransactionsPage() {
     "owner",
     "branch_manager",
   ]);
+  const isSuperAdmin = hasAnyRole(roles, ["super_admin"]);
+  const shiftExempt = isSuperAdmin;
 
   const [rows, setRows] = useState<Transaction[] | null>(null);
   const [currencies, setCurrencies] = useState<CurrencyOpt[]>([]);
@@ -299,7 +303,7 @@ function TransactionsPage() {
   const blacklistBlock = selectedCustomer?.is_blacklisted;
 
   function openCreate(type: TxType) {
-    if (!activeShift) {
+    if (!activeShift && !shiftExempt) {
       toast.error("Shif belum dibuka", {
         description:
           "Buka shif kerja terlebih dahulu di menu Shif Kerja sebelum memulai transaksi.",
@@ -309,13 +313,13 @@ function TransactionsPage() {
     setForm({
       ...emptyForm(),
       transaction_type: type,
-      branch_id: activeShift.branch_id,
+      branch_id: activeShift?.branch_id ?? HQ,
     });
     setOpen(true);
   }
 
   async function save() {
-    if (!activeShift) {
+    if (!activeShift && !shiftExempt) {
       toast.error("Shif belum dibuka", {
         description: "Buka shif kerja dahulu sebelum menyimpan transaksi.",
       });
@@ -357,6 +361,9 @@ function TransactionsPage() {
       status: "completed" as const,
       notes: parsed.data.notes || null,
       teller_id: user?.id ?? null,
+      ...(isSuperAdmin && parsed.data.transaction_date
+        ? { transaction_date: new Date(parsed.data.transaction_date).toISOString() }
+        : {}),
     };
     const { data, error } = await supabase
       .from("transactions")
