@@ -61,6 +61,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -148,6 +149,10 @@ function statusVariant(
 }
 
 function DashboardPage() {
+  const { roles, profile } = useCurrentUser();
+  const isTellerOnly =
+    roles.length > 0 && roles.every((r) => r === "teller");
+  const lockedBranchId = isTellerOnly ? profile?.branch_id ?? null : null;
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchFilter, setBranchFilter] = useState<string>("all");
   const [period, setPeriod] = useState<"7d" | "30d">("7d");
@@ -163,12 +168,14 @@ function DashboardPage() {
   const days = period === "7d" ? 7 : 30;
 
   useEffect(() => {
-    supabase
-      .from("branches")
-      .select("id, code, name")
-      .order("name")
-      .then(({ data }) => setBranches((data as Branch[]) ?? []));
-  }, []);
+    let q = supabase.from("branches").select("id, code, name").order("name");
+    if (lockedBranchId) q = q.eq("id", lockedBranchId);
+    q.then(({ data }) => setBranches((data as Branch[]) ?? []));
+  }, [lockedBranchId]);
+
+  useEffect(() => {
+    if (lockedBranchId) setBranchFilter(lockedBranchId);
+  }, [lockedBranchId]);
 
   const load = async () => {
     setLoading(true);
@@ -474,12 +481,18 @@ function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={branchFilter} onValueChange={setBranchFilter}>
+          <Select
+            value={branchFilter}
+            onValueChange={setBranchFilter}
+            disabled={!!lockedBranchId}
+          >
             <SelectTrigger className="w-40 sm:w-52">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Semua Cabang</SelectItem>
+              {!lockedBranchId && (
+                <SelectItem value="all">Semua Cabang</SelectItem>
+              )}
               {branches.map((b) => (
                 <SelectItem key={b.id} value={b.id}>
                   {b.code} — {b.name}
