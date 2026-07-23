@@ -5,7 +5,11 @@ import { Download, FileText, AlertTriangle, Flag, Printer } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
-import { generateReportPdf, generateLtkmReportPdf } from "@/lib/pdf-reports";
+import {
+  generateReportPdf,
+  generateLtkmReportPdf,
+  generateLkubReportPdf,
+} from "@/lib/pdf-reports";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -536,20 +540,31 @@ function ReportsPage() {
             <Button
               variant="outline"
               className="gap-2"
-              disabled={tab === "bulanan"}
               onClick={() => {
                 const label =
                   branchId === "all"
                     ? "Semua Cabang"
                     : branches.find((b) => b.id === branchId)?.name ?? "-";
+                const range =
+                  tab === "bulanan"
+                    ? monthRange(monthPeriod)
+                    : { from: dateFrom, to: dateTo };
                 const meta = {
                   title,
                   variant: tab,
                   branchLabel: label,
-                  dateFrom,
-                  dateTo,
+                  dateFrom: range.from,
+                  dateTo: range.to,
                   totals,
                 };
+                if (tab === "bulanan") {
+                  if (lkubRows.length === 0) {
+                    toast.info("Tidak ada data untuk dicetak");
+                    return;
+                  }
+                  generateLkubReportPdf(meta, lkubRows);
+                  return;
+                }
                 if (!rows || rows.length === 0) {
                   toast.info("Tidak ada data untuk dicetak");
                   return;
