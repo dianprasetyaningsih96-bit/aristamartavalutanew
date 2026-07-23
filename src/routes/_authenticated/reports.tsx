@@ -340,6 +340,12 @@ function ReportsPage() {
           ? "LTKT (Transaksi Keuangan Tunai ≥ Rp 500 jt)"
           : "LTKM (Transaksi Keuangan Mencurigakan)";
 
+  // Resolve mid_rate currency_id → code via currencies table
+  const midByCodeRef = useMemo(
+    () => ({ current: new Map<string, number>() }),
+    [],
+  );
+
   const lkubRows: LkubRow[] = useMemo(() => {
     if (tab !== "bulanan" || !rows) return [];
     const midByCur = new Map(
@@ -382,8 +388,6 @@ function ReportsPage() {
       .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
   }, [tab, rows, midRates]);
 
-  // Resolve mid_rate currency_id → code via currencies table
-  const midByCodeRef = useMemo(() => ({ current: new Map<string, number>() }), []);
   useEffect(() => {
     if (tab !== "bulanan") return;
     let cancelled = false;
