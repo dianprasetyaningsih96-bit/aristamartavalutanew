@@ -492,46 +492,61 @@ export type Database = {
       dttot_list: {
         Row: {
           address: string | null
-          alias: string | null
+          aliases: string | null
           birth_date: string | null
           birth_place: string | null
           created_at: string
           created_by: string | null
-          description: string | null
+          date_of_birth: string | null
+          entity_type: string | null
+          full_name: string
           id: string
+          identity_number: string | null
           is_active: boolean
-          name: string
+          listed_at: string | null
           nationality: string | null
+          notes: string | null
+          reference_code: string | null
           source: string | null
           updated_at: string
         }
         Insert: {
           address?: string | null
-          alias?: string | null
+          aliases?: string | null
           birth_date?: string | null
           birth_place?: string | null
           created_at?: string
           created_by?: string | null
-          description?: string | null
+          date_of_birth?: string | null
+          entity_type?: string | null
+          full_name: string
           id?: string
+          identity_number?: string | null
           is_active?: boolean
-          name: string
+          listed_at?: string | null
           nationality?: string | null
+          notes?: string | null
+          reference_code?: string | null
           source?: string | null
           updated_at?: string
         }
         Update: {
           address?: string | null
-          alias?: string | null
+          aliases?: string | null
           birth_date?: string | null
           birth_place?: string | null
           created_at?: string
           created_by?: string | null
-          description?: string | null
+          date_of_birth?: string | null
+          entity_type?: string | null
+          full_name?: string
           id?: string
+          identity_number?: string | null
           is_active?: boolean
-          name?: string
+          listed_at?: string | null
           nationality?: string | null
+          notes?: string | null
+          reference_code?: string | null
           source?: string | null
           updated_at?: string
         }
