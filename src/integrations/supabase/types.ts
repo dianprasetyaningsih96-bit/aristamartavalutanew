@@ -35,6 +35,96 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_requests: {
+        Row: {
+          action: Database["public"]["Enums"]["approval_action"]
+          created_at: string
+          id: string
+          metadata: Json | null
+          reason: string
+          reference_id: string | null
+          reference_table: string | null
+          request_no: string
+          requester_id: string
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["approval_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["approval_action"]
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+          reference_id?: string | null
+          reference_table?: string | null
+          request_no: string
+          requester_id: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["approval_action"]
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
+          reference_id?: string | null
+          reference_table?: string | null
+          request_no?: string
+          requester_id?: string
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       branches: {
         Row: {
           address: string | null
@@ -713,6 +803,12 @@ export type Database = {
         | "teller"
         | "auditor"
         | "owner"
+      approval_action:
+        | "void_transaction"
+        | "rate_override"
+        | "threshold_override"
+        | "other"
+      approval_status: "pending" | "approved" | "rejected" | "cancelled"
       cash_movement_type:
         | "opening"
         | "buy"
@@ -856,6 +952,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
+      approval_action: [
+        "void_transaction",
+        "rate_override",
+        "threshold_override",
+        "other",
+      ],
+      approval_status: ["pending", "approved", "rejected", "cancelled"],
       cash_movement_type: [
         "opening",
         "buy",
