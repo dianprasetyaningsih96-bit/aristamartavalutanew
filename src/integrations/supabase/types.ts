@@ -381,6 +381,94 @@ export type Database = {
         }
         Relationships: []
       }
+      transactions: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          currency_id: string
+          customer_id: string | null
+          foreign_amount: number
+          id: string
+          idr_amount: number
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          rate: number
+          status: Database["public"]["Enums"]["transaction_status"]
+          teller_id: string | null
+          transaction_date: string
+          transaction_no: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          currency_id: string
+          customer_id?: string | null
+          foreign_amount: number
+          id?: string
+          idr_amount: number
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          rate: number
+          status?: Database["public"]["Enums"]["transaction_status"]
+          teller_id?: string | null
+          transaction_date?: string
+          transaction_no: string
+          transaction_type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          currency_id?: string
+          customer_id?: string | null
+          foreign_amount?: number
+          id?: string
+          idr_amount?: number
+          notes?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"]
+          rate?: number
+          status?: Database["public"]["Enums"]["transaction_status"]
+          teller_id?: string | null
+          transaction_date?: string
+          transaction_no?: string
+          transaction_type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          void_reason?: string | null
+          voided_at?: string | null
+          voided_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           assigned_at: string
@@ -432,7 +520,10 @@ export type Database = {
       customer_type: "individual" | "corporate"
       id_document_type: "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other"
       kyc_status: "pending" | "verified" | "rejected" | "expired"
+      payment_method: "cash" | "transfer" | "other"
       risk_rating: "low" | "medium" | "high"
+      transaction_status: "draft" | "completed" | "voided"
+      transaction_type: "buy" | "sell"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -564,7 +655,10 @@ export const Constants = {
       customer_type: ["individual", "corporate"],
       id_document_type: ["ktp", "passport", "kitas", "sim", "npwp", "other"],
       kyc_status: ["pending", "verified", "rejected", "expired"],
+      payment_method: ["cash", "transfer", "other"],
       risk_rating: ["low", "medium", "high"],
+      transaction_status: ["draft", "completed", "voided"],
+      transaction_type: ["buy", "sell"],
     },
   },
 } as const
