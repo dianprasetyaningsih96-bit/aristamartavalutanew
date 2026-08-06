@@ -18,18 +18,30 @@ export type Database = {
         Row: {
           company_name: string
           id: boolean
+          shift_pagi_end: string | null
+          shift_pagi_start: string | null
+          shift_siang_end: string | null
+          shift_siang_start: string | null
           updated_at: string
           updated_by: string | null
         }
         Insert: {
           company_name?: string
           id?: boolean
+          shift_pagi_end?: string | null
+          shift_pagi_start?: string | null
+          shift_siang_end?: string | null
+          shift_siang_start?: string | null
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
           company_name?: string
           id?: boolean
+          shift_pagi_end?: string | null
+          shift_pagi_start?: string | null
+          shift_siang_end?: string | null
+          shift_siang_start?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -206,7 +218,7 @@ export type Database = {
       cash_movements: {
         Row: {
           amount: number
-          balance_after: number
+          balance_after: number | null
           branch_id: string
           created_at: string
           created_by: string | null
@@ -215,11 +227,12 @@ export type Database = {
           movement_type: Database["public"]["Enums"]["cash_movement_type"]
           notes: string | null
           reference_id: string | null
+          reference_no: string | null
           reference_table: string | null
         }
         Insert: {
           amount: number
-          balance_after: number
+          balance_after?: number | null
           branch_id: string
           created_at?: string
           created_by?: string | null
@@ -228,11 +241,12 @@ export type Database = {
           movement_type: Database["public"]["Enums"]["cash_movement_type"]
           notes?: string | null
           reference_id?: string | null
+          reference_no?: string | null
           reference_table?: string | null
         }
         Update: {
           amount?: number
-          balance_after?: number
+          balance_after?: number | null
           branch_id?: string
           created_at?: string
           created_by?: string | null
@@ -241,6 +255,7 @@ export type Database = {
           movement_type?: Database["public"]["Enums"]["cash_movement_type"]
           notes?: string | null
           reference_id?: string | null
+          reference_no?: string | null
           reference_table?: string | null
         }
         Relationships: [
@@ -873,6 +888,7 @@ export type Database = {
           foreign_amount: number
           id: string
           idr_amount: number
+          is_suspicious: boolean
           notes: string | null
           payment_method: Database["public"]["Enums"]["payment_method"]
           rate: number
@@ -894,6 +910,7 @@ export type Database = {
           foreign_amount: number
           id?: string
           idr_amount: number
+          is_suspicious?: boolean
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           rate: number
@@ -915,6 +932,7 @@ export type Database = {
           foreign_amount?: number
           id?: string
           idr_amount?: number
+          is_suspicious?: boolean
           notes?: string | null
           payment_method?: Database["public"]["Enums"]["payment_method"]
           rate?: number
