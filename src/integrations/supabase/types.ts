@@ -74,6 +74,102 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_balances: {
+        Row: {
+          balance: number
+          branch_id: string
+          currency_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number
+          branch_id: string
+          currency_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number
+          branch_id?: string
+          currency_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_balances_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_balances_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_movements: {
+        Row: {
+          amount: number
+          balance_after: number
+          branch_id: string
+          created_at: string
+          created_by: string | null
+          currency_id: string
+          id: string
+          movement_type: Database["public"]["Enums"]["cash_movement_type"]
+          notes: string | null
+          reference_id: string | null
+          reference_table: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          branch_id: string
+          created_at?: string
+          created_by?: string | null
+          currency_id: string
+          id?: string
+          movement_type: Database["public"]["Enums"]["cash_movement_type"]
+          notes?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          branch_id?: string
+          created_at?: string
+          created_by?: string | null
+          currency_id?: string
+          id?: string
+          movement_type?: Database["public"]["Enums"]["cash_movement_type"]
+          notes?: string | null
+          reference_id?: string | null
+          reference_table?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_movements_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       currencies: {
         Row: {
           code: string
@@ -345,6 +441,56 @@ export type Database = {
           },
         ]
       }
+      monthly_reports: {
+        Row: {
+          branch_id: string | null
+          created_at: string
+          file_url: string | null
+          generated_at: string | null
+          generated_by: string | null
+          id: string
+          metadata: Json | null
+          report_month: string
+          report_type: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          branch_id?: string | null
+          created_at?: string
+          file_url?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          report_month: string
+          report_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string | null
+          created_at?: string
+          file_url?: string | null
+          generated_at?: string | null
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          report_month?: string
+          report_type?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_reports_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -495,7 +641,57 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_ltkm_threshold_transactions: {
+        Row: {
+          branch_id: string | null
+          branch_name: string | null
+          created_at: string | null
+          currency_code: string | null
+          currency_id: string | null
+          customer_id: string | null
+          customer_name: string | null
+          foreign_amount: number | null
+          id: string | null
+          idr_amount: number | null
+          notes: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          rate: number | null
+          status: Database["public"]["Enums"]["transaction_status"] | null
+          teller_id: string | null
+          transaction_date: string | null
+          transaction_no: string | null
+          transaction_type:
+            | Database["public"]["Enums"]["transaction_type"]
+            | null
+          updated_at: string | null
+          void_reason: string | null
+          voided_at: string | null
+          voided_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_user_roles: {
@@ -517,6 +713,14 @@ export type Database = {
         | "teller"
         | "auditor"
         | "owner"
+      cash_movement_type:
+        | "opening"
+        | "buy"
+        | "sell"
+        | "deposit"
+        | "withdrawal"
+        | "adjustment"
+        | "closing"
       customer_type: "individual" | "corporate"
       id_document_type: "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other"
       kyc_status: "pending" | "verified" | "rejected" | "expired"
@@ -652,6 +856,15 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
+      cash_movement_type: [
+        "opening",
+        "buy",
+        "sell",
+        "deposit",
+        "withdrawal",
+        "adjustment",
+        "closing",
+      ],
       customer_type: ["individual", "corporate"],
       id_document_type: ["ktp", "passport", "kitas", "sim", "npwp", "other"],
       kyc_status: ["pending", "verified", "rejected", "expired"],
