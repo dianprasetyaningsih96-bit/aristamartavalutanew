@@ -30,8 +30,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import type { AppRole } from "@/integrations/supabase/client";
-import { ROLE_LABELS } from "@/integrations/supabase/client";
+import { ROLE_LABELS, type AppRole } from "@/lib/roles";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAppSettings } from "@/hooks/use-app-settings";
 

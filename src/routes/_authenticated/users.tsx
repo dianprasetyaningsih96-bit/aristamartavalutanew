@@ -4,11 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Users, Search, Shield, UserCog, UserPlus } from "lucide-react";
 import { createClient } from "@supabase/supabase-js";
-import {
-  supabase,
-  ROLE_LABELS,
-  type AppRole,
-} from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
+import { ROLE_LABELS, type AppRole } from "@/lib/roles";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { Card, CardContent } from "@/components/ui/card";
