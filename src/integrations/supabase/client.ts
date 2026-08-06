@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 // Publishable key — safe to expose in client bundle.
-const SUPABASE_URL = "https://vbmdlqwplfomtzrhafrc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id";
+const SUPABASE_URL = "https://sssdowkollznljkowoaj.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_bJgrgZy_BiEEb9pNxAHxmA_M9kU9QvY";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
