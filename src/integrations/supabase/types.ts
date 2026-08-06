@@ -110,6 +110,184 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_documents: {
+        Row: {
+          customer_id: string
+          doc_type: string
+          file_name: string | null
+          file_path: string
+          id: string
+          mime_type: string | null
+          notes: string | null
+          size_bytes: number | null
+          uploaded_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          customer_id: string
+          doc_type: string
+          file_name?: string | null
+          file_path: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          size_bytes?: number | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          customer_id?: string
+          doc_type?: string
+          file_name?: string | null
+          file_path?: string
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          size_bytes?: number | null
+          uploaded_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_documents_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "customers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customers: {
+        Row: {
+          address: string | null
+          blacklist_reason: string | null
+          branch_id: string | null
+          business_type: string | null
+          city: string | null
+          company_name: string | null
+          created_at: string
+          created_by: string | null
+          customer_code: string
+          customer_type: Database["public"]["Enums"]["customer_type"]
+          date_of_birth: string | null
+          email: string | null
+          employer: string | null
+          full_name: string
+          gender: string | null
+          id: string
+          id_expiry_date: string | null
+          id_number: string
+          id_type: Database["public"]["Enums"]["id_document_type"]
+          is_blacklisted: boolean
+          is_pep: boolean
+          kyc_notes: string | null
+          kyc_status: Database["public"]["Enums"]["kyc_status"]
+          kyc_verified_at: string | null
+          kyc_verified_by: string | null
+          monthly_income_range: string | null
+          nationality: string | null
+          npwp_number: string | null
+          occupation: string | null
+          pep_notes: string | null
+          phone: string | null
+          place_of_birth: string | null
+          postal_code: string | null
+          province: string | null
+          purpose_of_transaction: string | null
+          risk_rating: Database["public"]["Enums"]["risk_rating"]
+          source_of_funds: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          blacklist_reason?: string | null
+          branch_id?: string | null
+          business_type?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_code: string
+          customer_type?: Database["public"]["Enums"]["customer_type"]
+          date_of_birth?: string | null
+          email?: string | null
+          employer?: string | null
+          full_name: string
+          gender?: string | null
+          id?: string
+          id_expiry_date?: string | null
+          id_number: string
+          id_type?: Database["public"]["Enums"]["id_document_type"]
+          is_blacklisted?: boolean
+          is_pep?: boolean
+          kyc_notes?: string | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          kyc_verified_at?: string | null
+          kyc_verified_by?: string | null
+          monthly_income_range?: string | null
+          nationality?: string | null
+          npwp_number?: string | null
+          occupation?: string | null
+          pep_notes?: string | null
+          phone?: string | null
+          place_of_birth?: string | null
+          postal_code?: string | null
+          province?: string | null
+          purpose_of_transaction?: string | null
+          risk_rating?: Database["public"]["Enums"]["risk_rating"]
+          source_of_funds?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          blacklist_reason?: string | null
+          branch_id?: string | null
+          business_type?: string | null
+          city?: string | null
+          company_name?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_code?: string
+          customer_type?: Database["public"]["Enums"]["customer_type"]
+          date_of_birth?: string | null
+          email?: string | null
+          employer?: string | null
+          full_name?: string
+          gender?: string | null
+          id?: string
+          id_expiry_date?: string | null
+          id_number?: string
+          id_type?: Database["public"]["Enums"]["id_document_type"]
+          is_blacklisted?: boolean
+          is_pep?: boolean
+          kyc_notes?: string | null
+          kyc_status?: Database["public"]["Enums"]["kyc_status"]
+          kyc_verified_at?: string | null
+          kyc_verified_by?: string | null
+          monthly_income_range?: string | null
+          nationality?: string | null
+          npwp_number?: string | null
+          occupation?: string | null
+          pep_notes?: string | null
+          phone?: string | null
+          place_of_birth?: string | null
+          postal_code?: string | null
+          province?: string | null
+          purpose_of_transaction?: string | null
+          risk_rating?: Database["public"]["Enums"]["risk_rating"]
+          source_of_funds?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exchange_rates: {
         Row: {
           branch_id: string | null
@@ -251,6 +429,10 @@ export type Database = {
         | "teller"
         | "auditor"
         | "owner"
+      customer_type: "individual" | "corporate"
+      id_document_type: "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other"
+      kyc_status: "pending" | "verified" | "rejected" | "expired"
+      risk_rating: "low" | "medium" | "high"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -379,6 +561,10 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "branch_manager", "teller", "auditor", "owner"],
+      customer_type: ["individual", "corporate"],
+      id_document_type: ["ktp", "passport", "kitas", "sim", "npwp", "other"],
+      kyc_status: ["pending", "verified", "rejected", "expired"],
+      risk_rating: ["low", "medium", "high"],
     },
   },
 } as const
