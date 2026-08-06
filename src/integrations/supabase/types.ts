@@ -49,14 +49,20 @@ export type Database = {
       }
       approval_requests: {
         Row: {
-          action: Database["public"]["Enums"]["approval_action"]
+          action: string
+          branch_id: string | null
           created_at: string
+          entity_id: string | null
+          entity_table: string | null
           id: string
           metadata: Json | null
+          payload: Json | null
           reason: string
           reference_id: string | null
           reference_table: string | null
           request_no: string
+          requested_at: string | null
+          requested_by: string | null
           requester_id: string
           review_notes: string | null
           reviewed_at: string | null
@@ -66,14 +72,20 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          action: Database["public"]["Enums"]["approval_action"]
+          action: string
+          branch_id?: string | null
           created_at?: string
+          entity_id?: string | null
+          entity_table?: string | null
           id?: string
           metadata?: Json | null
+          payload?: Json | null
           reason: string
           reference_id?: string | null
           reference_table?: string | null
           request_no: string
+          requested_at?: string | null
+          requested_by?: string | null
           requester_id: string
           review_notes?: string | null
           reviewed_at?: string | null
@@ -83,14 +95,20 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          action?: Database["public"]["Enums"]["approval_action"]
+          action?: string
+          branch_id?: string | null
           created_at?: string
+          entity_id?: string | null
+          entity_table?: string | null
           id?: string
           metadata?: Json | null
+          payload?: Json | null
           reason?: string
           reference_id?: string | null
           reference_table?: string | null
           request_no?: string
+          requested_at?: string | null
+          requested_by?: string | null
           requester_id?: string
           review_notes?: string | null
           reviewed_at?: string | null
@@ -99,7 +117,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "approval_requests_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
