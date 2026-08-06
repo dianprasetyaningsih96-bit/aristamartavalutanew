@@ -1031,6 +1031,7 @@ export type Database = {
       }
     }
     Functions: {
+      admin_confirm_user: { Args: { _user_id: string }; Returns: undefined }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
