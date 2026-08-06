@@ -474,6 +474,54 @@ export type Database = {
           },
         ]
       }
+      dttot_list: {
+        Row: {
+          address: string | null
+          alias: string | null
+          birth_date: string | null
+          birth_place: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          nationality: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          alias?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          nationality?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          alias?: string | null
+          birth_date?: string | null
+          birth_place?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          nationality?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exchange_rates: {
         Row: {
           branch_id: string | null
@@ -531,6 +579,50 @@ export type Database = {
           },
         ]
       }
+      mid_rates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          currency_id: string
+          id: string
+          mid_rate: number
+          notes: string | null
+          period_month: string
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          currency_id: string
+          id?: string
+          mid_rate: number
+          notes?: string | null
+          period_month: string
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          currency_id?: string
+          id?: string
+          mid_rate?: number
+          notes?: string | null
+          period_month?: string
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mid_rates_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_reports: {
         Row: {
           branch_id: string | null
@@ -581,6 +673,54 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          category: Database["public"]["Enums"]["notification_category"]
+          created_at: string
+          id: string
+          link: string | null
+          message: string
+          metadata: Json | null
+          read_by: string[]
+          reference_id: string | null
+          reference_table: string | null
+          severity: Database["public"]["Enums"]["notification_severity"]
+          target_roles: Database["public"]["Enums"]["app_role"][] | null
+          title: string
+          user_id: string | null
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["notification_category"]
+          created_at?: string
+          id?: string
+          link?: string | null
+          message: string
+          metadata?: Json | null
+          read_by?: string[]
+          reference_id?: string | null
+          reference_table?: string | null
+          severity?: Database["public"]["Enums"]["notification_severity"]
+          target_roles?: Database["public"]["Enums"]["app_role"][] | null
+          title: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["notification_category"]
+          created_at?: string
+          id?: string
+          link?: string | null
+          message?: string
+          metadata?: Json | null
+          read_by?: string[]
+          reference_id?: string | null
+          reference_table?: string | null
+          severity?: Database["public"]["Enums"]["notification_severity"]
+          target_roles?: Database["public"]["Enums"]["app_role"][] | null
+          title?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -616,6 +756,113 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      shift_reconciliations: {
+        Row: {
+          actual_amount: number
+          created_at: string
+          currency_id: string
+          difference: number
+          expected_amount: number
+          id: string
+          notes: string | null
+          shift_id: string
+        }
+        Insert: {
+          actual_amount?: number
+          created_at?: string
+          currency_id: string
+          difference?: number
+          expected_amount?: number
+          id?: string
+          notes?: string | null
+          shift_id: string
+        }
+        Update: {
+          actual_amount?: number
+          created_at?: string
+          currency_id?: string
+          difference?: number
+          expected_amount?: number
+          id?: string
+          notes?: string | null
+          shift_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shift_reconciliations_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shift_reconciliations_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shifts: {
+        Row: {
+          branch_id: string
+          closed_at: string | null
+          closed_by: string | null
+          closing_cash_idr: number | null
+          created_at: string
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string
+          opening_cash_idr: number
+          period: Database["public"]["Enums"]["shift_period"]
+          shift_date: string
+          status: Database["public"]["Enums"]["shift_status"]
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_cash_idr?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by: string
+          opening_cash_idr?: number
+          period: Database["public"]["Enums"]["shift_period"]
+          shift_date?: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_cash_idr?: number | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string
+          opening_cash_idr?: number
+          period?: Database["public"]["Enums"]["shift_period"]
+          shift_date?: string
+          status?: Database["public"]["Enums"]["shift_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shifts_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transactions: {
         Row: {
@@ -788,6 +1035,17 @@ export type Database = {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
       }
+      get_users_admin: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_sign_in_at: string
+          roles: string[]
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -795,6 +1053,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      mark_all_notifications_read: { Args: never; Returns: undefined }
+      mark_notification_read: { Args: { _id: string }; Returns: undefined }
     }
     Enums: {
       app_role:
@@ -820,8 +1080,19 @@ export type Database = {
       customer_type: "individual" | "corporate"
       id_document_type: "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other"
       kyc_status: "pending" | "verified" | "rejected" | "expired"
+      notification_category:
+        | "ltkt_threshold"
+        | "ltkm_suspicious"
+        | "dttot_attempt"
+        | "low_cash"
+        | "approval_request"
+        | "approval_decision"
+        | "system"
+      notification_severity: "info" | "warning" | "critical"
       payment_method: "cash" | "transfer" | "other"
       risk_rating: "low" | "medium" | "high"
+      shift_period: "pagi" | "siang"
+      shift_status: "open" | "closed"
       transaction_status: "draft" | "completed" | "voided"
       transaction_type: "buy" | "sell"
     }
@@ -971,8 +1242,20 @@ export const Constants = {
       customer_type: ["individual", "corporate"],
       id_document_type: ["ktp", "passport", "kitas", "sim", "npwp", "other"],
       kyc_status: ["pending", "verified", "rejected", "expired"],
+      notification_category: [
+        "ltkt_threshold",
+        "ltkm_suspicious",
+        "dttot_attempt",
+        "low_cash",
+        "approval_request",
+        "approval_decision",
+        "system",
+      ],
+      notification_severity: ["info", "warning", "critical"],
       payment_method: ["cash", "transfer", "other"],
       risk_rating: ["low", "medium", "high"],
+      shift_period: ["pagi", "siang"],
+      shift_status: ["open", "closed"],
       transaction_status: ["draft", "completed", "voided"],
       transaction_type: ["buy", "sell"],
     },
