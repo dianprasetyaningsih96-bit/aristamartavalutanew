@@ -26,6 +26,7 @@ interface Transfer {
   created_at: string;
   notes: string | null;
   branch?: { name: string; code: string } | null;
+  target_branch?: { name: string; code: string } | null;
   currency?: { code: string; name: string } | null;
 }
 
