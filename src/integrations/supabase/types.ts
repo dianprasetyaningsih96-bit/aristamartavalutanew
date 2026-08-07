@@ -532,6 +532,7 @@ export type Database = {
           listed_at: string | null
           nationality: string | null
           notes: string | null
+          place_of_birth: string | null
           reference_code: string | null
           source: string | null
           updated_at: string
@@ -552,6 +553,7 @@ export type Database = {
           listed_at?: string | null
           nationality?: string | null
           notes?: string | null
+          place_of_birth?: string | null
           reference_code?: string | null
           source?: string | null
           updated_at?: string
@@ -572,6 +574,7 @@ export type Database = {
           listed_at?: string | null
           nationality?: string | null
           notes?: string | null
+          place_of_birth?: string | null
           reference_code?: string | null
           source?: string | null
           updated_at?: string
@@ -642,6 +645,7 @@ export type Database = {
           currency_id: string
           id: string
           mid_rate: number
+          note: string | null
           notes: string | null
           period_month: string
           source: string | null
@@ -653,6 +657,7 @@ export type Database = {
           currency_id: string
           id?: string
           mid_rate: number
+          note?: string | null
           notes?: string | null
           period_month: string
           source?: string | null
@@ -664,6 +669,7 @@ export type Database = {
           currency_id?: string
           id?: string
           mid_rate?: number
+          note?: string | null
           notes?: string | null
           period_month?: string
           source?: string | null
