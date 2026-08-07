@@ -9,6 +9,10 @@ import {
   ROLE_LABELS,
   type AppRole,
 } from "@/integrations/supabase/client";
+import {
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+} from "@/integrations/supabase/config";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { Card, CardContent } from "@/components/ui/card";
