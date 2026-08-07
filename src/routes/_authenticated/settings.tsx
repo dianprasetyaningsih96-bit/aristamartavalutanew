@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Save } from "lucide-react";
+import { Settings as SettingsIcon, Save, PlugZap, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_PROJECT_ID, SUPABASE_URL } from "@/integrations/supabase/config";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -167,6 +168,81 @@ function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {hasAnyRole(roles, ["super_admin"]) && <ConnectionCard />}
     </div>
+  );
+}
+function ConnectionCard() {
+  const [status, setStatus] = useState<"idle" | "checking" | "ok" | "error">("idle");
+  const [message, setMessage] = useState("");
+
+  async function check() {
+    setStatus("checking");
+    setMessage("");
+    const { error } = await supabase.from("branches").select("id").limit(1);
+    if (error) {
+      setStatus("error");
+      setMessage(error.message);
+    } else {
+      setStatus("ok");
+      setMessage("Koneksi ke database berhasil.");
+    }
+  }
+
+  useEffect(() => {
+    void check();
+  }, []);
+
+  return (
+    <Card className="max-w-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <PlugZap className="h-4 w-4 text-primary" />
+          Koneksi Database
+        </CardTitle>
+        <CardDescription>
+          Project backend yang sedang digunakan aplikasi ini.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Project ID</p>
+            <p className="break-all font-mono text-sm">{SUPABASE_PROJECT_ID}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Project URL</p>
+            <p className="break-all font-mono text-sm">{SUPABASE_URL}</p>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+          <div className="flex items-center gap-2 text-sm">
+            {status === "checking" && (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <span className="text-muted-foreground">Memeriksa koneksi…</span>
+              </>
+            )}
+            {status === "ok" && (
+              <>
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span>{message}</span>
+              </>
+            )}
+            {status === "error" && (
+              <>
+                <XCircle className="h-4 w-4 text-destructive" />
+                <span className="break-all text-destructive">{message}</span>
+              </>
+            )}
+          </div>
+          <Button variant="outline" size="sm" onClick={check} disabled={status === "checking"}>
+            Uji Ulang
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

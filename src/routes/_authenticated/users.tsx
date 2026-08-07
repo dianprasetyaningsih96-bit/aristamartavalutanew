@@ -9,6 +9,10 @@ import {
   ROLE_LABELS,
   type AppRole,
 } from "@/integrations/supabase/client";
+import {
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+} from "@/integrations/supabase/config";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { Card, CardContent } from "@/components/ui/card";
@@ -76,10 +80,6 @@ const ROLE_STYLES: Record<AppRole, string> = {
   teller: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30",
   auditor: "bg-amber-500/15 text-amber-700 border-amber-500/30",
 };
-
-const SUPABASE_URL = "https://vbmdlqwplfomtzrhafrc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id";
 
 function UsersPage() {
   const { user, roles: myRoles, loading: userLoading } = useCurrentUser();
