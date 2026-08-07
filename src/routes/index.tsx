@@ -30,7 +30,7 @@ function Landing() {
             <span className="bg-[image:var(--gradient-glow)] bg-clip-text text-transparent">
               Money Changer
             </span>{" "}
-            muncul error saat login, perbaiki, data login diambil dari supabase
+            Modern & Terpercaya
 
           </h1>
           <p className="mt-4 text-pretty text-base text-muted-foreground sm:mt-6 sm:text-lg">
