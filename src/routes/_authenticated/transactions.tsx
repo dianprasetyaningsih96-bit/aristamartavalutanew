@@ -221,6 +221,19 @@ function TransactionsPage() {
   const [voidReason, setVoidReason] = useState("");
 
   async function load() {
+    let query = supabase
+      .from("transactions")
+      .select(
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
+      )
+      .order("transaction_date", { ascending: false })
+      .limit(200);
+
+    // Filter by branch if not super admin
+    if (!isSuperAdmin && profile?.branch_id) {
+      query = query.eq("branch_id", profile.branch_id);
+    }
+
     const [
       { data: trx, error },
       { data: cur },
@@ -229,13 +242,7 @@ function TransactionsPage() {
       { data: rt },
       { data: sh },
     ] = await Promise.all([
-      supabase
-        .from("transactions")
-        .select(
-          "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
-        )
-        .order("transaction_date", { ascending: false })
-        .limit(200),
+      query,
       supabase
         .from("currencies")
         .select("id, code, name")
