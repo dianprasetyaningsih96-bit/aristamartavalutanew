@@ -303,7 +303,7 @@ function ReportsPage() {
         };
     const { error } = await supabase
       .from("transactions")
-      .update(patch)
+      .update(patch as any)
       .eq("id", flagTarget.id);
     setFlagSaving(false);
     if (error) {
