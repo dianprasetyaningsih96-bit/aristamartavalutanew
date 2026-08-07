@@ -128,7 +128,7 @@ const admin: NavItem[] = [
     title: "Persetujuan",
     url: "/approvals",
     icon: ClipboardList,
-    roles: ["super_admin", "branch_manager", "owner"],
+    roles: ["super_admin", "branch_manager", "owner", "teller"],
   },
   {
     title: "Notifikasi",
