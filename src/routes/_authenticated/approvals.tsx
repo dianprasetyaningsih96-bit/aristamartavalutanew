@@ -37,7 +37,7 @@ function ApprovalsPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [branchInfo, setBranchInfo] = useState<{ is_head_office: boolean } | null>(null);
 
-  const canApprove = hasAnyRole(roles, ["super_admin", "owner"]) || (hasAnyRole(roles, ["branch_manager", "teller"]) && branchInfo?.is_head_office);
+  const canApprove = hasAnyRole(roles, ["super_admin", "owner", "branch_manager", "teller"]) && (hasAnyRole(roles, ["super_admin"]) || branchInfo?.is_head_office);
 
   useEffect(() => {
     if (profile?.branch_id) {
