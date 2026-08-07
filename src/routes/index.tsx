@@ -14,7 +14,7 @@ function Landing() {
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elegant)]">
             <Banknote className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold tracking-tight">KUPVA BB</span>
+          <span className="text-lg font-bold tracking-tight">Valuta Guardian</span>
         </div>
         <Button asChild size="sm">
           <Link to="/auth">
@@ -30,7 +30,7 @@ function Landing() {
             <span className="bg-[image:var(--gradient-glow)] bg-clip-text text-transparent">
               Money Changer
             </span>{" "}
-            KUPVA BB
+              Valuta Guardian
           </h1>
           <p className="mt-4 text-pretty text-base text-muted-foreground sm:mt-6 sm:text-lg">
             Platform terintegrasi untuk KYC/CDD, transaksi jual-beli valuta asing,
@@ -68,7 +68,7 @@ function Landing() {
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-3.5 w-3.5" /> Enkripsi & audit trail sesuai standar BI
           </span>
-          <span>&copy; {new Date().getFullYear()} KUPVA BB</span>
+          <span>&copy; {new Date().getFullYear()} Valuta Guardian</span>
         </div>
       </footer>
     </div>
