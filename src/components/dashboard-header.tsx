@@ -67,7 +67,7 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
           }}
         >
           <Wifi className="h-3.5 w-3.5" />
-          tes koneksi ke supabase
+          atur ulang koneksi ke supabase sebagai berikut:\nProject URL: https://vbmdlqwplfomtzrhafrc.supabase.co\nPublishable key: sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id\nProject ID: vbmdlqwplfomtzrhafrc
         </Button>
 
         <NotificationsBell />
