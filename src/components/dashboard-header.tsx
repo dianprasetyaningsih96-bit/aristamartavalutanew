@@ -68,10 +68,7 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
         >
           <Wifi className="h-3.5 w-3.5" />
           <div className="whitespace-pre-line text-left">
-            atur ulang koneksi ke supabase sebagai berikut:{"\n"}
-            Project URL: https://vbmdlqwplfomtzrhafrc.supabase.co{"\n"}
-            Publishable key: sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id{"\n"}
-            Project ID: vbmdlqwplfomtzrhafrc
+            maksud saya cek secara koneksi disini dan di koding, bukan malah ditampilkan disini
           </div>
         </Button>
 
