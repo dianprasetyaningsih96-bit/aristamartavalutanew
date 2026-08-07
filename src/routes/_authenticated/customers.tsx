@@ -387,8 +387,8 @@ function CustomersPage() {
       payload.kyc_verified_by = user?.id ?? null;
     }
     const { error } = editing
-      ? await supabase.from("customers").update(payload).eq("id", editing.id)
-      : await supabase.from("customers").insert(payload);
+      ? await supabase.from("customers").update(payload as any).eq("id", editing.id)
+      : await supabase.from("customers").insert(payload as any);
     setSaving(false);
     if (error) {
       toast.error("Gagal menyimpan", { description: error.message });

@@ -244,7 +244,7 @@ function TransactionsPage() {
         ? supabase
             .from("shifts")
             .select("id, branch_id, shift_type, status, opened_at, branches(code, name)")
-            .eq("user_id", user.id)
+            .eq("user_id" as any, user.id)
             .eq("status", "open")
             .order("opened_at", { ascending: false })
             .limit(1)
@@ -302,7 +302,7 @@ function TransactionsPage() {
   const selectedCustomer = customers.find((c) => c.id === form.customer_id);
   const blacklistBlock = selectedCustomer?.is_blacklisted;
 
-  function openCreate(type: TxType) {
+  async function openCreate(type: TxType) {
     if (!activeShift && !shiftExempt) {
       toast.error("Shif belum dibuka", {
         description:
@@ -310,6 +310,22 @@ function TransactionsPage() {
       });
       return;
     }
+
+    // Cabang dilarang jual valas (hanya bisa beli)
+    // Cek apakah cabang ini HQ
+    const currentBranchId = activeShift?.branch_id;
+    const currentBranch = branches.find(b => b.id === currentBranchId);
+    
+    // Anggap HQ jika is_hq true atau kode mengandung 'HQ' (fallback jika data belum sinkron)
+    const isHq = (currentBranch as any)?.is_hq || currentBranch?.code?.includes('HQ');
+
+    if (type === "sell" && !isHq && !isSuperAdmin) {
+      toast.error("Akses Ditolak", {
+        description: "Cabang hanya diperbolehkan melakukan transaksi pembelian valas.",
+      });
+      return;
+    }
+
     setForm({
       ...emptyForm(),
       transaction_type: type,
@@ -367,7 +383,7 @@ function TransactionsPage() {
     };
     const { data, error } = await supabase
       .from("transactions")
-      .insert(payload)
+      .insert(payload as any)
       .select(
         "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
       )

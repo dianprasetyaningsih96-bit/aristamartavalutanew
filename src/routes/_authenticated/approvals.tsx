@@ -140,7 +140,7 @@ function ApprovalsPage() {
       setLoading(false);
       return;
     }
-    setRows((data as ApprovalRequest[]) ?? []);
+    setRows((data as unknown as ApprovalRequest[]) ?? []);
     setLoading(false);
   }
 
@@ -182,7 +182,7 @@ function ApprovalsPage() {
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
         review_notes: reviewNotes.trim() || null,
-      })
+      } as any)
       .eq("id", reviewTarget.id);
     setSubmitting(false);
     if (error) {
@@ -511,8 +511,10 @@ function CreateRequestDialog({
       entity_table: entityTable.trim() || null,
       entity_id: entityId.trim() || null,
       requested_by: userId,
+      requester_id: userId,
       status: "pending",
-    });
+      request_no: `APP-${Date.now()}`,
+    } as any);
     setSubmitting(false);
     if (error) {
       toast.error("Gagal mengajukan", { description: error.message });

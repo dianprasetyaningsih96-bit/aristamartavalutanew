@@ -290,7 +290,7 @@ function MidRatesPage() {
       }
       const { error } = await supabase
         .from("mid_rates")
-        .upsert(payloads, { onConflict: "currency_id,period_month" });
+        .upsert(payloads as any, { onConflict: "currency_id,period_month" });
       if (error) {
         toast.error("Gagal impor kurs tengah", { description: error.message });
       } else {
