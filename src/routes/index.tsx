@@ -66,7 +66,7 @@ function Landing() {
       <footer className="border-t">
         <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:items-center sm:px-6 sm:py-6">
           <span className="inline-flex items-center gap-1.5">
-            <Lock className="h-3.5 w-3.5" /> pastikan sudah terhubung ke supabase https://vbmdlqwplfomtzrhafrc.supabase.co
+            <Lock className="h-3.5 w-3.5" /> Enkripsi & audit trail sesuai standar BI
           </span>
           <span>&copy; {new Date().getFullYear()} Valuta Guardian</span>
         </div>
