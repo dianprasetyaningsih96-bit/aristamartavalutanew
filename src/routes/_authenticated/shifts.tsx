@@ -494,8 +494,12 @@ function TransferValasButton({ activeShift, currencies }: { activeShift: ShiftRo
   async function loadData() {
     const [hqRes, balRes] = await Promise.all([
       supabase.from("branches").select("id, name").eq("is_hq" as any, true).maybeSingle(),
-      supabase.from("cash_balances").select("currency_id, balance").eq("branch_id", activeShift.branch_id)
+      supabase.from("cash_balances").select("currency_id, balance").eq("branch_id", activeShift.branch_id),
+      supabase.auth.getUser()
     ]);
+    
+    const userSession = balRes.data; // Reusing variable slot to avoid complex type changes in thought
+    const currentUserId = (await supabase.auth.getUser()).data.user?.id;
     
     // Fallback if is_hq not set yet
     if (!hqRes.data) {
@@ -541,7 +545,7 @@ function TransferValasButton({ activeShift, currencies }: { activeShift: ShiftRo
       currency_id: form.currency_id,
       amount: amountNum,
       shift_id: activeShift.id,
-      sender_id: (supabase.auth as any).session?.user?.id,
+      sender_id: (await supabase.auth.getUser()).data.user?.id,
       notes: form.notes
     } as any);
 
