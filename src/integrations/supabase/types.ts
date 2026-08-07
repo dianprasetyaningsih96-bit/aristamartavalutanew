@@ -175,6 +175,7 @@ export type Database = {
           processed_by: string | null
           shift_id: string | null
           status: string
+          target_branch_id: string | null
         }
         Insert: {
           amount: number
@@ -187,6 +188,7 @@ export type Database = {
           processed_by?: string | null
           shift_id?: string | null
           status?: string
+          target_branch_id?: string | null
         }
         Update: {
           amount?: number
@@ -199,6 +201,7 @@ export type Database = {
           processed_by?: string | null
           shift_id?: string | null
           status?: string
+          target_branch_id?: string | null
         }
         Relationships: [
           {
@@ -220,6 +223,13 @@ export type Database = {
             columns: ["shift_id"]
             isOneToOne: false
             referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_transfers_target_branch_id_fkey"
+            columns: ["target_branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
             referencedColumns: ["id"]
           },
         ]
