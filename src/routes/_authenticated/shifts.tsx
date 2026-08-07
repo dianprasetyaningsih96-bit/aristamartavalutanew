@@ -397,7 +397,7 @@ function CloseShiftDialog({
       physical_balance: Number(r.physical_balance) || 0,
     }));
     if (payload.length) {
-      const { error: recErr } = await supabase.from("shift_reconciliations").insert(payload);
+      const { error: recErr } = await supabase.from("shift_reconciliations").insert(payload as any);
       if (recErr) { setSaving(false); toast.error("Rekonsiliasi gagal: " + recErr.message); return; }
     }
     setSaving(false);
