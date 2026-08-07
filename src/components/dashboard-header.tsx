@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { LogOut, Search, User as UserIcon } from "lucide-react";
+import { LogOut, Search, User as UserIcon, Wifi } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,22 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input placeholder="Cari nasabah, transaksi..." className="pl-9" />
       </div>
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex items-center gap-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="hidden items-center gap-2 text-xs text-muted-foreground hover:text-primary lg:flex"
+          onClick={() => {
+            supabase.from("profiles").select("id", { count: "exact", head: true }).then(({ error }) => {
+              if (error) toast.error("Koneksi gagal: " + error.message);
+              else toast.success("Koneksi Supabase aktif");
+            });
+          }}
+        >
+          <Wifi className="h-3.5 w-3.5" />
+          tes koneksi ke supabase
+        </Button>
+
         <NotificationsBell />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
