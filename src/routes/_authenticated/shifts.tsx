@@ -353,6 +353,14 @@ function CloseShiftDialog({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [transfering, setTransfering] = useState(false);
+  const [branchInfo, setBranchInfo] = useState<{ is_head_office: boolean } | null>(null);
+
+  useEffect(() => {
+    supabase.from("branches").select("is_head_office").eq("id", shift.branch_id).single().then(({ data }) => {
+      setBranchInfo(data);
+    });
+  }, [shift.branch_id]);
 
   useEffect(() => {
     (async () => {
