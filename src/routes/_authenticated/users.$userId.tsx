@@ -143,7 +143,7 @@ function UserDetailPage() {
       const prof = (pRes.data as Profile) ?? null;
       setProfile(prof);
       setRoles(((rRes.data as { role: AppRole }[]) ?? []).map((r) => r.role));
-      setAudit((aRes.data as AuditRow[]) ?? []);
+      setAudit((aRes.data as unknown as AuditRow[]) ?? []);
       setTxs((tRes.data as TxRow[]) ?? []);
       const cm = new Map<string, string>();
       for (const c of (cRes.data as { id: string; code: string }[]) ?? []) cm.set(c.id, c.code);
