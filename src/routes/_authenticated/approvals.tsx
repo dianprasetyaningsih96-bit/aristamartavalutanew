@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/approvals")({
 interface Transfer {
   id: string;
   branch_id: string;
+  target_branch_id: string | null;
   currency_id: string;
   amount: number;
   status: "pending" | "accepted" | "rejected";
