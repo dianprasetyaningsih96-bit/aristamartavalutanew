@@ -478,13 +478,15 @@ function TransactionsPage() {
                 <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
                 Beli Valas
               </Button>
-              <Button
-                onClick={() => openCreate("sell")}
-                className="gap-2"
-              >
-                <ArrowUpCircle className="h-4 w-4" />
-                Jual Valas
-              </Button>
+              {canSell && (
+                <Button
+                  onClick={() => openCreate("sell")}
+                  className="gap-2"
+                >
+                  <ArrowUpCircle className="h-4 w-4" />
+                  Jual Valas
+                </Button>
+              )}
             </>
           )
         }
