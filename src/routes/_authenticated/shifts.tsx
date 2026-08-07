@@ -157,7 +157,11 @@ function ShiftsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Riwayat Shif</CardTitle>
-          <CardDescription>100 shif terakhir dari seluruh cabang</CardDescription>
+          <CardDescription>
+            {roles.includes("super_admin") 
+              ? "100 shif terakhir dari seluruh cabang" 
+              : "100 shif terakhir dari cabang Anda"}
+          </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
