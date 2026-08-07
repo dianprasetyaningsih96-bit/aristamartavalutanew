@@ -58,7 +58,7 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
         <Button
           variant="ghost"
           size="sm"
-          className="hidden items-center gap-2 text-xs text-muted-foreground hover:text-primary lg:flex"
+          className="hidden items-center gap-2 text-xs text-muted-foreground hover:text-primary lg:flex h-auto py-2"
           onClick={() => {
             supabase.from("profiles").select("id", { count: "exact", head: true }).then(({ error }) => {
               if (error) toast.error("Koneksi gagal: " + error.message);
