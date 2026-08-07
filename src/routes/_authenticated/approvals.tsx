@@ -182,7 +182,7 @@ function ApprovalsPage() {
         reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
         review_notes: reviewNotes.trim() || null,
-      })
+      } as any)
       .eq("id", reviewTarget.id);
     setSubmitting(false);
     if (error) {
