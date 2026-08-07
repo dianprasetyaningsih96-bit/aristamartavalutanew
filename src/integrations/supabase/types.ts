@@ -1186,7 +1186,7 @@ export type Database = {
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_notification_read: { Args: { _id: string }; Returns: undefined }
       process_branch_transfer: {
-        Args: { p_notes: string; p_status: string; transfer_id: string }
+        Args: { p_notes?: string; p_status: string; transfer_id: string }
         Returns: undefined
       }
     }
