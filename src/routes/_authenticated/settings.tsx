@@ -1,8 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Save } from "lucide-react";
+import { Settings as SettingsIcon, Save, PlugZap, Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { SUPABASE_PROJECT_ID, SUPABASE_URL } from "@/integrations/supabase/config";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -167,6 +168,8 @@ function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {hasAnyRole(roles, ["super_admin"]) && <ConnectionCard />}
     </div>
   );
 }
