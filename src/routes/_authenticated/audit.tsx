@@ -109,7 +109,7 @@ function AuditPage() {
       setLoading(false);
       return;
     }
-    setRows((data as unknown as AuditLog[]) ?? []);
+    setRows((data as AuditLog[]) ?? []);
     setLoading(false);
   }
 

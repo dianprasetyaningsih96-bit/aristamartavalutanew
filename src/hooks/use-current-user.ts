@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/integrations/supabase/client";
-import type { AppRole } from "@/lib/roles";
+import { supabase, type AppRole } from "@/integrations/supabase/client";
 
 export interface CurrentUserState {
   user: User | null;

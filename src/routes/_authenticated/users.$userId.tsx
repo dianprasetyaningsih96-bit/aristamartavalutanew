@@ -2,8 +2,11 @@ import { createFileRoute, Link, useParams } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Activity, ArrowLeftRight, ShieldCheck, Mail, Phone, Building2, Calendar } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { ROLE_LABELS, type AppRole } from "@/lib/roles";
+import {
+  supabase,
+  ROLE_LABELS,
+  type AppRole,
+} from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -143,7 +146,7 @@ function UserDetailPage() {
       const prof = (pRes.data as Profile) ?? null;
       setProfile(prof);
       setRoles(((rRes.data as { role: AppRole }[]) ?? []).map((r) => r.role));
-      setAudit((aRes.data as unknown as AuditRow[]) ?? []);
+      setAudit((aRes.data as AuditRow[]) ?? []);
       setTxs((tRes.data as TxRow[]) ?? []);
       const cm = new Map<string, string>();
       for (const c of (cRes.data as { id: string; code: string }[]) ?? []) cm.set(c.id, c.code);

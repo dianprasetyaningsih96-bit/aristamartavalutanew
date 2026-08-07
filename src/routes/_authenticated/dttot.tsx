@@ -365,7 +365,7 @@ function DttotPage() {
         setImporting(false);
         return;
       }
-      const { error } = await supabase.from("dttot_list").insert(payloads as any);
+      const { error } = await supabase.from("dttot_list").insert(payloads);
       if (error) {
         toast.error("Gagal impor DTTOT", { description: error.message });
       } else {

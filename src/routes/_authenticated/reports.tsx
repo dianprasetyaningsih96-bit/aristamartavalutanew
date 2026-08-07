@@ -303,7 +303,7 @@ function ReportsPage() {
         };
     const { error } = await supabase
       .from("transactions")
-      .update(patch as any)
+      .update(patch)
       .eq("id", flagTarget.id);
     setFlagSaving(false);
     if (error) {
@@ -324,7 +324,7 @@ function ReportsPage() {
       .update({
         ltkm_report_no: no.trim(),
         ltkm_reported_at: new Date().toISOString(),
-      } as any)
+      })
       .eq("id", flagTarget.id);
     if (error) {
       toast.error("Gagal menyimpan", { description: error.message });
