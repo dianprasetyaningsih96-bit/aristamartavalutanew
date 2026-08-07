@@ -124,9 +124,9 @@ function ApprovalsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Memuat...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Memuat...</TableCell></TableRow>
               ) : transfers.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Tidak ada data transfer</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Tidak ada data transfer</TableCell></TableRow>
               ) : transfers.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="text-xs text-muted-foreground">
