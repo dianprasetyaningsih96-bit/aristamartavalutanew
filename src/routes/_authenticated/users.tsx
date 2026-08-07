@@ -74,8 +74,9 @@ const ROLE_STYLES: Record<AppRole, string> = {
   auditor: "bg-amber-500/15 text-amber-700 border-amber-500/30",
 };
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://djtbxrelgldjgipvfggf.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_tEtrBVmynIEOioIhilVDWA_BuFfnxJg';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 
 function UsersPage() {
   const { user, roles: myRoles, loading: userLoading } = useCurrentUser();
