@@ -77,10 +77,6 @@ const ROLE_STYLES: Record<AppRole, string> = {
   auditor: "bg-amber-500/15 text-amber-700 border-amber-500/30",
 };
 
-const SUPABASE_URL = "https://vbmdlqwplfomtzrhafrc.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY =
-  "sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id";
-
 function UsersPage() {
   const { user, roles: myRoles, loading: userLoading } = useCurrentUser();
   const canManage = hasAnyRole(myRoles, ["super_admin", "owner"]);
