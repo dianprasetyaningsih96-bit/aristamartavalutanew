@@ -16,11 +16,16 @@ function Landing() {
           </div>
           <span className="text-lg font-bold tracking-tight">KUPVA BB</span>
         </div>
-        <Button asChild size="sm">
-          <Link to="/auth">
-            Masuk <ArrowRight className="ml-1 h-4 w-4" />
-          </Link>
-        </Button>
+        <div className="flex items-center gap-4">
+          <span className="hidden text-[10px] text-muted-foreground md:block">
+            saya ingin mengubah koneksi ke supabase ke project ID ini vbmdlqwplfomtzrhafrc bagaimana caranya?
+          </span>
+          <Button asChild size="sm">
+            <Link to="/auth">
+              Masuk <ArrowRight className="ml-1 h-4 w-4" />
+            </Link>
+          </Button>
+        </div>
       </header>
 
       <main className="mx-auto max-w-7xl px-4 pb-16 pt-8 sm:px-6 sm:pb-24 sm:pt-16">
