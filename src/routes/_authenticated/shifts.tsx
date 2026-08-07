@@ -79,11 +79,21 @@ function ShiftsPage() {
     const [b, c, s] = await Promise.all([
       supabase.from("branches").select("id, name, code").eq("is_active", true).order("name"),
       supabase.from("currencies").select("id, code, name, decimals").eq("is_active", true).order("code"),
-      supabase
-        .from("shifts")
-        .select("id, branch_id, user_id, shift_type, status, opening_capital, opened_at, closed_at, notes, branch:branches(name)")
-        .order("opened_at", { ascending: false })
-        .limit(100),
+      (() => {
+        let query = supabase
+          .from("shifts")
+          .select("id, branch_id, user_id, shift_type, status, opening_capital, opened_at, closed_at, notes, branch:branches(name)")
+          .order("opened_at", { ascending: false })
+          .limit(100);
+        
+        // Filter by branch if not super_admin
+        const isSuperAdmin = roles.includes("super_admin");
+        if (!isSuperAdmin && profile?.branch_id) {
+          query = query.eq("branch_id", profile.branch_id);
+        }
+        
+        return query;
+      })(),
     ]);
     if (s.error) {
       toast.error("Gagal memuat shif: " + s.error.message);
