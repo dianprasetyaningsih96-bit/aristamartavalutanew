@@ -166,20 +166,31 @@ const fmtNum = (n: number, d = 2) =>
 const CDD_THRESHOLD_IDR = 100_000_000;
 
 function TransactionsPage() {
-  const { roles, user } = useCurrentUser();
+  const { roles, user, profile } = useCurrentUser();
   const { settings } = useAppSettings();
+  
+  // Load branch info to check if Head Office
+  const [branchInfo, setBranchInfo] = useState<{ is_head_office: boolean } | null>(null);
+
+  useEffect(() => {
+    if (profile?.branch_id) {
+      supabase.from("branches").select("is_head_office").eq("id", profile.branch_id).single().then(({ data }) => {
+        setBranchInfo(data);
+      });
+    }
+  }, [profile?.branch_id]);
+
   const canWrite = hasAnyRole(roles, [
     "super_admin",
     "owner",
     "branch_manager",
     "teller",
   ]);
-  const canVoid = hasAnyRole(roles, [
-    "super_admin",
-    "owner",
-    "branch_manager",
-  ]);
+  
   const isSuperAdmin = hasAnyRole(roles, ["super_admin"]);
+  
+  // Branches can ONLY buy. Head Office can buy AND sell. Super Admin bypass.
+  const canSell = isSuperAdmin || (branchInfo?.is_head_office ?? false);
   const shiftExempt = isSuperAdmin;
 
   const [rows, setRows] = useState<Transaction[] | null>(null);
