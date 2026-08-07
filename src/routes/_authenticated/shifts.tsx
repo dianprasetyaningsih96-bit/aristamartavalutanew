@@ -407,6 +407,31 @@ function CloseShiftDialog({
       const { error: recErr } = await supabase.from("shift_reconciliations").insert(payload);
       if (recErr) { setSaving(false); toast.error("Rekonsiliasi gagal: " + recErr.message); return; }
     }
+
+    // Automatically transfer to Head Office if NOT Head Office and Siang/Sore shift
+    if (branchInfo && !branchInfo.is_head_office && shift.shift_type === "siang") {
+      setTransfering(true);
+      const transfers = rows
+        .filter(r => r.system_balance > 0)
+        .map(r => ({
+          branch_id: shift.branch_id,
+          currency_id: r.currency_id,
+          amount: r.system_balance,
+          shift_id: shift.id,
+          status: "pending" as const
+        }));
+
+      if (transfers.length > 0) {
+        const { error: txErr } = await supabase.from("branch_transfers").insert(transfers);
+        if (txErr) {
+          toast.error("Gagal membuat transfer otomatis: " + txErr.message);
+        } else {
+          toast.info("Valas otomatis ditransfer ke Kantor Pusat untuk persetujuan.");
+        }
+      }
+      setTransfering(false);
+    }
+
     setSaving(false);
     toast.success("Shif ditutup & rekonsiliasi tersimpan");
     onSaved();
