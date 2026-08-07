@@ -68,7 +68,7 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
         >
           <Wifi className="h-3.5 w-3.5" />
           <div className="whitespace-pre-line text-left">
-            maksud saya cek secara koneksi disini dan di koding, bukan malah ditampilkan disini
+            Implementasikan uji koneksi Supabase dari tombol di dashboard dengan melakukan request ping yang benar di sisi coding, bukan hanya menampilkan teks konfigurasi.
           </div>
         </Button>
 
