@@ -58,7 +58,7 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
         <Button
           variant="ghost"
           size="sm"
-          className="hidden items-center gap-2 text-xs text-muted-foreground hover:text-primary lg:flex"
+          className="hidden items-center gap-2 text-xs text-muted-foreground hover:text-primary lg:flex h-auto py-2"
           onClick={() => {
             supabase.from("profiles").select("id", { count: "exact", head: true }).then(({ error }) => {
               if (error) toast.error("Koneksi gagal: " + error.message);
@@ -67,7 +67,12 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
           }}
         >
           <Wifi className="h-3.5 w-3.5" />
-          tes koneksi ke supabase
+          <div className="whitespace-pre-line text-left">
+            atur ulang koneksi ke supabase sebagai berikut:{"\n"}
+            Project URL: https://vbmdlqwplfomtzrhafrc.supabase.co{"\n"}
+            Publishable key: sb_publishable_WVOw5REqyFAYq07Az1lkSQ_Hkevu_id{"\n"}
+            Project ID: vbmdlqwplfomtzrhafrc
+          </div>
         </Button>
 
         <NotificationsBell />
