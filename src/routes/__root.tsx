@@ -82,14 +82,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Valuta Guardian — Money Changer Information System" },
+      { title: "KUPVA BB — Money Changer Information System" },
       {
         name: "description",
         content:
-          "Sistem Informasi Money Changer Valuta Guardian: KYC/CDD, transaksi valas, manajemen kas, dan pelaporan sesuai regulasi Bank Indonesia.",
+          "Sistem Informasi Money Changer KUPVA BB: KYC/CDD, transaksi valas, manajemen kas, dan pelaporan sesuai regulasi Bank Indonesia.",
       },
-      { name: "author", content: "Valuta Guardian" },
-      { property: "og:title", content: "Valuta Guardian — Money Changer Information System" },
+      { name: "author", content: "KUPVA BB" },
+      { property: "og:title", content: "KUPVA BB — Money Changer Information System" },
       {
         property: "og:description",
         content: "Sistem informasi money changer terintegrasi untuk KUPVA BB berlisensi Bank Indonesia.",

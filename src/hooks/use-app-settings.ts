@@ -10,7 +10,7 @@ export interface AppSettings {
 }
 
 const DEFAULT: AppSettings = {
-  company_name: "Valuta Guardian",
+  company_name: "KUPVA BB",
   shift_pagi_start: "08:00",
   shift_pagi_end: "15:00",
   shift_siang_start: "15:00",
