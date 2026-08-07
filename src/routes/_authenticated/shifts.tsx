@@ -437,6 +437,8 @@ function CloseShiftDialog({
     onSaved();
   }
 
+  const isSaving = saving || transfering;
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-3xl">
