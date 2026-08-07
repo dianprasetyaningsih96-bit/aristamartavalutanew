@@ -319,7 +319,7 @@ function MidRatesPage() {
     <div className="flex flex-col gap-6 p-6">
       <MasterPageHeader
         title="Kurs Tengah (Mid Rate)"
-        description="Kurs tengah per mata uang per bulan — dipakai pada Laporan Kegiatan Usaha Bulanan (LKUB)."
+        description="Kurs tengah per mata uang per bulan — dipakai pada Laporan Kegiatan Usaha Bulanan (LKUB) Valuta Guardian."
         onAdd={openCreate}
         addLabel="Tambah Kurs Tengah"
         canWrite={canWrite}

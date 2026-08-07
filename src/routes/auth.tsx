@@ -17,7 +17,7 @@ export const Route = createFileRoute("/auth")({
 function AuthPage() {
   const navigate = useNavigate();
   const { settings } = useAppSettings();
-  const companyName = settings?.company_name || "KUPVA BB";
+  const companyName = settings?.company_name || "Valuta Guardian";
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
