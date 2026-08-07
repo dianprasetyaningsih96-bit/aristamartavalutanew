@@ -67,7 +67,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
   head: () => ({
     meta: [
-      { title: "Dashboard Analytics - KUPVA BB" },
+      { title: "Dashboard Analytics - Valuta Guardian" },
       {
         name: "description",
         content:
