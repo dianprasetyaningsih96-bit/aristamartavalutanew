@@ -41,11 +41,23 @@ export function useNotifications(limit = 50) {
       setLoading(false);
       return;
     }
+
+    // Get current user's profile to check roles/branch
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("branch_id, user_roles(role)")
+      .eq("id", uid)
+      .single();
+
+    const roles = profile?.user_roles?.map((r: any) => r.role) || [];
+
     const { data } = await supabase
       .from("notifications")
       .select("*")
+      .or(`user_id.eq.${uid},target_roles.overlap.{${roles.join(",")}}`)
       .order("created_at", { ascending: false })
       .limit(limit);
+
     setItems((data as NotificationRow[]) ?? []);
     setLoading(false);
   }, [limit]);
