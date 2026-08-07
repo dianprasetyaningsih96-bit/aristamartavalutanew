@@ -53,6 +53,7 @@ interface Branch {
   phone: string | null;
   license_no: string | null;
   is_active: boolean;
+  is_hq: boolean;
   created_at: string;
 }
 
@@ -64,6 +65,7 @@ const branchSchema = z.object({
   phone: z.string().trim().max(30).optional().or(z.literal("")),
   license_no: z.string().trim().max(80).optional().or(z.literal("")),
   is_active: z.boolean(),
+  is_hq: z.boolean().default(false),
 });
 
 type BranchForm = z.infer<typeof branchSchema>;
@@ -76,6 +78,7 @@ const empty: BranchForm = {
   phone: "",
   license_no: "",
   is_active: true,
+  is_hq: false,
 };
 
 function BranchesPage() {
@@ -121,6 +124,7 @@ function BranchesPage() {
       phone: row.phone ?? "",
       license_no: row.license_no ?? "",
       is_active: row.is_active,
+      is_hq: row.is_hq || false,
     });
     setOpen(true);
   }
@@ -142,6 +146,7 @@ function BranchesPage() {
       phone: parsed.data.phone || null,
       license_no: parsed.data.license_no || null,
       is_active: parsed.data.is_active,
+      is_hq: parsed.data.is_hq,
     };
     const { error } = editing
       ? await supabase.from("branches").update(payload).eq("id", editing.id)
@@ -191,7 +196,8 @@ function BranchesPage() {
                 <TableHead>Kota</TableHead>
                 <TableHead>Telepon</TableHead>
                 <TableHead>No. Izin</TableHead>
-                <TableHead>Status</TableHead>
+                 <TableHead>Status</TableHead>
+                <TableHead>HQ</TableHead>
                 <TableHead className="w-32 text-right">Aksi</TableHead>
               </TableRow>
             </TableHeader>
@@ -227,6 +233,9 @@ function BranchesPage() {
                       <Badge variant={row.is_active ? "default" : "secondary"}>
                         {row.is_active ? "Aktif" : "Nonaktif"}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {row.is_hq && <Badge variant="outline" className="border-primary text-primary">Kantor Pusat</Badge>}
                     </TableCell>
                     <TableCell className="text-right">
                       {canWrite && (
@@ -326,6 +335,16 @@ function BranchesPage() {
               />
               <Label htmlFor="branch-active" className="cursor-pointer">
                 Cabang aktif
+              </Label>
+            </div>
+            <div className="flex items-center gap-3 col-span-2">
+              <Switch
+                checked={form.is_hq}
+                onCheckedChange={(v) => setForm({ ...form, is_hq: v })}
+                id="branch-hq"
+              />
+              <Label htmlFor="branch-hq" className="cursor-pointer">
+                Kantor Pusat (Jimbaran)
               </Label>
             </div>
           </div>
