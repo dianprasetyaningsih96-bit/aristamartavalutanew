@@ -140,7 +140,7 @@ function ApprovalsPage() {
       setLoading(false);
       return;
     }
-    setRows((data as ApprovalRequest[]) ?? []);
+    setRows((data as unknown as ApprovalRequest[]) ?? []);
     setLoading(false);
   }
 

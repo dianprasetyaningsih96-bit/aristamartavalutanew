@@ -259,7 +259,7 @@ function OpenShiftDialog({
       shift_type: shiftType,
       opening_capital: capital,
       notes: notes || null,
-    });
+    } as any);
     setSaving(false);
     if (error) { toast.error("Gagal membuka shif: " + error.message); return; }
     toast.success("Shif dibuka");
