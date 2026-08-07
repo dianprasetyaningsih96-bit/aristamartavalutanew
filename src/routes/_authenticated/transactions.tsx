@@ -765,22 +765,28 @@ function TransactionsPage() {
             </div>
             <div className="space-y-2">
               <Label>Cabang</Label>
-              <Select
-                value={form.branch_id}
-                onValueChange={(v) => setForm({ ...form, branch_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={HQ}>HQ / Default</SelectItem>
-                  {branches.map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.code} — {b.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {roles.includes("teller") && !roles.includes("super_admin") ? (
+                <div className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground opacity-70">
+                  {branches.find((b) => b.id === form.branch_id)?.code || "HQ"} — {branches.find((b) => b.id === form.branch_id)?.name || "Default"}
+                </div>
+              ) : (
+                <Select
+                  value={form.branch_id}
+                  onValueChange={(v) => setForm({ ...form, branch_id: v })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={HQ}>HQ / Default</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.code} — {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             <div className="space-y-2">
