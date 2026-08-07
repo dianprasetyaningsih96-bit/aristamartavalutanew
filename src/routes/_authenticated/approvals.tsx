@@ -114,7 +114,8 @@ function ApprovalsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Waktu</TableHead>
-                <TableHead>Cabang Asal</TableHead>
+                <TableHead>Asal</TableHead>
+                <TableHead>Tujuan</TableHead>
                 <TableHead>Valuta</TableHead>
                 <TableHead className="text-right">Nominal</TableHead>
                 <TableHead>Status</TableHead>
