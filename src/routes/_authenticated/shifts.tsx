@@ -500,10 +500,10 @@ function CloseShiftDialog({
           </span>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={saving}>Batal</Button>
-          <Button onClick={submit} disabled={saving || loading} variant="destructive" className="gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>Batal</Button>
+          <Button onClick={submit} disabled={isSaving || loading} variant="destructive" className="gap-2">
             <Square className="h-4 w-4" />
-            {saving ? "Menyimpan…" : "Tutup Shif"}
+            {isSaving ? "Memproses…" : "Tutup Shif"}
           </Button>
         </DialogFooter>
       </DialogContent>
