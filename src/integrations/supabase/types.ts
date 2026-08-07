@@ -1221,6 +1221,8 @@ export type Database = {
         | "withdrawal"
         | "adjustment"
         | "closing"
+        | "transfer_in"
+        | "transfer_out"
       customer_type: "individual" | "corporate"
       id_document_type: "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other"
       kyc_status: "pending" | "verified" | "rejected" | "expired"
@@ -1382,6 +1384,8 @@ export const Constants = {
         "withdrawal",
         "adjustment",
         "closing",
+        "transfer_in",
+        "transfer_out",
       ],
       customer_type: ["individual", "corporate"],
       id_document_type: ["ktp", "passport", "kitas", "sim", "npwp", "other"],
