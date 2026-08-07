@@ -125,9 +125,10 @@ function ShiftsPage() {
           <CardHeader className="pb-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <CardTitle className="flex items-center gap-2 text-base">
+                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                   <Clock className="h-4 w-4" />
                   Shif Aktif Anda — {myOpenShift.shift_type === "pagi" ? "Pagi" : "Siang/Sore"}
+                  <TransferValasButton activeShift={myOpenShift} currencies={currencies} />
                 </CardTitle>
                 <CardDescription>
                   Dibuka {formatDateTime(myOpenShift.opened_at)}
@@ -475,3 +476,243 @@ function CloseShiftDialog({
     </Dialog>
   );
 }
+
+import { Send, Check, X } from "lucide-react";
+
+function TransferValasButton({ activeShift, currencies }: { activeShift: ShiftRow, currencies: Currency[] }) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hqBranch, setHqBranch] = useState<any>(null);
+  const [balances, setBalances] = useState<any[]>([]);
+  
+  const [form, setForm] = useState({
+    currency_id: "",
+    amount: "",
+    notes: ""
+  });
+
+  async function loadData() {
+    const [hqRes, balRes] = await Promise.all([
+      supabase.from("branches").select("id, name").eq("is_hq", true).maybeSingle(),
+      supabase.from("cash_balances").select("currency_id, balance").eq("branch_id", activeShift.branch_id)
+    ]);
+    
+    // Fallback if is_hq not set yet
+    if (!hqRes.data) {
+      const { data: fallbackHq } = await supabase.from("branches").select("id, name").ilike("name", "%Jimbaran%").maybeSingle();
+      setHqBranch(fallbackHq);
+    } else {
+      setHqBranch(hqRes.data);
+    }
+    
+    setBalances(balRes.data ?? []);
+  }
+
+  useEffect(() => {
+    if (open) loadData();
+  }, [open]);
+
+  async function handleTransfer() {
+    if (!hqBranch) {
+      toast.error("Kantor pusat tidak ditemukan. Pastikan cabang Jimbaran sudah diatur sebagai Kantor Pusat.");
+      return;
+    }
+    if (hqBranch.id === activeShift.branch_id) {
+      toast.error("Anda berada di Kantor Pusat. Transfer hanya dilakukan oleh cabang ke Kantor Pusat.");
+      return;
+    }
+    if (!form.currency_id || !form.amount) {
+      toast.error("Mata uang dan jumlah wajib diisi");
+      return;
+    }
+
+    const amountNum = Number(form.amount);
+    const balance = balances.find(b => b.currency_id === form.currency_id)?.balance ?? 0;
+    
+    if (amountNum > balance) {
+      toast.error("Saldo tidak mencukupi");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await supabase.from("branch_transfers").insert({
+      from_branch_id: activeShift.branch_id,
+      to_branch_id: hqBranch.id,
+      currency_id: form.currency_id,
+      amount: amountNum,
+      shift_id: activeShift.id,
+      sender_id: (supabase.auth as any).session?.user?.id,
+      notes: form.notes
+    });
+
+    setLoading(false);
+    if (error) {
+      toast.error("Gagal mentransfer: " + error.message);
+      return;
+    }
+
+    toast.success("Transfer berhasil dikirim ke Kantor Pusat");
+    setOpen(false);
+    setForm({ currency_id: "", amount: "", notes: "" });
+  }
+
+  // If this IS the HQ branch, show incoming transfers instead of "Transfer Valas"
+  const isHq = hqBranch?.id === activeShift.branch_id;
+
+  if (isHq) {
+    return <IncomingTransfers branchId={activeShift.branch_id} />;
+  }
+
+  return (
+    <>
+      <Button size="sm" variant="outline" className="ml-2 gap-2" onClick={() => setOpen(true)}>
+        <Send className="h-3.5 w-3.5" /> Transfer ke Pusat
+      </Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer Valas ke Pusat</DialogTitle>
+            <DialogDescription>
+              Kirim hasil pembelian valas ke Kantor Pusat ({hqBranch?.name ?? "Jimbaran"}). 
+              Saldo akan dikurangi dari cabang ini dan menunggu persetujuan pusat.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Mata Uang</Label>
+              <Select value={form.currency_id} onValueChange={(v) => setForm({ ...form, currency_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Pilih mata uang" /></SelectTrigger>
+                <SelectContent>
+                  {currencies.map(c => {
+                    const bal = balances.find(b => b.currency_id === c.id)?.balance ?? 0;
+                    return (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.code} — {c.name} (Saldo: {bal.toLocaleString()})
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label>Jumlah</Label>
+              <Input 
+                type="number" 
+                placeholder="0.00" 
+                value={form.amount} 
+                onChange={(e) => setForm({ ...form, amount: e.target.value })} 
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Catatan</Label>
+              <Input 
+                placeholder="Catatan tambahan..." 
+                value={form.notes} 
+                onChange={(e) => setForm({ ...form, notes: e.target.value })} 
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>Batal</Button>
+            <Button onClick={handleTransfer} disabled={loading}>
+              {loading ? "Mengirim..." : "Kirim Transfer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
+
+function IncomingTransfers({ branchId }: { branchId: string }) {
+  const [transfers, setTransfers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  async function loadTransfers() {
+    const { data } = await supabase
+      .from("branch_transfers")
+      .select("*, from_branch:branches!from_branch_id(name), currency:currencies(code)")
+      .eq("to_branch_id", branchId)
+      .eq("status", "pending")
+      .order("created_at", { ascending: false });
+    setTransfers(data ?? []);
+  }
+
+  useEffect(() => {
+    loadTransfers();
+    // Subscribe to changes
+    const sub = supabase.channel("transfers").on("postgres_changes", { event: "*", schema: "public", table: "branch_transfers" }, loadTransfers).subscribe();
+    return () => { supabase.removeChannel(sub); };
+  }, [branchId]);
+
+  async function updateStatus(id: string, status: "accepted" | "rejected") {
+    setLoading(true);
+    const { error } = await supabase
+      .from("branch_transfers")
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq("id", id);
+    
+    setLoading(false);
+    if (error) {
+      toast.error("Gagal memproses: " + error.message);
+      return;
+    }
+    
+    toast.success(status === "accepted" ? "Transfer diterima" : "Transfer ditolak");
+    loadTransfers();
+  }
+
+  if (transfers.length === 0) return null;
+
+  return (
+    <div className="ml-auto flex items-center gap-2">
+      <Badge variant="destructive" className="animate-pulse">{transfers.length} Transfer Masuk</Badge>
+      <Dialog>
+        <DialogTrigger asChild>
+          <Button size="sm" variant="outline">Lihat Transfer</Button>
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Transfer Masuk dari Cabang</DialogTitle>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Dari Cabang</TableHead>
+                <TableHead>Mata Uang</TableHead>
+                <TableHead className="text-right">Jumlah</TableHead>
+                <TableHead className="text-right">Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {transfers.map(t => (
+                <TableRow key={t.id}>
+                  <TableCell>{t.from_branch?.name}</TableCell>
+                  <TableCell>{t.currency?.code}</TableCell>
+                  <TableCell className="text-right">{Number(t.amount).toLocaleString()}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Button size="icon" variant="ghost" className="text-emerald-600" onClick={() => updateStatus(t.id, "accepted")} disabled={loading}>
+                        <Check className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => updateStatus(t.id, "rejected")} disabled={loading}>
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+import { DialogTrigger } from "@/components/ui/dialog";

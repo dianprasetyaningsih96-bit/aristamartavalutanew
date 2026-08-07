@@ -101,7 +101,7 @@ function BranchesPage() {
       toast.error("Gagal memuat cabang", { description: error.message });
       return;
     }
-    setRows((data as Branch[]) ?? []);
+    setRows((data as unknown as Branch[]) ?? []);
   }
 
   useEffect(() => {
@@ -149,8 +149,8 @@ function BranchesPage() {
       is_hq: parsed.data.is_hq,
     };
     const { error } = editing
-      ? await supabase.from("branches").update(payload).eq("id", editing.id)
-      : await supabase.from("branches").insert(payload);
+      ? await supabase.from("branches").update(payload as any).eq("id", editing.id)
+      : await supabase.from("branches").insert(payload as any);
     setSaving(false);
     if (error) {
       toast.error("Gagal menyimpan", { description: error.message });
