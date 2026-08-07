@@ -244,7 +244,7 @@ function TransactionsPage() {
         ? supabase
             .from("shifts")
             .select("id, branch_id, shift_type, status, opened_at, branches(code, name)")
-            .eq("user_id", user.id)
+            .eq("user_id" as any, user.id)
             .eq("status", "open")
             .order("opened_at", { ascending: false })
             .limit(1)
@@ -383,7 +383,7 @@ function TransactionsPage() {
     };
     const { data, error } = await supabase
       .from("transactions")
-      .insert(payload)
+      .insert(payload as any)
       .select(
         "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
       )

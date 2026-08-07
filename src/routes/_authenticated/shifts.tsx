@@ -493,7 +493,7 @@ function TransferValasButton({ activeShift, currencies }: { activeShift: ShiftRo
 
   async function loadData() {
     const [hqRes, balRes] = await Promise.all([
-      supabase.from("branches").select("id, name").eq("is_hq", true).maybeSingle(),
+      supabase.from("branches").select("id, name").eq("is_hq" as any, true).maybeSingle(),
       supabase.from("cash_balances").select("currency_id, balance").eq("branch_id", activeShift.branch_id)
     ]);
     
@@ -535,7 +535,7 @@ function TransferValasButton({ activeShift, currencies }: { activeShift: ShiftRo
     }
 
     setLoading(true);
-    const { error } = await supabase.from("branch_transfers").insert({
+    const { error } = await supabase.from("branch_transfers" as any).insert({
       from_branch_id: activeShift.branch_id,
       to_branch_id: hqBranch.id,
       currency_id: form.currency_id,
@@ -543,7 +543,7 @@ function TransferValasButton({ activeShift, currencies }: { activeShift: ShiftRo
       shift_id: activeShift.id,
       sender_id: (supabase.auth as any).session?.user?.id,
       notes: form.notes
-    });
+    } as any);
 
     setLoading(false);
     if (error) {
@@ -635,7 +635,7 @@ function IncomingTransfers({ branchId }: { branchId: string }) {
 
   async function loadTransfers() {
     const { data } = await supabase
-      .from("branch_transfers")
+      .from("branch_transfers" as any)
       .select("*, from_branch:branches!from_branch_id(name), currency:currencies(code)")
       .eq("to_branch_id", branchId)
       .eq("status", "pending")
@@ -653,8 +653,8 @@ function IncomingTransfers({ branchId }: { branchId: string }) {
   async function updateStatus(id: string, status: "accepted" | "rejected") {
     setLoading(true);
     const { error } = await supabase
-      .from("branch_transfers")
-      .update({ status, updated_at: new Date().toISOString() })
+      .from("branch_transfers" as any)
+      .update({ status, updated_at: new Date().toISOString() } as any)
       .eq("id", id);
     
     setLoading(false);
