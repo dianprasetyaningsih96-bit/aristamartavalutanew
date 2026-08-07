@@ -26,6 +26,7 @@ interface Transfer {
   created_at: string;
   notes: string | null;
   branch?: { name: string; code: string } | null;
+  target_branch?: { name: string; code: string } | null;
   currency?: { code: string; name: string } | null;
 }
 
@@ -50,9 +51,16 @@ function ApprovalsPage() {
 
   async function load() {
     setLoading(true);
+    // Use hints to resolve ambiguous relationships between branch_transfers and branches
+    // branch_id -> branch, target_branch_id -> target_branch
     const { data, error } = await supabase
       .from("branch_transfers")
-      .select("*, branch:branches(name, code), currency:currencies(code, name)")
+      .select(`
+        *, 
+        branch:branches!branch_transfers_branch_id_fkey(name, code),
+        target_branch:branches!branch_transfers_target_branch_id_fkey(name, code),
+        currency:currencies(code, name)
+      `)
       .order("created_at", { ascending: false });
     
     if (error) {
@@ -106,7 +114,8 @@ function ApprovalsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Waktu</TableHead>
-                <TableHead>Cabang Asal</TableHead>
+                <TableHead>Asal</TableHead>
+                <TableHead>Tujuan</TableHead>
                 <TableHead>Valuta</TableHead>
                 <TableHead className="text-right">Nominal</TableHead>
                 <TableHead>Status</TableHead>
@@ -115,9 +124,9 @@ function ApprovalsPage() {
             </TableHeader>
             <TableBody>
               {loading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Memuat...</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Memuat...</TableCell></TableRow>
               ) : transfers.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Tidak ada data transfer</TableCell></TableRow>
+                <TableRow><TableCell colSpan={7} className="text-center py-8">Tidak ada data transfer</TableCell></TableRow>
               ) : transfers.map((t) => (
                 <TableRow key={t.id}>
                   <TableCell className="text-xs text-muted-foreground">
@@ -126,6 +135,10 @@ function ApprovalsPage() {
                   <TableCell>
                     <div className="font-medium">{t.branch?.name}</div>
                     <div className="text-xs text-muted-foreground">{t.branch?.code}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="font-medium text-emerald-700">{t.target_branch?.name || "-"}</div>
+                    <div className="text-xs text-muted-foreground">{t.target_branch?.code}</div>
                   </TableCell>
                   <TableCell>
                     <div className="font-mono font-bold">{t.currency?.code}</div>
