@@ -137,6 +137,10 @@ function ApprovalsPage() {
                     <div className="text-xs text-muted-foreground">{t.branch?.code}</div>
                   </TableCell>
                   <TableCell>
+                    <div className="font-medium text-emerald-700">{t.target_branch?.name || "-"}</div>
+                    <div className="text-xs text-muted-foreground">{t.target_branch?.code}</div>
+                  </TableCell>
+                  <TableCell>
                     <div className="font-mono font-bold">{t.currency?.code}</div>
                   </TableCell>
                   <TableCell className="text-right font-mono font-semibold">
