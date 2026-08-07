@@ -50,9 +50,16 @@ function ApprovalsPage() {
 
   async function load() {
     setLoading(true);
+    // Use hints to resolve ambiguous relationships between branch_transfers and branches
+    // branch_id -> branch, target_branch_id -> target_branch
     const { data, error } = await supabase
       .from("branch_transfers")
-      .select("*, branch:branches(name, code), currency:currencies(code, name)")
+      .select(`
+        *, 
+        branch:branches!branch_transfers_branch_id_fkey(name, code),
+        target_branch:branches!branch_transfers_target_branch_id_fkey(name, code),
+        currency:currencies(code, name)
+      `)
       .order("created_at", { ascending: false });
     
     if (error) {
