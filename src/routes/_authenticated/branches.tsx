@@ -180,7 +180,7 @@ function BranchesPage() {
     <div className="flex flex-col gap-6 p-6">
       <MasterPageHeader
         title="Cabang"
-        description="Kelola daftar cabang / outlet money changer Anda."
+        description="Kelola daftar cabang / outlet Valuta Guardian Anda."
         onAdd={openCreate}
         addLabel="Tambah Cabang"
         canWrite={canWrite}

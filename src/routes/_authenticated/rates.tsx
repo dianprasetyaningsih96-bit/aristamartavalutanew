@@ -274,7 +274,7 @@ function RatesPage() {
     <div className="flex flex-col gap-6 p-6">
       <MasterPageHeader
         title="Kurs Valuta"
-        description="Setiap cabang dapat memiliki kurs beli & jual sendiri. Jika cabang tidak memiliki kurs, transaksi memakai kurs HQ / Default."
+        description="Setiap cabang dapat memiliki kurs beli & jual sendiri. Jika cabang tidak memiliki kurs, transaksi memakai kurs Kantor Pusat."
         onAdd={openCreate}
         addLabel="Tambah Kurs"
         canWrite={canWrite}
