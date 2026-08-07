@@ -187,6 +187,12 @@ function TransactionsPage() {
     "teller",
   ]);
   
+  const canVoid = hasAnyRole(roles, [
+    "super_admin",
+    "owner",
+    "branch_manager",
+  ]);
+  
   const isSuperAdmin = hasAnyRole(roles, ["super_admin"]);
   
   // Branches can ONLY buy. Head Office can buy AND sell. Super Admin bypass.
