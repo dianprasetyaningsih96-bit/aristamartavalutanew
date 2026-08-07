@@ -409,10 +409,11 @@ function CloseShiftDialog({
     }
 
     // Automatically transfer to Head Office if NOT Head Office and Siang/Sore shift
+    // Only transfer Foreign Currencies (NOT IDR)
     if (branchInfo && !branchInfo.is_head_office && shift.shift_type === "siang") {
       setTransfering(true);
       const transfers = rows
-        .filter(r => r.system_balance > 0)
+        .filter(r => r.system_balance > 0 && r.code !== "IDR")
         .map(r => ({
           branch_id: shift.branch_id,
           currency_id: r.currency_id,
@@ -426,7 +427,7 @@ function CloseShiftDialog({
         if (txErr) {
           toast.error("Gagal membuat transfer otomatis: " + txErr.message);
         } else {
-          toast.info("Valas otomatis ditransfer ke Kantor Pusat untuk persetujuan.");
+          toast.info(`${transfers.length} valuta asing otomatis ditransfer ke Kantor Pusat untuk persetujuan.`);
         }
       }
       setTransfering(false);
