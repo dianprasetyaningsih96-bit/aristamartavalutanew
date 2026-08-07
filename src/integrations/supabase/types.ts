@@ -163,6 +163,67 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_transfers: {
+        Row: {
+          amount: number
+          branch_id: string
+          created_at: string | null
+          currency_id: string
+          id: string
+          notes: string | null
+          processed_at: string | null
+          processed_by: string | null
+          shift_id: string | null
+          status: string
+        }
+        Insert: {
+          amount: number
+          branch_id: string
+          created_at?: string | null
+          currency_id: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          shift_id?: string | null
+          status?: string
+        }
+        Update: {
+          amount?: number
+          branch_id?: string
+          created_at?: string | null
+          currency_id?: string
+          id?: string
+          notes?: string | null
+          processed_at?: string | null
+          processed_by?: string | null
+          shift_id?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_transfers_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_transfers_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_transfers_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branches: {
         Row: {
           address: string | null
@@ -171,6 +232,7 @@ export type Database = {
           created_at: string
           id: string
           is_active: boolean
+          is_head_office: boolean | null
           license_no: string | null
           name: string
           phone: string | null
@@ -183,6 +245,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_head_office?: boolean | null
           license_no?: string | null
           name: string
           phone?: string | null
@@ -195,6 +258,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_active?: boolean
+          is_head_office?: boolean | null
           license_no?: string | null
           name?: string
           phone?: string | null
@@ -1121,6 +1185,10 @@ export type Database = {
       }
       mark_all_notifications_read: { Args: never; Returns: undefined }
       mark_notification_read: { Args: { _id: string }; Returns: undefined }
+      process_branch_transfer: {
+        Args: { p_notes: string; p_status: string; transfer_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
