@@ -101,6 +101,19 @@ export const ID_TYPE_LABEL: Record<IdType, string> = {
   other: "Lainnya",
 };
 
+export const KYC_LABEL: Record<KycStatus, string> = {
+  pending: "Menunggu",
+  verified: "Terverifikasi",
+  rejected: "Ditolak",
+  expired: "Kadaluarsa",
+};
+
+export const RISK_LABEL: Record<RiskRating, string> = {
+  low: "Rendah",
+  medium: "Menengah",
+  high: "Tinggi",
+};
+
 export const INCOME_RANGES = [
   "< Rp 5 juta",
   "Rp 5 - 15 juta",
@@ -219,21 +232,23 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
   return (
     <div className="space-y-4 py-2">
       <Tabs defaultValue="identity" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="identity">Identitas</TabsTrigger>
-          <TabsTrigger value="contact">Kontak</TabsTrigger>
-          <TabsTrigger value="profile">Profil</TabsTrigger>
-          <TabsTrigger value="kyc">KYC</TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto sm:mx-0">
+          <TabsList className="inline-flex w-max min-w-full gap-1 sm:grid sm:w-full sm:grid-cols-4 sm:gap-0">
+            <TabsTrigger value="identity" className="whitespace-nowrap text-xs">Identitas</TabsTrigger>
+            <TabsTrigger value="contact" className="whitespace-nowrap text-xs">Kontak</TabsTrigger>
+            <TabsTrigger value="profile" className="whitespace-nowrap text-xs">Profil</TabsTrigger>
+            <TabsTrigger value="kyc" className="whitespace-nowrap text-xs">KYC</TabsTrigger>
+          </TabsList>
+        </div>
 
         <TabsContent value="identity" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Jenis Nasabah *">
               <Select
                 value={form.customer_type}
                 onValueChange={(v: CustomerType) => setForm({ ...form, customer_type: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="individual">Perorangan</SelectItem>
                   <SelectItem value="corporate">Badan Usaha</SelectItem>
@@ -245,7 +260,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
                 value={form.branch_id || "none"}
                 onValueChange={(v) => setForm({ ...form, branch_id: v === "none" ? "" : v })}
               >
-                <SelectTrigger><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue placeholder="Pilih cabang" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">— Tidak ditentukan —</SelectItem>
                   {branches.map((b) => (
@@ -256,6 +271,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
             </Field>
             <Field label="Nama Lengkap *" className="col-span-2">
               <Input
+                className="h-8"
                 value={form.full_name}
                 onChange={(e) => setForm({ ...form, full_name: e.target.value })}
                 maxLength={150}
@@ -266,7 +282,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
                 value={form.id_type}
                 onValueChange={(v: IdType) => setForm({ ...form, id_type: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {(Object.keys(ID_TYPE_LABEL) as IdType[]).map((k) => (
                     <SelectItem key={k} value={k}>{ID_TYPE_LABEL[k]}</SelectItem>
@@ -276,6 +292,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
             </Field>
             <Field label="Nomor Identitas *">
               <Input
+                className="h-8 font-mono"
                 value={form.id_number}
                 onChange={(e) => setForm({ ...form, id_number: e.target.value })}
                 maxLength={50}
@@ -283,9 +300,11 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
             </Field>
             <Field label="Kewarganegaraan">
               <Input
+                className="h-8"
                 value={form.nationality ?? ""}
                 onChange={(e) => setForm({ ...form, nationality: e.target.value.toUpperCase() })}
                 maxLength={3}
+                placeholder="ID"
               />
             </Field>
             {!isCorporate && (
@@ -293,14 +312,9 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
                 <Field label="Tanggal Lahir">
                   <Input
                     type="date"
+                    className="h-8"
                     value={form.date_of_birth ?? ""}
                     onChange={(e) => setForm({ ...form, date_of_birth: e.target.value })}
-                  />
-                </Field>
-                <Field label="Tempat Lahir">
-                  <Input
-                    value={form.place_of_birth ?? ""}
-                    onChange={(e) => setForm({ ...form, place_of_birth: e.target.value })}
                   />
                 </Field>
               </>
@@ -309,9 +323,10 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
         </TabsContent>
 
         <TabsContent value="contact" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Alamat" className="col-span-2">
               <Textarea
+                className="min-h-[60px]"
                 value={form.address ?? ""}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 maxLength={255}
@@ -320,6 +335,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
             </Field>
             <Field label="Telepon">
               <Input
+                className="h-8"
                 value={form.phone ?? ""}
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 maxLength={30}
@@ -328,6 +344,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
             <Field label="Email">
               <Input
                 type="email"
+                className="h-8"
                 value={form.email ?? ""}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 maxLength={150}
@@ -337,9 +354,10 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
         </TabsContent>
 
         <TabsContent value="profile" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Pekerjaan">
               <Input
+                className="h-8"
                 value={form.occupation ?? ""}
                 onChange={(e) => setForm({ ...form, occupation: e.target.value })}
               />
@@ -349,7 +367,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
                 value={form.source_of_funds || ""}
                 onValueChange={(v) => setForm({ ...form, source_of_funds: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {SOURCE_OF_FUNDS_OPTIONS.map(opt => (
                     <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -357,12 +375,12 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
                 </SelectContent>
               </Select>
             </Field>
-            <Field label="Tujuan Transaksi">
+            <Field label="Tujuan Transaksi" className="col-span-2">
               <Select
                 value={form.purpose_of_transaction || ""}
                 onValueChange={(v) => setForm({ ...form, purpose_of_transaction: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {PURPOSE_OPTIONS.map(opt => (
                     <SelectItem key={opt} value={opt}>{opt}</SelectItem>
@@ -374,17 +392,17 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
         </TabsContent>
 
         <TabsContent value="kyc" className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Field label="Status KYC">
               <Select
                 value={form.kyc_status}
                 onValueChange={(v: KycStatus) => setForm({ ...form, kyc_status: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pending">Menunggu</SelectItem>
-                  <SelectItem value="verified">Terverifikasi</SelectItem>
-                  <SelectItem value="rejected">Ditolak</SelectItem>
+                  {(Object.keys(KYC_LABEL) as KycStatus[]).map((k) => (
+                    <SelectItem key={k} value={k}>{KYC_LABEL[k]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -393,16 +411,19 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
                 value={form.risk_rating}
                 onValueChange={(v: RiskRating) => setForm({ ...form, risk_rating: v })}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Rendah</SelectItem>
-                  <SelectItem value="medium">Menengah</SelectItem>
-                  <SelectItem value="high">Tinggi</SelectItem>
+                  {(Object.keys(RISK_LABEL) as RiskRating[]).map((k) => (
+                    <SelectItem key={k} value={k}>{RISK_LABEL[k]}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
-            <div className="col-span-2 flex items-center justify-between p-3 border rounded-lg">
-              <Label>DTTOT (Daftar Hitam)</Label>
+            <div className="col-span-2 flex items-center justify-between p-2 border rounded-lg bg-background">
+              <div className="space-y-0.5">
+                <Label className="text-xs">DTTOT (Daftar Hitam)</Label>
+                <p className="text-[10px] text-muted-foreground italic">Blokir transaksi</p>
+              </div>
               <Switch
                 checked={form.is_blacklisted}
                 onCheckedChange={(v) => setForm({ ...form, is_blacklisted: v })}
@@ -412,9 +433,9 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
         </TabsContent>
       </Tabs>
 
-      <div className="flex justify-end gap-2 pt-4">
-        <Button variant="outline" onClick={onCancel} disabled={saving}>Batal</Button>
-        <Button onClick={save} disabled={saving}>
+      <div className="flex justify-end gap-2 pt-2 border-t mt-4">
+        <Button size="sm" variant="ghost" onClick={onCancel} disabled={saving}>Batal</Button>
+        <Button size="sm" onClick={save} disabled={saving}>
           {saving ? "Menyimpan..." : "Simpan Nasabah"}
         </Button>
       </div>
@@ -424,8 +445,8 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
 
 function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className={`space-y-2 ${className}`}>
-      <Label className="text-xs">{label}</Label>
+    <div className={`space-y-1.5 ${className}`}>
+      <Label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">{label}</Label>
       {children}
     </div>
   );
