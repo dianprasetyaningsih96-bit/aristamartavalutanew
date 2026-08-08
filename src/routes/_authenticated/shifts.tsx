@@ -321,10 +321,15 @@ function OpenShiftDialog({
             <div className="space-y-2">
               <Label>Modal Awal (IDR) <span className="text-destructive">*</span></Label>
               <Input
+                type="text"
                 inputMode="numeric"
-                placeholder="Contoh: 50000000"
-                value={openingCapital}
-                onChange={(e) => setOpeningCapital(e.target.value.replace(/[^\d]/g, ""))}
+                prefix="Rp"
+                placeholder="Contoh: 50.000.000"
+                value={openingCapital ? formatIDR(Number(openingCapital)).replace("Rp", "").trim() : ""}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d]/g, "");
+                  setOpeningCapital(val);
+                }}
               />
               <p className="text-xs text-muted-foreground">
                 Modal ini akan tercatat sebagai setoran kas IDR ke cabang.
