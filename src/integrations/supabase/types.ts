@@ -811,6 +811,7 @@ export type Database = {
       }
       notifications: {
         Row: {
+          branch_id: string | null
           category: Database["public"]["Enums"]["notification_category"]
           created_at: string
           id: string
@@ -823,9 +824,11 @@ export type Database = {
           severity: Database["public"]["Enums"]["notification_severity"]
           target_roles: Database["public"]["Enums"]["app_role"][] | null
           title: string
+          type: string | null
           user_id: string | null
         }
         Insert: {
+          branch_id?: string | null
           category: Database["public"]["Enums"]["notification_category"]
           created_at?: string
           id?: string
@@ -838,9 +841,11 @@ export type Database = {
           severity?: Database["public"]["Enums"]["notification_severity"]
           target_roles?: Database["public"]["Enums"]["app_role"][] | null
           title: string
+          type?: string | null
           user_id?: string | null
         }
         Update: {
+          branch_id?: string | null
           category?: Database["public"]["Enums"]["notification_category"]
           created_at?: string
           id?: string
@@ -853,9 +858,18 @@ export type Database = {
           severity?: Database["public"]["Enums"]["notification_severity"]
           target_roles?: Database["public"]["Enums"]["app_role"][] | null
           title?: string
+          type?: string | null
           user_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
