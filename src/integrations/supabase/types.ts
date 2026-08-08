@@ -823,6 +823,7 @@ export type Database = {
           severity: Database["public"]["Enums"]["notification_severity"]
           target_roles: Database["public"]["Enums"]["app_role"][] | null
           title: string
+          type: string | null
           user_id: string | null
         }
         Insert: {
@@ -838,6 +839,7 @@ export type Database = {
           severity?: Database["public"]["Enums"]["notification_severity"]
           target_roles?: Database["public"]["Enums"]["app_role"][] | null
           title: string
+          type?: string | null
           user_id?: string | null
         }
         Update: {
@@ -853,6 +855,7 @@ export type Database = {
           severity?: Database["public"]["Enums"]["notification_severity"]
           target_roles?: Database["public"]["Enums"]["app_role"][] | null
           title?: string
+          type?: string | null
           user_id?: string | null
         }
         Relationships: []
