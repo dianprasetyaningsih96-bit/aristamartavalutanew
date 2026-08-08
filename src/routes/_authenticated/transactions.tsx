@@ -12,7 +12,9 @@ import {
   Printer,
   AlertTriangle,
 } from "lucide-react";
+import { Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { CustomerForm } from "@/components/customers/customer-form";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
 import { MasterPageHeader } from "@/components/master-data/page-header";
@@ -219,6 +221,7 @@ function TransactionsPage() {
   const [printed, setPrinted] = useState(false);
   const [voiding, setVoiding] = useState<Transaction | null>(null);
   const [voidReason, setVoidReason] = useState("");
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
 
   async function load() {
     let query = supabase
@@ -844,31 +847,61 @@ function TransactionsPage() {
             </div>
 
             <div className="space-y-2 col-span-2">
-              <Label>Nasabah {requiresCDD && "*"}</Label>
-              <Select
-                value={form.customer_id}
-                onValueChange={(v) => setForm({ ...form, customer_id: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={NO_CUSTOMER}>
-                    Walk-in (tanpa nasabah terdaftar)
-                  </SelectItem>
-                  {customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.customer_code} — {c.full_name}
-                      {c.is_blacklisted ? " ⛔" : ""}
-                      {c.risk_rating === "high" ? " ⚠️" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {blacklistBlock && (
-                <p className="text-xs text-destructive">
-                  Nasabah tercatat dalam DTTOT — transaksi diblokir.
-                </p>
+              <div className="flex items-center justify-between">
+                <Label>Nasabah {requiresCDD && "*"}</Label>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-7 gap-1 text-xs" 
+                  onClick={() => setShowAddCustomer(true)}
+                >
+                  <Plus className="h-3 w-3" />
+                  Tambah Nasabah Baru
+                </Button>
+              </div>
+
+              {showAddCustomer ? (
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4">
+                    <CustomerForm 
+                      onSuccess={(id) => {
+                        load();
+                        setForm(f => ({ ...f, customer_id: id }));
+                        setShowAddCustomer(false);
+                      }}
+                      onCancel={() => setShowAddCustomer(false)}
+                      initialBranchId={form.branch_id === HQ ? undefined : form.branch_id}
+                    />
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  <Select
+                    value={form.customer_id}
+                    onValueChange={(v) => setForm({ ...form, customer_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_CUSTOMER}>
+                        Walk-in (tanpa nasabah terdaftar)
+                      </SelectItem>
+                      {customers.map((c) => (
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.customer_code} — {c.full_name}
+                          {c.is_blacklisted ? " ⛔" : ""}
+                          {c.risk_rating === "high" ? " ⚠️" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {blacklistBlock && (
+                    <p className="text-xs text-destructive">
+                      Nasabah tercatat dalam DTTOT — transaksi diblokir.
+                    </p>
+                  )}
+                </>
               )}
             </div>
 
