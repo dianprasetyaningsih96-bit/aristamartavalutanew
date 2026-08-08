@@ -176,17 +176,26 @@ function SettingsPage() {
 function ConnectionCard() {
   const [status, setStatus] = useState<"idle" | "checking" | "ok" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [projectId, setProjectId] = useState(localStorage.getItem("override_supabase_project_id") || SUPABASE_PROJECT_ID);
+  const [url, setUrl] = useState(localStorage.getItem("override_supabase_url") || SUPABASE_URL);
+  const [anonKey, setAnonKey] = useState(localStorage.getItem("override_supabase_anon_key") || "");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   async function check() {
     setStatus("checking");
     setMessage("");
-    const { error } = await supabase.from("branches").select("id").limit(1);
-    if (error) {
+    try {
+      const { error } = await supabase.from("branches").select("id").limit(1);
+      if (error) {
+        setStatus("error");
+        setMessage(error.message);
+      } else {
+        setStatus("ok");
+        setMessage("Koneksi ke database berhasil.");
+      }
+    } catch (err: any) {
       setStatus("error");
-      setMessage(error.message);
-    } else {
-      setStatus("ok");
-      setMessage("Koneksi ke database berhasil.");
+      setMessage(err.message || "Gagal menghubungkan ke database");
     }
   }
 
@@ -194,51 +203,116 @@ function ConnectionCard() {
     void check();
   }, []);
 
+  function handleSwitchProject() {
+    if (!projectId || !url || !anonKey) {
+      toast.error("Mohon isi Project ID, URL, dan Publishable Key");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      localStorage.setItem("override_supabase_project_id", projectId);
+      localStorage.setItem("override_supabase_url", url);
+      localStorage.setItem("override_supabase_anon_key", anonKey);
+      
+      toast.success("Konfigurasi disimpan. Halaman akan dimuat ulang...");
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      toast.error("Gagal menyimpan konfigurasi");
+      setIsUpdating(false);
+    }
+  }
+
+  function handleReset() {
+    localStorage.removeItem("override_supabase_project_id");
+    localStorage.removeItem("override_supabase_url");
+    localStorage.removeItem("override_supabase_anon_key");
+    toast.success("Konfigurasi direset ke default. Memuat ulang...");
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  }
+
   return (
-    <Card className="max-w-2xl">
+    <Card className="max-w-2xl border-primary/20 bg-primary/5">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <PlugZap className="h-4 w-4 text-primary" />
-          Koneksi Database
+          <PlugZap className="h-5 w-5 text-primary" />
+          Konfigurasi & Koneksi Database
         </CardTitle>
         <CardDescription>
-          Project backend yang sedang digunakan aplikasi ini.
+          Atur project database yang digunakan oleh aplikasi ini. (Role: Super Admin Only)
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Project ID</p>
-            <p className="break-all font-mono text-sm">{SUPABASE_PROJECT_ID}</p>
+      <CardContent className="space-y-6">
+        <div className="grid gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="project-id">Project ID</Label>
+            <Input
+              id="project-id"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              placeholder="Misal: abcdefghijklmno"
+              className="font-mono bg-background"
+            />
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Project URL</p>
-            <p className="break-all font-mono text-sm">{SUPABASE_URL}</p>
+          <div className="space-y-2">
+            <Label htmlFor="project-url">Project URL</Label>
+            <Input
+              id="project-url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://abcdefghijklmno.supabase.co"
+              className="font-mono bg-background"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="anon-key">Publishable (Anon) Key</Label>
+            <Input
+              id="anon-key"
+              type="password"
+              value={anonKey}
+              onChange={(e) => setAnonKey(e.target.value)}
+              placeholder="sb_publishable_..."
+              className="font-mono bg-background"
+            />
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
+        <div className="flex gap-2">
+          <Button onClick={handleSwitchProject} disabled={isUpdating} className="flex-1">
+            {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            Simpan & Hubungkan
+          </Button>
+          <Button variant="outline" onClick={handleReset} disabled={isUpdating}>
+            Reset Default
+          </Button>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-background p-4">
           <div className="flex items-center gap-2 text-sm">
             {status === "checking" && (
               <>
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                <span className="text-muted-foreground">Memeriksa koneksi…</span>
+                <span className="text-muted-foreground">Memeriksa koneksi ke {url}...</span>
               </>
             )}
             {status === "ok" && (
               <>
                 <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                <span>{message}</span>
+                <span className="font-medium text-emerald-700">{message}</span>
               </>
             )}
             {status === "error" && (
               <>
                 <XCircle className="h-4 w-4 text-destructive" />
-                <span className="break-all text-destructive">{message}</span>
+                <span className="break-all font-medium text-destructive">{message}</span>
               </>
             )}
           </div>
-          <Button variant="outline" size="sm" onClick={check} disabled={status === "checking"}>
+          <Button variant="ghost" size="sm" onClick={check} disabled={status === "checking"}>
             Uji Ulang
           </Button>
         </div>
