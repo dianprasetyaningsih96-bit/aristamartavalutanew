@@ -59,7 +59,9 @@ export function useNotifications(limit = 50) {
       .limit(limit);
 
     if (!isSuperAdmin) {
-      // For non-super_admins, filter by user_id, target_roles + branch_id
+      // For non-super_admins, filter by:
+      // 1. Direct user_id match
+      // 2. OR: target_roles overlap AND (branch_id matches OR branch_id is null)
       query = query.or(`user_id.eq.${uid},and(target_roles.overlap.{${roles.join(",")}},or(branch_id.is.null,branch_id.eq.${profile?.branch_id}))`);
     }
 
