@@ -50,13 +50,20 @@ export function useNotifications(limit = 50) {
       .single();
 
     const roles = profile?.user_roles?.map((r: any) => r.role) || [];
+    const isSuperAdmin = roles.includes("super_admin");
 
-    const { data } = await supabase
+    let query = supabase
       .from("notifications")
       .select("*")
-      .or(`user_id.eq.${uid},target_roles.overlap.{${roles.join(",")}}`)
       .order("created_at", { ascending: false })
       .limit(limit);
+
+    if (!isSuperAdmin) {
+      // For non-super_admins, filter by user_id, target_roles + branch_id
+      query = query.or(`user_id.eq.${uid},and(target_roles.overlap.{${roles.join(",")}},or(branch_id.is.null,branch_id.eq.${profile?.branch_id}))`);
+    }
+
+    const { data } = await query;
 
     setItems((data as NotificationRow[]) ?? []);
     setLoading(false);
