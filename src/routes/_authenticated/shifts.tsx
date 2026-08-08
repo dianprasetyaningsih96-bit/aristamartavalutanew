@@ -325,7 +325,7 @@ function OpenShiftDialog({
                 inputMode="numeric"
                 prefix="Rp"
                 placeholder="Contoh: 50.000.000"
-                value={openingCapital ? formatIDR(Number(openingCapital)).replace("Rp", "").trim() : ""}
+                value={openingCapital ? new Intl.NumberFormat("id-ID").format(Number(openingCapital)) : ""}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^\d]/g, "");
                   setOpeningCapital(val);

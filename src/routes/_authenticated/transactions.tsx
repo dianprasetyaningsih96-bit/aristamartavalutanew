@@ -805,10 +805,10 @@ function TransactionsPage() {
                 type="text"
                 inputMode="decimal"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
-                value={form.foreign_amount === 0 ? "" : fmtNum(form.foreign_amount, 2)}
+                value={form.foreign_amount === 0 ? "" : fmtNum(form.foreign_amount, 2).replace(/\./g, "X").replace(/,/g, ".").replace(/X/g, ",")}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
-                  const num = parseFloat(val) || 0;
+                  const val = e.target.value.replace(/[^\d,]/g, "");
+                  const num = parseFloat(val.replace(/,/g, ".")) || 0;
                   setForm({ ...form, foreign_amount: num });
                 }}
               />
@@ -819,10 +819,10 @@ function TransactionsPage() {
                 type="text"
                 inputMode="decimal"
                 prefix="Rp"
-                value={form.rate === 0 ? "" : fmtNum(form.rate, 2)}
+                value={form.rate === 0 ? "" : fmtNum(form.rate, 2).replace(/\./g, "X").replace(/,/g, ".").replace(/X/g, ",")}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
-                  const num = parseFloat(val) || 0;
+                  const val = e.target.value.replace(/[^\d,]/g, "");
+                  const num = parseFloat(val.replace(/,/g, ".")) || 0;
                   setForm({ ...form, rate: num });
                 }}
               />
