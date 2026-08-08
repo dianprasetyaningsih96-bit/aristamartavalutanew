@@ -800,30 +800,31 @@ function TransactionsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>Nominal Valas *</Label>
+              <Label>Nominal Valas ({currencies.find(c => c.id === form.currency_id)?.code || "-"}) *</Label>
               <Input
-                type="number"
-                step="0.01"
-                min={0}
-                value={form.foreign_amount || ""}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    foreign_amount: Number(e.target.value),
-                  })
-                }
+                type="text"
+                inputMode="decimal"
+                prefix={currencies.find(c => c.id === form.currency_id)?.code}
+                value={form.foreign_amount === 0 ? "" : fmtNum(form.foreign_amount, 2)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
+                  const num = parseFloat(val) || 0;
+                  setForm({ ...form, foreign_amount: num });
+                }}
               />
             </div>
             <div className="space-y-2">
               <Label>Kurs *</Label>
               <Input
-                type="number"
-                step="0.0001"
-                min={0}
-                value={form.rate || ""}
-                onChange={(e) =>
-                  setForm({ ...form, rate: Number(e.target.value) })
-                }
+                type="text"
+                inputMode="decimal"
+                prefix="Rp"
+                value={form.rate === 0 ? "" : fmtNum(form.rate, 2)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d,]/g, "").replace(",", ".");
+                  const num = parseFloat(val) || 0;
+                  setForm({ ...form, rate: num });
+                }}
               />
               <p className="text-[10px] text-muted-foreground">
                 Kurs disarankan otomatis dari master kurs aktif — dapat diubah.
