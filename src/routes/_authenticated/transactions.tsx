@@ -356,6 +356,8 @@ function TransactionsPage() {
     // Check inventory if selling and prevent_oversell is active
     if (form.transaction_type === "sell" && settings.prevent_oversell) {
       const branchId = form.branch_id === HQ ? null : form.branch_id;
+      
+      // Query specific branch inventory
       const { data: inv } = await supabase
         .from("cash_inventory")
         .select("balance")
@@ -364,9 +366,26 @@ function TransactionsPage() {
         .maybeSingle();
 
       const currentBalance = inv?.balance || 0;
-      if (currentBalance < form.foreign_amount) {
+      
+      // If branch has no balance, check if there's a global balance (branch_id IS NULL)
+      // This handles cases where cash was seeded without a branch association or is managed centrally
+      let effectiveBalance = currentBalance;
+      if (currentBalance < form.foreign_amount && branchId !== null) {
+        const { data: globalInv } = await supabase
+          .from("cash_inventory")
+          .select("balance")
+          .eq("currency_id", form.currency_id)
+          .is("branch_id", null)
+          .maybeSingle();
+        
+        if (globalInv && globalInv.balance >= form.foreign_amount) {
+          effectiveBalance = globalInv.balance;
+        }
+      }
+
+      if (effectiveBalance < form.foreign_amount) {
         toast.error("Saldo tidak mencukupi", {
-          description: `Stok saat ini: ${fmtNum(currentBalance, 2)}. Transaksi jual ditolak oleh sistem.`,
+          description: `Stok saat ini: ${fmtNum(effectiveBalance, 2)}. Transaksi jual ditolak oleh sistem.`,
         });
         return;
       }
