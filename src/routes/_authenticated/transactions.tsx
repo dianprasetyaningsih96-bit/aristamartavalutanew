@@ -359,7 +359,7 @@ function TransactionsPage() {
       
       // Query all inventory for this currency to calculate total availability
       const { data: invs, error: invError } = await supabase
-        .from("cash_inventory")
+        .from("cash_balances")
         .select("balance, branch_id")
         .eq("currency_id", form.currency_id);
 
