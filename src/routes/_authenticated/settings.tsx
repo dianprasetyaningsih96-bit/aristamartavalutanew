@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Save, PlugZap, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Settings as SettingsIcon, Save, PlugZap, Loader2, CheckCircle2, XCircle, ShieldAlert } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_PROJECT_ID, SUPABASE_URL } from "@/integrations/supabase/config";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
@@ -25,6 +26,7 @@ function SettingsPage() {
   const [pagiEnd, setPagiEnd] = useState(settings.shift_pagi_end);
   const [siangStart, setSiangStart] = useState(settings.shift_siang_start);
   const [siangEnd, setSiangEnd] = useState(settings.shift_siang_end);
+  const [preventOversell, setPreventOversell] = useState(settings.prevent_oversell);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -33,6 +35,7 @@ function SettingsPage() {
     setPagiEnd(settings.shift_pagi_end);
     setSiangStart(settings.shift_siang_start);
     setSiangEnd(settings.shift_siang_end);
+    setPreventOversell(settings.prevent_oversell);
   }, [settings]);
 
   useEffect(() => {
@@ -58,6 +61,7 @@ function SettingsPage() {
         shift_pagi_end: pagiEnd,
         shift_siang_start: siangStart,
         shift_siang_end: siangEnd,
+        prevent_oversell: preventOversell,
         updated_at: new Date().toISOString(),
         updated_by: userRes.user?.id ?? null,
       })
@@ -164,6 +168,40 @@ function SettingsPage() {
             <Button onClick={handleSave} disabled={saving || loading} className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Menyimpan…" : "Simpan Jam Shif"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-destructive">
+            <ShieldAlert className="h-5 w-5" />
+            Keamanan & Validasi Transaksi
+          </CardTitle>
+          <CardDescription>
+            Atur batasan dan validasi untuk operasional transaksi.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="prevent-oversell" className="text-base font-medium">Cegah Penjualan Melebihi Saldo</Label>
+              <p className="text-sm text-muted-foreground">
+                Jika aktif, teller tidak bisa menjual valas jika saldo kas untuk mata uang tersebut tidak mencukupi.
+              </p>
+            </div>
+            <Switch
+              id="prevent-oversell"
+              checked={preventOversell}
+              onCheckedChange={setPreventOversell}
+              disabled={loading || saving}
+            />
+          </div>
+          <div className="flex justify-end">
+            <Button onClick={handleSave} disabled={saving || loading} className="gap-2">
+              <Save className="h-4 w-4" />
+              {saving ? "Menyimpan…" : "Simpan Pengaturan Keamanan"}
             </Button>
           </div>
         </CardContent>

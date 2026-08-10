@@ -352,6 +352,26 @@ function TransactionsPage() {
       });
       return;
     }
+
+    // Check inventory if selling and prevent_oversell is active
+    if (form.transaction_type === "sell" && settings.prevent_oversell) {
+      const branchId = form.branch_id === HQ ? null : form.branch_id;
+      const { data: inv } = await supabase
+        .from("cash_inventory")
+        .select("balance")
+        .eq("currency_id", form.currency_id)
+        .eq("branch_id", branchId)
+        .maybeSingle();
+
+      const currentBalance = inv?.balance || 0;
+      if (currentBalance < form.foreign_amount) {
+        toast.error("Saldo tidak mencukupi", {
+          description: `Stok saat ini: ${fmtNum(currentBalance, 2)}. Transaksi jual ditolak oleh sistem.`,
+        });
+        return;
+      }
+    }
+
     const parsed = schema.safeParse(form);
     if (!parsed.success) {
       toast.error("Data tidak valid", {
