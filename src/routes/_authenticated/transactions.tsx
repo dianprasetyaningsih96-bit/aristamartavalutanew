@@ -357,23 +357,33 @@ function TransactionsPage() {
     if (form.transaction_type === "sell" && settings.prevent_oversell) {
       const branchId = form.branch_id === HQ ? null : form.branch_id;
       
-      // Query all inventory for this currency to calculate total availability
-      const { data: invs, error: invError } = await supabase
+      // Query inventory for this currency at the specific branch
+      const { data: inv, error: invError } = await supabase
         .from("cash_balances")
-        .select("balance, branch_id")
-        .eq("currency_id", form.currency_id);
+        .select("balance")
+        .eq("currency_id", form.currency_id)
+        .eq(branchId ? "branch_id" : "branch_id_is_null", branchId ? branchId : true)
+        .maybeSingle();
 
-      if (invError) {
-        toast.error("Gagal memeriksa saldo", { description: invError.message });
+      // Note: If using null in .eq(), Supabase JS might need .is("branch_id", null) 
+      // but the schema usually handles branch_id = null for HQ.
+      // Let's use a more robust check for branch_id.
+      
+      const { data: specificInv, error: specificError } = await (branchId 
+        ? supabase.from("cash_balances").select("balance").eq("currency_id", form.currency_id).eq("branch_id", branchId)
+        : supabase.from("cash_balances").select("balance").eq("currency_id", form.currency_id).is("branch_id", null)
+      ).maybeSingle();
+
+      if (specificError) {
+        toast.error("Gagal memeriksa saldo", { description: specificError.message });
         return;
       }
 
-      // Calculate total balance across all branches and HQ
-      const totalBalance = (invs || []).reduce((sum, item) => sum + (item.balance || 0), 0);
+      const currentBalance = specificInv?.balance || 0;
 
-      if (totalBalance < form.foreign_amount) {
-        toast.error("Saldo tidak mencukupi", {
-          description: `Stok total (seluruh cabang): ${fmtNum(totalBalance, 2)}. Transaksi jual ditolak oleh sistem.`,
+      if (currentBalance < form.foreign_amount) {
+        toast.error("Saldo cabang tidak mencukupi", {
+          description: `Stok cabang ini: ${fmtNum(currentBalance, 2)}. Transaksi jual ditolak.`,
         });
         return;
       }
