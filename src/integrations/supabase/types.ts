@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           company_name: string
           id: boolean
+          prevent_oversell: boolean | null
           shift_pagi_end: string | null
           shift_pagi_start: string | null
           shift_siang_end: string | null
@@ -28,6 +29,7 @@ export type Database = {
         Insert: {
           company_name?: string
           id?: boolean
+          prevent_oversell?: boolean | null
           shift_pagi_end?: string | null
           shift_pagi_start?: string | null
           shift_siang_end?: string | null
@@ -38,6 +40,7 @@ export type Database = {
         Update: {
           company_name?: string
           id?: boolean
+          prevent_oversell?: boolean | null
           shift_pagi_end?: string | null
           shift_pagi_start?: string | null
           shift_siang_end?: string | null
