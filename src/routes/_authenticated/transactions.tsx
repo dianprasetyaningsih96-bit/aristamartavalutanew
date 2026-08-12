@@ -1153,6 +1153,7 @@ function TransactionsPage() {
                   rate: Number(viewing.rate),
                   idr_amount: Number(viewing.idr_amount),
                   payment_method: viewing.payment_method,
+                  teller_name: (viewing as any).profiles?.full_name || (viewing as any).teller_id,
                   company_name: settings.company_name,
                 });
                 setPrinted(true);
