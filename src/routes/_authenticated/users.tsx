@@ -537,21 +537,34 @@ function UsersPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                          <Button asChild size="sm" variant="ghost">
-                            <Link
-                              to="/users/$userId"
-                              params={{ userId: p.id }}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setPassTarget(p);
+                                setTargetPassword("");
+                                setPasswordOpen(true);
+                              }}
+                              title="Ubah Password"
                             >
-                              Detail
-                            </Link>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEdit(p)}
-                          >
-                            Kelola
-                          </Button>
+                              <Shield className="h-4 w-4 text-amber-600" />
+                            </Button>
+                            <Button asChild size="icon" variant="ghost" title="Detail">
+                              <Link
+                                to="/users/$userId"
+                                params={{ userId: p.id }}
+                              >
+                                <Users className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => openEdit(p)}
+                              title="Kelola"
+                            >
+                              <UserCog className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
