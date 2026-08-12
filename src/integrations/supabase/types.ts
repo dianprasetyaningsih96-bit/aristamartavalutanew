@@ -1187,6 +1187,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_change_password: {
+        Args: { _new_password: string; _user_id: string }
+        Returns: boolean
+      }
       admin_confirm_user: { Args: { _user_id: string }; Returns: undefined }
       get_user_roles: {
         Args: { _user_id: string }

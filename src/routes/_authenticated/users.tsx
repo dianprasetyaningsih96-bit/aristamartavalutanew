@@ -106,6 +106,10 @@ function UsersPage() {
   const [newBranchId, setNewBranchId] = useState("");
   const [newRoles, setNewRoles] = useState<Set<AppRole>>(new Set(["teller"]));
   const [creating, setCreating] = useState(false);
+  const [passwordOpen, setPasswordOpen] = useState(false);
+  const [passTarget, setPassTarget] = useState<Profile | null>(null);
+  const [targetPassword, setTargetPassword] = useState("");
+  const [changingPass, setChangingPass] = useState(false);
 
   function resetCreateForm() {
     setNewEmail("");
@@ -360,6 +364,28 @@ function UsersPage() {
     load();
   }
 
+  async function handlePasswordChange() {
+    if (!passTarget) return;
+    if (targetPassword.length < 8) {
+      toast.error("Password minimal 8 karakter");
+      return;
+    }
+    setChangingPass(true);
+    const { error } = await supabase.rpc("admin_change_password", {
+      _user_id: passTarget.id,
+      _new_password: targetPassword,
+    });
+    setChangingPass(false);
+    if (error) {
+      toast.error("Gagal mengubah password", { description: error.message });
+      return;
+    }
+    toast.success("Password berhasil diubah");
+    setPasswordOpen(false);
+    setTargetPassword("");
+    setPassTarget(null);
+  }
+
   if (!userLoading && !canManage) {
     return (
       <div className="space-y-6">
@@ -511,21 +537,34 @@ function UsersPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                          <Button asChild size="sm" variant="ghost">
-                            <Link
-                              to="/users/$userId"
-                              params={{ userId: p.id }}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setPassTarget(p);
+                                setTargetPassword("");
+                                setPasswordOpen(true);
+                              }}
+                              title="Ubah Password"
                             >
-                              Detail
-                            </Link>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => openEdit(p)}
-                          >
-                            Kelola
-                          </Button>
+                              <Shield className="h-4 w-4 text-amber-600" />
+                            </Button>
+                            <Button asChild size="icon" variant="ghost" title="Detail">
+                              <Link
+                                to="/users/$userId"
+                                params={{ userId: p.id }}
+                              >
+                                <Users className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => openEdit(p)}
+                              title="Kelola"
+                            >
+                              <UserCog className="h-4 w-4" />
+                            </Button>
                           </div>
                         </TableCell>
                       </TableRow>
@@ -715,6 +754,36 @@ function UsersPage() {
             </Button>
             <Button onClick={save} disabled={submitting}>
               Simpan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={passwordOpen} onOpenChange={setPasswordOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ubah Password Pengguna</DialogTitle>
+            <DialogDescription>
+              Mengubah password untuk {passTarget?.full_name} ({passTarget?.email}).
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Password Baru</Label>
+              <Input
+                type="password"
+                value={targetPassword}
+                onChange={(e) => setTargetPassword(e.target.value)}
+                placeholder="Minimal 8 karakter"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPasswordOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handlePasswordChange} disabled={changingPass}>
+              {changingPass ? "Memproses..." : "Simpan Password"}
             </Button>
           </DialogFooter>
         </DialogContent>
