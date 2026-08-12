@@ -546,10 +546,17 @@ function UsersPage() {
                                 setPasswordOpen(true);
                               }}
                               title="Ubah Password"
+                              className="h-8 w-8 text-amber-600 hover:text-amber-700 hover:bg-amber-50"
                             >
-                              <Shield className="h-4 w-4 text-amber-600" />
+                              <Shield className="h-4 w-4" />
                             </Button>
-                            <Button asChild size="icon" variant="ghost" title="Detail">
+                            <Button
+                              asChild
+                              size="icon"
+                              variant="ghost"
+                              title="Detail"
+                              className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            >
                               <Link
                                 to="/users/$userId"
                                 params={{ userId: p.id }}
@@ -562,6 +569,7 @@ function UsersPage() {
                               variant="ghost"
                               onClick={() => openEdit(p)}
                               title="Kelola"
+                              className="h-8 w-8 text-slate-600 hover:text-slate-900 hover:bg-slate-100"
                             >
                               <UserCog className="h-4 w-4" />
                             </Button>
