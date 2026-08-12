@@ -102,7 +102,7 @@ export function generateReceiptPdf(r: ReceiptData) {
   doc.setFontSize(6.5);
   doc.setTextColor(...BRAND.muted);
   if (r.teller_name) {
-    doc.text(`Teller: ${r.teller_name}`, 4, y);
+    doc.text(`User: ${r.teller_name}`, 4, y);
     y += 3;
   }
   doc.text(
