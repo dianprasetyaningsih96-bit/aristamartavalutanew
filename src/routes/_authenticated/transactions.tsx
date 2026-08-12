@@ -229,7 +229,7 @@ function TransactionsPage() {
     let query = supabase
       .from("transactions")
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name), profiles!teller_id(full_name)",
       )
       .order("transaction_date", { ascending: false })
       .limit(200);
@@ -435,7 +435,7 @@ function TransactionsPage() {
       .from("transactions")
       .insert(payload)
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name), profiles!teller_id(full_name)",
       )
       .single();
     setSaving(false);
