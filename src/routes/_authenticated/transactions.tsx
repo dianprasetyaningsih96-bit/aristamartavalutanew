@@ -229,7 +229,7 @@ function TransactionsPage() {
     let query = supabase
       .from("transactions")
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name), profiles:teller_id(full_name)",
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
       )
       .order("transaction_date", { ascending: false })
       .limit(200);
@@ -435,7 +435,7 @@ function TransactionsPage() {
       .from("transactions")
       .insert(payload)
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name), profiles:teller_id(full_name)",
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name)",
       )
       .single();
     setSaving(false);
@@ -1120,9 +1120,6 @@ function TransactionsPage() {
                 </div>
                 <ThermalDivider />
                 <div className="text-center text-[9px] opacity-70 space-y-0.5">
-                  {viewing.profiles?.full_name && (
-                    <div className="mb-1 text-left">User: {viewing.profiles.full_name}</div>
-                  )}
                   <div>Simpan struk ini sebagai bukti transaksi.</div>
                   <div>Terima kasih atas kepercayaan Anda.</div>
                   <div className="pt-1">** KUPVA BB · Bank Indonesia **</div>
@@ -1158,7 +1155,7 @@ function TransactionsPage() {
                   rate: Number(viewing.rate),
                   idr_amount: Number(viewing.idr_amount),
                   payment_method: viewing.payment_method,
-                  teller_name: viewing.profiles?.full_name || undefined,
+                  teller_name: (viewing as any).profiles?.full_name || undefined,
                   company_name: settings.company_name,
                 });
                 setPrinted(true);
