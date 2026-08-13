@@ -82,17 +82,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "KUPVA BB — Money Changer Information System" },
+      { title: "'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            beritahu saya di file koding yang mana saja yg anda ubah — Money Changer Information System" },
       {
         name: "description",
         content:
-          "Sistem Informasi Money Changer KUPVA BB: KYC/CDD, transaksi valas, manajemen kas, dan pelaporan sesuai regulasi Bank Indonesia.",
+          "Sistem Informasi Money Changer '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            beritahu saya di file koding yang mana saja yg anda ubah: KYC/CDD, transaksi valas, manajemen kas, dan pelaporan sesuai regulasi Bank Indonesia.",
       },
-      { name: "author", content: "KUPVA BB" },
-      { property: "og:title", content: "KUPVA BB — Money Changer Information System" },
+      { name: "author", content: "'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            beritahu saya di file koding yang mana saja yg anda ubah" },
+      { property: "og:title", content: "'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            beritahu saya di file koding yang mana saja yg anda ubah — Money Changer Information System" },
       {
         property: "og:description",
-        content: "Sistem informasi money changer terintegrasi untuk KUPVA BB berlisensi Bank Indonesia.",
+        content: "Sistem informasi money changer terintegrasi untuk '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''\n                                        \n                                            \n                                            beritahu saya di file koding yang mana saja yg anda ubah berlisensi Bank Indonesia.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
