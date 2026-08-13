@@ -14,10 +14,7 @@ function Landing() {
           <div className="grid h-9 w-9 place-items-center rounded-xl bg-[image:var(--gradient-primary)] text-primary-foreground shadow-[var(--shadow-elegant)]">
             <Banknote className="h-5 w-5" />
           </div>
-          <span className="text-lg font-bold tracking-tight">'''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            beritahu saya di file koding yang mana saja yg anda ubah</span>
+          <span className="text-lg font-bold tracking-tight">KUPVA BB</span>
         </div>
         <div className="flex items-center gap-4">
           <Button asChild size="sm">
@@ -35,10 +32,7 @@ function Landing() {
             <span className="bg-[image:var(--gradient-glow)] bg-clip-text text-transparent">
               Money Changer
             </span>{" "}
-            '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            beritahu saya di file koding yang mana saja yg anda ubah
+            KUPVA BB
           </h1>
           <p className="mt-4 text-pretty text-base text-muted-foreground sm:mt-6 sm:text-lg">
             Platform terintegrasi untuk KYC/CDD, transaksi jual-beli valuta asing,
@@ -76,10 +70,7 @@ function Landing() {
           <span className="inline-flex items-center gap-1.5">
             <Lock className="h-3.5 w-3.5" /> Enkripsi & audit trail sesuai standar BI
           </span>
-          <span>&copy; {new Date().getFullYear()} '''Do not make any visual modifications. The phrases I write are commands to understand what I want, not to be written down. Understand their content well, then execute what is required.'''
-                                        
-                                            
-                                            beritahu saya di file koding yang mana saja yg anda ubah</span>
+          <span>&copy; {new Date().getFullYear()} KUPVA BB</span>
         </div>
       </footer>
     </div>
