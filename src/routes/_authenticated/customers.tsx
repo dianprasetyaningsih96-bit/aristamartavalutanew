@@ -236,6 +236,13 @@ function CustomersPage() {
   const [rows, setRows] = useState<Customer[] | null>(null);
   const [branches, setBranches] = useState<{ id: string; name: string; code: string }[]>([]);
   const [search, setSearch] = useState("");
+  
+  const routerSearch = Route.useSearch() as any;
+  useEffect(() => {
+    if (routerSearch.search) {
+      setSearch(routerSearch.search);
+    }
+  }, [routerSearch.search]);
   const [filterKyc, setFilterKyc] = useState<string>("all");
   const [filterRisk, setFilterRisk] = useState<string>("all");
   const [open, setOpen] = useState(false);

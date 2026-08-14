@@ -211,6 +211,13 @@ function TransactionsPage() {
   const [activeShift, setActiveShift] = useState<ActiveShift | null>(null);
 
   const [search, setSearch] = useState("");
+  
+  const routerSearch = Route.useSearch() as any;
+  useEffect(() => {
+    if (routerSearch.search) {
+      setSearch(routerSearch.search);
+    }
+  }, [routerSearch.search]);
   const [filterType, setFilterType] = useState<"all" | TxType>("all");
   const [filterStatus, setFilterStatus] = useState<"all" | TxStatus>("all");
 
