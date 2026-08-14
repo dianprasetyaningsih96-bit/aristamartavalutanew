@@ -50,10 +50,29 @@ export function DashboardHeader({ trigger }: { trigger: ReactNode }) {
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b bg-card/80 px-4 backdrop-blur-md sm:px-6">
       {trigger}
-      <div className="relative hidden max-w-sm flex-1 md:block">
+      <form 
+        onSubmit={(e) => {
+          e.preventDefault();
+          const formData = new FormData(e.currentTarget);
+          const query = formData.get("search")?.toString().trim();
+          if (query) {
+            // Logika sederhana: jika diawali 'TRX' kemungkinan transaksi, jika tidak ke nasabah
+            if (query.toUpperCase().startsWith("TRX")) {
+              navigate({ to: "/transactions", search: { search: query } as any });
+            } else {
+              navigate({ to: "/customers", search: { search: query } as any });
+            }
+          }
+        }}
+        className="relative hidden max-w-sm flex-1 md:block"
+      >
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Cari nasabah, transaksi..." className="pl-9" />
-      </div>
+        <Input 
+          name="search"
+          placeholder="Cari nasabah, transaksi..." 
+          className="pl-9" 
+        />
+      </form>
       <div className="ml-auto flex items-center gap-2">
         <NotificationsBell />
         <DropdownMenu>
