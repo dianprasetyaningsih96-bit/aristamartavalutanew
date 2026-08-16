@@ -196,6 +196,34 @@ function ReportsPage() {
   const [monthPeriod, setMonthPeriod] = useState<string>(currentMonthISO());
   const [midRates, setMidRates] = useState<MidRateRow[]>([]);
   const [openingBalances, setOpeningBalances] = useState<any[]>([]);
+  const [idToCode, setIdToCode] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    if (tab !== "bulanan") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("currencies")
+        .select("id, code");
+      if (cancelled) return;
+      const mapping = new Map<string, string>(
+        (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
+      );
+      setIdToCode(mapping);
+      
+      midByCodeRef.current = new Map(
+        midRates
+          .map((m) => [mapping.get(m.currency_id), Number(m.mid_rate)] as const)
+          .filter((x): x is readonly [string, number] => !!x[0]),
+      );
+      // Trigger re-render by touching rows dep (no-op set)
+      setRows((r) => (r ? [...r] : r));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, midRates]);
   const [rows, setRows] = useState<TrxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -428,34 +456,6 @@ function ReportsPage() {
       .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
   }, [tab, rows, midRates, openingBalances, idToCode]);
 
-  const [idToCode, setIdToCode] = useState<Map<string, string>>(new Map());
-
-  useEffect(() => {
-    if (tab !== "bulanan") return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("currencies")
-        .select("id, code");
-      if (cancelled) return;
-      const mapping = new Map<string, string>(
-        (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
-      );
-      setIdToCode(mapping);
-      
-      midByCodeRef.current = new Map(
-        midRates
-          .map((m) => [mapping.get(m.currency_id), Number(m.mid_rate)] as const)
-          .filter((x): x is readonly [string, number] => !!x[0]),
-      );
-      // Trigger re-render by touching rows dep (no-op set)
-      setRows((r) => (r ? [...r] : r));
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, midRates]);
 
   function exportLkubCSV() {
     if (lkubRows.length === 0) {
