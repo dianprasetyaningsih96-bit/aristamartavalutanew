@@ -249,11 +249,20 @@ function ReportsPage() {
 
     if (tab === "bulanan") {
       const monthDate = monthPeriod + "-01";
-      const { data: mr } = await supabase
-        .from("mid_rates")
-        .select("currency_id, mid_rate")
-        .eq("period_month", monthDate);
-      setMidRates((mr as MidRateRow[]) ?? []);
+      const [midRes, openRes] = await Promise.all([
+        supabase
+          .from("mid_rates")
+          .select("currency_id, mid_rate")
+          .eq("period_month", monthDate),
+        supabase
+          .from("monthly_balances")
+          .select("currency_id, opening_balance_foreign, opening_balance_idr")
+          .eq("period_month", monthDate)
+          .eq("branch_id", branchId === "all" ? undefined : branchId), // Simplified for now, though usually we filter by branch
+      ]);
+      
+      setMidRates((midRes.data as MidRateRow[]) ?? []);
+      setOpeningBalances((openRes.data as any[]) ?? []);
     }
   }
 
