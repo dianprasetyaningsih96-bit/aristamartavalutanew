@@ -17,6 +17,7 @@ import { Route as AuthenticatedTransactionsRouteImport } from './routes/_authent
 import { Route as AuthenticatedShiftsRouteImport } from './routes/_authenticated/shifts'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
+import { Route as AuthenticatedRatesHistoryRouteImport } from './routes/_authenticated/rates-history'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMidRatesRouteImport } from './routes/_authenticated/mid-rates'
@@ -70,6 +71,12 @@ const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   path: '/reports',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedRatesHistoryRoute =
+  AuthenticatedRatesHistoryRouteImport.update({
+    id: '/rates-history',
+    path: '/rates-history',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
   id: '/rates',
   path: '/rates',
@@ -147,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/mid-rates': typeof AuthenticatedMidRatesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/rates': typeof AuthenticatedRatesRoute
+  '/rates-history': typeof AuthenticatedRatesHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shifts': typeof AuthenticatedShiftsRoute
@@ -168,6 +176,7 @@ export interface FileRoutesByTo {
   '/mid-rates': typeof AuthenticatedMidRatesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
   '/rates': typeof AuthenticatedRatesRoute
+  '/rates-history': typeof AuthenticatedRatesHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/shifts': typeof AuthenticatedShiftsRoute
@@ -191,6 +200,7 @@ export interface FileRoutesById {
   '/_authenticated/mid-rates': typeof AuthenticatedMidRatesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
+  '/_authenticated/rates-history': typeof AuthenticatedRatesHistoryRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/shifts': typeof AuthenticatedShiftsRoute
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/mid-rates'
     | '/notifications'
     | '/rates'
+    | '/rates-history'
     | '/reports'
     | '/settings'
     | '/shifts'
@@ -235,6 +246,7 @@ export interface FileRouteTypes {
     | '/mid-rates'
     | '/notifications'
     | '/rates'
+    | '/rates-history'
     | '/reports'
     | '/settings'
     | '/shifts'
@@ -257,6 +269,7 @@ export interface FileRouteTypes {
     | '/_authenticated/mid-rates'
     | '/_authenticated/notifications'
     | '/_authenticated/rates'
+    | '/_authenticated/rates-history'
     | '/_authenticated/reports'
     | '/_authenticated/settings'
     | '/_authenticated/shifts'
@@ -327,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/reports'
       fullPath: '/reports'
       preLoaderRoute: typeof AuthenticatedReportsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rates-history': {
+      id: '/_authenticated/rates-history'
+      path: '/rates-history'
+      fullPath: '/rates-history'
+      preLoaderRoute: typeof AuthenticatedRatesHistoryRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rates': {
@@ -439,6 +459,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMidRatesRoute: typeof AuthenticatedMidRatesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
+  AuthenticatedRatesHistoryRoute: typeof AuthenticatedRatesHistoryRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedShiftsRoute: typeof AuthenticatedShiftsRoute
@@ -458,6 +479,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMidRatesRoute: AuthenticatedMidRatesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
+  AuthenticatedRatesHistoryRoute: AuthenticatedRatesHistoryRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedShiftsRoute: AuthenticatedShiftsRoute,
