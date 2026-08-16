@@ -664,15 +664,27 @@ function ReportsPage() {
                       <TableRow>
                         <TableHead>Jenis Valuta</TableHead>
                         <TableHead>Jenis Produk</TableHead>
-                        <TableHead className="text-right">Saldo Awal (Valas)</TableHead>
-                        <TableHead className="text-right">Saldo Awal (Rp)</TableHead>
+                        <TableHead className="text-right">
+                          Saldo Awal (Valas)
+                          <InfoTooltip content="Saldo fisik persediaan kas valuta pada awal bulan (carry-over dari saldo akhir bulan sebelumnya)." />
+                        </TableHead>
+                        <TableHead className="text-right">
+                          Saldo Awal (Rp)
+                          <InfoTooltip content="Total modal (IDR) dari stok valas awal, berdasarkan catatan perolehan sebelumnya." />
+                        </TableHead>
                         <TableHead className="text-right">Volume Beli (Valas)</TableHead>
                         <TableHead className="text-right">Volume Beli (Rp)</TableHead>
                         <TableHead className="text-right">Volume Jual (Valas)</TableHead>
                         <TableHead className="text-right">Volume Jual (Rp)</TableHead>
-                        <TableHead className="text-right">Saldo Akhir (Valas)</TableHead>
+                        <TableHead className="text-right">
+                          Saldo Akhir (Valas)
+                          <InfoTooltip content="Sisa fisik valuta pada akhir bulan. Formula: Saldo Awal (Valas) + Volume Beli (Valas) - Volume Jual (Valas)." />
+                        </TableHead>
                         <TableHead className="text-right">Kurs Tengah</TableHead>
-                        <TableHead className="text-right">Saldo Akhir (Rp)</TableHead>
+                        <TableHead className="text-right">
+                          Saldo Akhir (Rp)
+                          <InfoTooltip content="Nilai IDR dari persediaan valuta akhir menggunakan Kurs Tengah BI. Formula: Saldo Akhir (Valas) * Kurs Tengah." />
+                        </TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
