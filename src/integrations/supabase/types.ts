@@ -284,7 +284,6 @@ export type Database = {
           balance: number
           branch_id: string
           currency_id: string
-          historical_idr_balance: number | null
           id: string
           updated_at: string
         }
@@ -292,7 +291,6 @@ export type Database = {
           balance?: number
           branch_id: string
           currency_id: string
-          historical_idr_balance?: number | null
           id?: string
           updated_at?: string
         }
@@ -300,7 +298,6 @@ export type Database = {
           balance?: number
           branch_id?: string
           currency_id?: string
-          historical_idr_balance?: number | null
           id?: string
           updated_at?: string
         }
@@ -1259,20 +1256,6 @@ export type Database = {
         Returns: boolean
       }
       admin_confirm_user: { Args: { _user_id: string }; Returns: undefined }
-      get_lkub_data: {
-        Args: { p_branch_id: string; p_period_month: string }
-        Returns: {
-          currency_code: string
-          currency_id: string
-          mid_rate: number
-          saldo_awal_idr: number
-          saldo_awal_valas: number
-          volume_beli_idr: number
-          volume_beli_valas: number
-          volume_jual_idr: number
-          volume_jual_valas: number
-        }[]
-      }
       get_user_roles: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"][]
