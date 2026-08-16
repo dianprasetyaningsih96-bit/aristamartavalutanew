@@ -658,6 +658,56 @@ export type Database = {
         }
         Relationships: []
       }
+      exchange_rate_logs: {
+        Row: {
+          action_type: string
+          branch_name: string | null
+          changed_at: string | null
+          changed_by: string | null
+          currency_code: string | null
+          id: string
+          new_buy_rate: number | null
+          new_sell_rate: number | null
+          old_buy_rate: number | null
+          old_sell_rate: number | null
+          rate_id: string | null
+        }
+        Insert: {
+          action_type: string
+          branch_name?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          currency_code?: string | null
+          id?: string
+          new_buy_rate?: number | null
+          new_sell_rate?: number | null
+          old_buy_rate?: number | null
+          old_sell_rate?: number | null
+          rate_id?: string | null
+        }
+        Update: {
+          action_type?: string
+          branch_name?: string | null
+          changed_at?: string | null
+          changed_by?: string | null
+          currency_code?: string | null
+          id?: string
+          new_buy_rate?: number | null
+          new_sell_rate?: number | null
+          old_buy_rate?: number | null
+          old_sell_rate?: number | null
+          rate_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exchange_rate_logs_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exchange_rates: {
         Row: {
           branch_id: string | null
