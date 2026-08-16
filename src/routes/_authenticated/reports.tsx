@@ -1075,8 +1075,6 @@ function ReportsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
-
       <Dialog open={openingModalOpen} onOpenChange={setOpeningModalOpen}>
         <DialogContent>
           <DialogHeader>
@@ -1129,5 +1127,7 @@ function ReportsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
   );
 }
+
