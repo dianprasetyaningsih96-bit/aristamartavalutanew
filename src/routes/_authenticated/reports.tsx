@@ -425,6 +425,8 @@ function ReportsPage() {
       .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
   }, [tab, rows, midRates, openingBalances]);
 
+  const [idToCode, setIdToCode] = useState<Map<string, string>>(new Map());
+
   useEffect(() => {
     if (tab !== "bulanan") return;
     let cancelled = false;
@@ -433,12 +435,14 @@ function ReportsPage() {
         .from("currencies")
         .select("id, code");
       if (cancelled) return;
-      const idToCode = new Map<string, string>(
+      const mapping = new Map<string, string>(
         (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
       );
+      setIdToCode(mapping);
+      
       midByCodeRef.current = new Map(
         midRates
-          .map((m) => [idToCode.get(m.currency_id), Number(m.mid_rate)] as const)
+          .map((m) => [mapping.get(m.currency_id), Number(m.mid_rate)] as const)
           .filter((x): x is readonly [string, number] => !!x[0]),
       );
       // Trigger re-render by touching rows dep (no-op set)
