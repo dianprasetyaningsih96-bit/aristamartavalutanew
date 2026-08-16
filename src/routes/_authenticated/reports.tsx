@@ -703,39 +703,60 @@ function ReportsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        lkubRows.map((r) => (
-                          <TableRow key={r.currency_code}>
-                            <TableCell className="font-mono font-semibold">
-                              {r.currency_code}
-                            </TableCell>
-                            <TableCell>1 - UKA</TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtNum(r.buy_foreign)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtIDR(r.buy_idr)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtNum(r.sell_foreign)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtIDR(r.sell_idr)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {r.mid_rate !== null ? (
-                                fmtNum(r.mid_rate, 4)
-                              ) : (
-                                <span className="text-amber-600 text-xs">
-                                  belum diisi
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                          </TableRow>
-                        ))
+                        lkubRows.map((r) => {
+                          const saldoAkhirValas = Number(r.saldo_awal_valas) + Number(r.buy_foreign) - Number(r.sell_foreign);
+                          const saldoAkhirIdr = r.mid_rate ? saldoAkhirValas * Number(r.mid_rate) : 0;
+                          return (
+                            <TableRow key={r.currency_code}>
+                              <TableCell className="font-mono font-semibold">
+                                {r.currency_code}
+                              </TableCell>
+                              <TableCell>1 - UKA</TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(r.saldo_awal_valas)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(r.saldo_awal_idr)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(r.buy_foreign)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(r.buy_idr)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(r.sell_foreign)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(r.sell_idr)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(saldoAkhirValas)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {r.mid_rate !== null ? (
+                                  fmtNum(r.mid_rate, 4)
+                                ) : (
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-amber-600 text-[10px] font-sans">
+                                      Kurs Tengah BI required
+                                    </span>
+                                    <span className="text-amber-600 text-xs">
+                                      belum diisi
+                                    </span>
+                                  </div>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {r.mid_rate !== null ? (
+                                  fmtIDR(saldoAkhirIdr)
+                                ) : (
+                                  "Rp 0"
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
