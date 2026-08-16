@@ -212,6 +212,8 @@ function ReportsPage() {
       .then(({ data }) => setBranches((data as Branch[]) ?? []));
   }, []);
 
+  const [lkubData, setLkubData] = useState<LkubRow[]>([]);
+
   async function load() {
     setLoading(true);
     setRows(null);
@@ -219,6 +221,23 @@ function ReportsPage() {
       tab === "bulanan"
         ? monthRange(monthPeriod)
         : { from: dateFrom, to: dateTo, label: "" };
+    
+    if (tab === "bulanan") {
+      const monthDate = monthPeriod + "-01";
+      const { data, error } = await supabase.rpc("get_lkub_data", {
+        p_branch_id: branchId === "all" ? null : branchId,
+        p_period_month: monthDate,
+      });
+      setLoading(false);
+      if (error) {
+        toast.error("Gagal memuat LKUB", { description: error.message });
+        return;
+      }
+      setLkubData((data as LkubRow[]) ?? []);
+      // Still load raw transactions for other logic if needed, but LKUB uses the RPC data
+      return;
+    }
+
     let q = supabase
       .from("transactions")
       .select(
@@ -246,15 +265,6 @@ function ReportsPage() {
       return;
     }
     setRows((data as unknown as TrxRow[]) ?? []);
-
-    if (tab === "bulanan") {
-      const monthDate = monthPeriod + "-01";
-      const { data: mr } = await supabase
-        .from("mid_rates")
-        .select("currency_id, mid_rate")
-        .eq("period_month", monthDate);
-      setMidRates((mr as MidRateRow[]) ?? []);
-    }
   }
 
   useEffect(() => {
