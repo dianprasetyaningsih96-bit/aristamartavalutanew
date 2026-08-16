@@ -224,6 +224,48 @@ function ReportsPage() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab, midRates]);
+
+  const [openingModalOpen, setOpeningModalOpen] = useState(false);
+  const [openingSaving, setOpeningSaving] = useState(false);
+  const [openingForm, setOpeningForm] = useState({
+    currency_id: "",
+    foreign: "",
+    idr: ""
+  });
+
+  async function saveOpeningBalance() {
+    if (!openingForm.currency_id || !openingForm.foreign || !openingForm.idr) {
+      toast.error("Mohon isi semua field");
+      return;
+    }
+    if (branchId === "all") {
+      toast.error("Pilih cabang terlebih dahulu");
+      return;
+    }
+
+    setOpeningSaving(true);
+    const { error } = await supabase
+      .from("monthly_balances")
+      .upsert({
+        branch_id: branchId,
+        currency_id: openingForm.currency_id,
+        period_month: monthPeriod + "-01",
+        opening_balance_foreign: Number(openingForm.foreign),
+        opening_balance_idr: Number(openingForm.idr)
+      }, {
+        onConflict: "branch_id, currency_id, period_month"
+      });
+
+    setOpeningSaving(false);
+    if (error) {
+      toast.error("Gagal menyimpan", { description: error.message });
+      return;
+    }
+    toast.success("Saldo awal berhasil disimpan");
+    setOpeningModalOpen(false);
+    load();
+  }
+
   const [rows, setRows] = useState<TrxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
