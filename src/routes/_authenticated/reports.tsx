@@ -195,6 +195,7 @@ function ReportsPage() {
   const [dateTo, setDateTo] = useState<string>(todayISO(0));
   const [monthPeriod, setMonthPeriod] = useState<string>(currentMonthISO());
   const [midRates, setMidRates] = useState<MidRateRow[]>([]);
+  const [openingBalances, setOpeningBalances] = useState<any[]>([]);
   const [rows, setRows] = useState<TrxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
