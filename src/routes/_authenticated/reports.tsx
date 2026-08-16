@@ -195,7 +195,7 @@ function ReportsPage() {
   const [dateFrom, setDateFrom] = useState<string>(todayISO(-6));
   const [dateTo, setDateTo] = useState<string>(todayISO(0));
   const [monthPeriod, setMonthPeriod] = useState<string>(currentMonthISO());
-  const [midRates, setMidRates] = useState<MidRateRow[]>([]);
+  
   const [rows, setRows] = useState<TrxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -344,11 +344,6 @@ function ReportsPage() {
           ? "LTKT (Transaksi Keuangan Tunai ≥ Rp 500 jt)"
           : "LTKM (Transaksi Keuangan Mencurigakan)";
 
-  // Resolve mid_rate currency_id → code via currencies table
-  const midByCodeRef = useMemo(
-    () => ({ current: new Map<string, number>() }),
-    [],
-  );
 
   const lkubRows: LkubRow[] = useMemo(() => {
     if (tab !== "bulanan") return [];
@@ -518,6 +513,7 @@ function ReportsPage() {
                   dateFrom: range.from,
                   dateTo: range.to,
                   totals,
+                  lkubRows,
                 };
                 if (tab === "bulanan") {
                   if (lkubRows.length === 0) {
