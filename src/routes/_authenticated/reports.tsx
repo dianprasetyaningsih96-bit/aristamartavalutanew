@@ -365,11 +365,13 @@ function ReportsPage() {
   const lkubRows: LkubRow[] = useMemo(() => {
     if (tab !== "bulanan" || !rows) return [];
     
-    // Currency IDs can be multiple if branch filter is 'all', so we aggregate
-    const openByCur = new Map<string, { foreign: number; idr: number }>();
+    // 1. Map Opening Balances by Currency Code
+    const openByCode = new Map<string, { foreign: number; idr: number }>();
     openingBalances.forEach(ob => {
-      const existing = openByCur.get(ob.currency_id) || { foreign: 0, idr: 0 };
-      openByCur.set(ob.currency_id, {
+      const code = idToCode.get(ob.currency_id);
+      if (!code) return;
+      const existing = openByCode.get(code) || { foreign: 0, idr: 0 };
+      openByCode.set(code, {
         foreign: existing.foreign + Number(ob.opening_balance_foreign),
         idr: existing.idr + Number(ob.opening_balance_idr)
       });
@@ -377,26 +379,28 @@ function ReportsPage() {
 
     const map = new Map<string, LkubRow>();
     
-    // We need to ensure all currencies that have opening balances OR transactions are included
-    // But rows only has transaction currencies. Let's first collect all currency codes and IDs
-    // The current UI relies on currencies already fetched in the separate useEffect.
-    
-    for (const r of rows) {
-      if (r.status !== "completed") continue;
-      const code = r.currencies?.code ?? "-";
-      // We need a real currency ID to match opening balances, but reports only selects code
-      // We'll match by currency code below if we map ID -> Code from the currencies table
-    }
+    // 2. Add all currencies that have opening balances but maybe no transactions yet
+    openByCode.forEach((bal, code) => {
+      map.set(code, {
+        currency_id: "", // not strictly needed for UI
+        currency_code: code,
+        opening_foreign: bal.foreign,
+        opening_idr: bal.idr,
+        buy_foreign: 0,
+        buy_idr: 0,
+        sell_foreign: 0,
+        sell_idr: 0,
+        mid_rate: null,
+      });
+    });
 
-    // A better approach: iterate through all relevant currencies if we had them.
-    // For now, let's stick to the current logic but fix the missing properties.
+    // 3. Process transactions
     for (const r of rows) {
       if (r.status !== "completed") continue;
       const code = r.currencies?.code ?? "-";
-      const key = code;
       const existing =
-        map.get(key) ?? {
-          currency_id: key,
+        map.get(code) ?? {
+          currency_id: "",
           currency_code: code,
           opening_foreign: 0,
           opening_idr: 0,
@@ -413,17 +417,16 @@ function ReportsPage() {
         existing.sell_foreign += Number(r.foreign_amount);
         existing.sell_idr += Number(r.idr_amount);
       }
-      map.set(key, existing);
+      map.set(code, existing);
     }
     
     return Array.from(map.values())
       .map((row) => ({
         ...row,
         mid_rate: midByCodeRef.current.get(row.currency_code) ?? null,
-        // We'll need another map to match opening balances by code
       }))
       .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
-  }, [tab, rows, midRates, openingBalances]);
+  }, [tab, rows, midRates, openingBalances, idToCode]);
 
   const [idToCode, setIdToCode] = useState<Map<string, string>>(new Map());
 
