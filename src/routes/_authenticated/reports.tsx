@@ -727,6 +727,18 @@ function ReportsPage() {
                 </CardTitle>
                 {tab === "bulanan" && (
                   <div className="flex flex-wrap gap-2">
+                    {branchId !== "all" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setOpeningForm({ currency_id: "", foreign: "", idr: "" });
+                          setOpeningModalOpen(true);
+                        }}
+                      >
+                        Set Saldo Awal
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
