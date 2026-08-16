@@ -847,7 +847,10 @@ function ReportsPage() {
                               </TableCell>
                               <TableCell className="text-right font-mono">
                                 {r.mid_rate !== null ? (
-                                  "Rp " + fmtNum(r.mid_rate, 4)
+                                  "Rp " + new Intl.NumberFormat("id-ID", {
+                                    minimumFractionDigits: 0,
+                                    maximumFractionDigits: 0,
+                                  }).format(r.mid_rate)
                                 ) : (
                                   <span className="text-amber-600 text-xs">
                                     belum diisi
