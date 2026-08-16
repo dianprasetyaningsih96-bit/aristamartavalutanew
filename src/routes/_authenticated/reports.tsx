@@ -276,12 +276,16 @@ function ReportsPage() {
     const r = rows ?? [];
     return {
       count: r.length,
-      buy: r
-        .filter((x) => x.transaction_type === "buy" && x.status === "completed")
-        .reduce((s, x) => s + Number(x.idr_amount), 0),
-      sell: r
-        .filter((x) => x.transaction_type === "sell" && x.status === "completed")
-        .reduce((s, x) => s + Number(x.idr_amount), 0),
+      buy: tab === "bulanan" 
+        ? lkubRows.reduce((s, x) => s + Number(x.buy_idr), 0)
+        : r
+          .filter((x) => x.transaction_type === "buy" && x.status === "completed")
+          .reduce((s, x) => s + Number(x.idr_amount), 0),
+      sell: tab === "bulanan"
+        ? lkubRows.reduce((s, x) => s + Number(x.sell_idr), 0)
+        : r
+          .filter((x) => x.transaction_type === "sell" && x.status === "completed")
+          .reduce((s, x) => s + Number(x.idr_amount), 0),
       suspicious: r.filter((x) => x.is_suspicious).length,
     };
   }, [rows]);
