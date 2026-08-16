@@ -364,46 +364,9 @@ function ReportsPage() {
   );
 
   const lkubRows: LkubRow[] = useMemo(() => {
-    if (tab !== "bulanan" || !rows) return [];
-    const midByCur = new Map(
-      midRates.map((m) => [m.currency_id, Number(m.mid_rate)]),
-    );
-    const map = new Map<string, LkubRow>();
-    for (const r of rows) {
-      if (r.status !== "completed") continue;
-      // Reports uses embedded rows, but we grouped by currency code (id not in select).
-      // Fallback key: use currency code.
-      const code = r.currencies?.code ?? "-";
-      const key = code;
-      const existing =
-        map.get(key) ?? {
-          currency_id: key,
-          currency_code: code,
-          buy_foreign: 0,
-          buy_idr: 0,
-          sell_foreign: 0,
-          sell_idr: 0,
-          mid_rate: null,
-        };
-      if (r.transaction_type === "buy") {
-        existing.buy_foreign += Number(r.foreign_amount);
-        existing.buy_idr += Number(r.idr_amount);
-      } else {
-        existing.sell_foreign += Number(r.foreign_amount);
-        existing.sell_idr += Number(r.idr_amount);
-      }
-      map.set(key, existing);
-    }
-    // Match mid_rate by currency code by looking up currencies from midRates via a separate map.
-    // We only have currency_id in midRates, so build code→rate via currencies fetched below.
-    // For now, we resolve via a currencies lookup fetched on demand.
-    return Array.from(map.values())
-      .map((row) => ({
-        ...row,
-        mid_rate: midByCodeRef.current.get(row.currency_code) ?? null,
-      }))
-      .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
-  }, [tab, rows, midRates]);
+    if (tab !== "bulanan") return [];
+    return lkubData.sort((a, b) => a.currency_code.localeCompare(b.currency_code));
+  }, [tab, lkubData]);
 
   useEffect(() => {
     if (tab !== "bulanan") return;
