@@ -537,7 +537,7 @@ function ReportsPage() {
             r.sell_foreign,
             r.sell_idr,
             saldoAkhirValas,
-            r.mid_rate ?? "",
+            r.mid_rate !== null ? `Rp ${fmtNum(r.mid_rate, 4)}` : "",
             saldoAkhirIdr,
           ]
             .map((v) => `"${String(v ?? "")}"`)
