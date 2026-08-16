@@ -477,23 +477,26 @@ function ReportsPage() {
     ];
     const csv = [header.join(",")]
       .concat(
-        lkubRows.map((r) =>
-          [
+        lkubRows.map((r) => {
+          const saldoAkhirValas = r.opening_foreign + r.buy_foreign - r.sell_foreign;
+          const saldoAkhirIdr = r.mid_rate !== null ? saldoAkhirValas * r.mid_rate : 0;
+          
+          return [
             r.currency_code,
             "1 - UKA",
-            0,
-            0,
+            r.opening_foreign,
+            r.opening_idr,
             r.buy_foreign,
             r.buy_idr,
             r.sell_foreign,
             r.sell_idr,
-            0,
+            saldoAkhirValas,
             r.mid_rate ?? "",
-            0,
+            saldoAkhirIdr,
           ]
             .map((v) => `"${String(v ?? "")}"`)
-            .join(","),
-        ),
+            .join(",");
+        }),
       )
       .join("\n");
     const blob = new Blob(["\ufeff" + csv], {
