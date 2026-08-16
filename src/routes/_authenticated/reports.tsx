@@ -1078,3 +1078,55 @@ function ReportsPage() {
     </div>
   );
 }
+      <Dialog open={openingModalOpen} onOpenChange={setOpeningModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Saldo Awal LKUB</DialogTitle>
+            <DialogDescription>
+              Tentukan saldo awal (carry-over) untuk periode {monthPeriod} di cabang yang dipilih.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Mata Uang</Label>
+              <Select 
+                value={openingForm.currency_id} 
+                onValueChange={(v) => setOpeningForm(prev => ({ ...prev, currency_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih mata uang" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from(idToCode.entries()).map(([id, code]) => (
+                    <SelectItem key={id} value={id}>{code}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Saldo Awal (Valas)</Label>
+              <Input 
+                type="number" 
+                step="0.01" 
+                value={openingForm.foreign}
+                onChange={(e) => setOpeningForm(prev => ({ ...prev, foreign: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Saldo Awal (Rp - Historical Cost)</Label>
+              <Input 
+                type="number" 
+                step="1" 
+                value={openingForm.idr}
+                onChange={(e) => setOpeningForm(prev => ({ ...prev, idr: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpeningModalOpen(false)}>Batal</Button>
+            <Button onClick={saveOpeningBalance} disabled={openingSaving}>
+              {openingSaving ? "Menyimpan..." : "Simpan Saldo Awal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
