@@ -523,14 +523,6 @@ function ReportsPage() {
                   generateLkubReportPdf(meta, lkubRows);
                   return;
                 }
-                if (tab === "bulanan") {
-                  if (lkubRows.length === 0) {
-                    toast.info("Tidak ada data untuk dicetak");
-                    return;
-                  }
-                  generateLkubReportPdf(meta, lkubRows);
-                  return;
-                }
 
                 if (!rows || rows.length === 0) {
                   toast.info("Tidak ada data untuk dicetak");
