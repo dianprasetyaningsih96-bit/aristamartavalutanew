@@ -77,6 +77,8 @@ interface MidRateRow {
 interface LkubRow {
   currency_id: string;
   currency_code: string;
+  opening_foreign: number;
+  opening_idr: number;
   buy_foreign: number;
   buy_idr: number;
   sell_foreign: number;
@@ -193,6 +195,77 @@ function ReportsPage() {
   const [dateTo, setDateTo] = useState<string>(todayISO(0));
   const [monthPeriod, setMonthPeriod] = useState<string>(currentMonthISO());
   const [midRates, setMidRates] = useState<MidRateRow[]>([]);
+  const [openingBalances, setOpeningBalances] = useState<any[]>([]);
+  const [idToCode, setIdToCode] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    if (tab !== "bulanan") return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("currencies")
+        .select("id, code");
+      if (cancelled) return;
+      const mapping = new Map<string, string>(
+        (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
+      );
+      setIdToCode(mapping);
+      
+      midByCodeRef.current = new Map(
+        midRates
+          .map((m) => [mapping.get(m.currency_id), Number(m.mid_rate)] as const)
+          .filter((x): x is readonly [string, number] => !!x[0]),
+      );
+      // Trigger re-render by touching rows dep (no-op set)
+      setRows((r) => (r ? [...r] : r));
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, midRates]);
+
+  const [openingModalOpen, setOpeningModalOpen] = useState(false);
+  const [openingSaving, setOpeningSaving] = useState(false);
+  const [openingForm, setOpeningForm] = useState({
+    currency_id: "",
+    foreign: "",
+    idr: ""
+  });
+
+  async function saveOpeningBalance() {
+    if (!openingForm.currency_id || !openingForm.foreign || !openingForm.idr) {
+      toast.error("Mohon isi semua field");
+      return;
+    }
+    if (branchId === "all") {
+      toast.error("Pilih cabang terlebih dahulu");
+      return;
+    }
+
+    setOpeningSaving(true);
+    const { error } = await supabase
+      .from("monthly_balances")
+      .upsert({
+        branch_id: branchId,
+        currency_id: openingForm.currency_id,
+        period_month: monthPeriod + "-01",
+        opening_balance_foreign: Number(openingForm.foreign),
+        opening_balance_idr: Number(openingForm.idr)
+      }, {
+        onConflict: "branch_id, currency_id, period_month"
+      });
+
+    setOpeningSaving(false);
+    if (error) {
+      toast.error("Gagal menyimpan", { description: error.message });
+      return;
+    }
+    toast.success("Saldo awal berhasil disimpan");
+    setOpeningModalOpen(false);
+    load();
+  }
+
   const [rows, setRows] = useState<TrxRow[] | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -246,11 +319,24 @@ function ReportsPage() {
 
     if (tab === "bulanan") {
       const monthDate = monthPeriod + "-01";
-      const { data: mr } = await supabase
+      const midQuery = supabase
         .from("mid_rates")
         .select("currency_id, mid_rate")
         .eq("period_month", monthDate);
-      setMidRates((mr as MidRateRow[]) ?? []);
+        
+      let openQuery = supabase
+        .from("monthly_balances")
+        .select("currency_id, opening_balance_foreign, opening_balance_idr")
+        .eq("period_month", monthDate);
+      
+      if (branchId !== "all") {
+        openQuery = openQuery.eq("branch_id", branchId);
+      }
+        
+      const [midRes, openRes] = await Promise.all([midQuery, openQuery]);
+      
+      setMidRates((midRes.data as MidRateRow[]) ?? []);
+      setOpeningBalances((openRes.data as any[]) ?? []);
     }
   }
 
@@ -352,20 +438,46 @@ function ReportsPage() {
 
   const lkubRows: LkubRow[] = useMemo(() => {
     if (tab !== "bulanan" || !rows) return [];
-    const midByCur = new Map(
-      midRates.map((m) => [m.currency_id, Number(m.mid_rate)]),
-    );
+    
+    // 1. Map Opening Balances by Currency Code
+    const openByCode = new Map<string, { foreign: number; idr: number }>();
+    openingBalances.forEach(ob => {
+      const code = idToCode.get(ob.currency_id);
+      if (!code) return;
+      const existing = openByCode.get(code) || { foreign: 0, idr: 0 };
+      openByCode.set(code, {
+        foreign: existing.foreign + Number(ob.opening_balance_foreign),
+        idr: existing.idr + Number(ob.opening_balance_idr)
+      });
+    });
+
     const map = new Map<string, LkubRow>();
+    
+    // 2. Add all currencies that have opening balances but maybe no transactions yet
+    openByCode.forEach((bal, code) => {
+      map.set(code, {
+        currency_id: "", // not strictly needed for UI
+        currency_code: code,
+        opening_foreign: bal.foreign,
+        opening_idr: bal.idr,
+        buy_foreign: 0,
+        buy_idr: 0,
+        sell_foreign: 0,
+        sell_idr: 0,
+        mid_rate: null,
+      });
+    });
+
+    // 3. Process transactions
     for (const r of rows) {
       if (r.status !== "completed") continue;
-      // Reports uses embedded rows, but we grouped by currency code (id not in select).
-      // Fallback key: use currency code.
       const code = r.currencies?.code ?? "-";
-      const key = code;
       const existing =
-        map.get(key) ?? {
-          currency_id: key,
+        map.get(code) ?? {
+          currency_id: "",
           currency_code: code,
+          opening_foreign: 0,
+          opening_idr: 0,
           buy_foreign: 0,
           buy_idr: 0,
           sell_foreign: 0,
@@ -379,43 +491,17 @@ function ReportsPage() {
         existing.sell_foreign += Number(r.foreign_amount);
         existing.sell_idr += Number(r.idr_amount);
       }
-      map.set(key, existing);
+      map.set(code, existing);
     }
-    // Match mid_rate by currency code by looking up currencies from midRates via a separate map.
-    // We only have currency_id in midRates, so build code→rate via currencies fetched below.
-    // For now, we resolve via a currencies lookup fetched on demand.
+    
     return Array.from(map.values())
       .map((row) => ({
         ...row,
         mid_rate: midByCodeRef.current.get(row.currency_code) ?? null,
       }))
       .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
-  }, [tab, rows, midRates]);
+  }, [tab, rows, midRates, openingBalances, idToCode]);
 
-  useEffect(() => {
-    if (tab !== "bulanan") return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("currencies")
-        .select("id, code");
-      if (cancelled) return;
-      const idToCode = new Map<string, string>(
-        (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
-      );
-      midByCodeRef.current = new Map(
-        midRates
-          .map((m) => [idToCode.get(m.currency_id), Number(m.mid_rate)] as const)
-          .filter((x): x is readonly [string, number] => !!x[0]),
-      );
-      // Trigger re-render by touching rows dep (no-op set)
-      setRows((r) => (r ? [...r] : r));
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, midRates]);
 
   function exportLkubCSV() {
     if (lkubRows.length === 0) {
@@ -437,23 +523,26 @@ function ReportsPage() {
     ];
     const csv = [header.join(",")]
       .concat(
-        lkubRows.map((r) =>
-          [
+        lkubRows.map((r) => {
+          const saldoAkhirValas = r.opening_foreign + r.buy_foreign - r.sell_foreign;
+          const saldoAkhirIdr = r.mid_rate !== null ? saldoAkhirValas * r.mid_rate : 0;
+          
+          return [
             r.currency_code,
             "1 - UKA",
-            0,
-            0,
+            r.opening_foreign,
+            r.opening_idr,
             r.buy_foreign,
             r.buy_idr,
             r.sell_foreign,
             r.sell_idr,
-            0,
+            saldoAkhirValas,
             r.mid_rate ?? "",
-            0,
+            saldoAkhirIdr,
           ]
             .map((v) => `"${String(v ?? "")}"`)
-            .join(","),
-        ),
+            .join(",");
+        }),
       )
       .join("\n");
     const blob = new Blob(["\ufeff" + csv], {
@@ -638,6 +727,18 @@ function ReportsPage() {
                 </CardTitle>
                 {tab === "bulanan" && (
                   <div className="flex flex-wrap gap-2">
+                    {branchId !== "all" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setOpeningForm({ currency_id: "", foreign: "", idr: "" });
+                          setOpeningModalOpen(true);
+                        }}
+                      >
+                        Set Saldo Awal
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -713,39 +814,52 @@ function ReportsPage() {
                           </TableCell>
                         </TableRow>
                       ) : (
-                        lkubRows.map((r) => (
-                          <TableRow key={r.currency_code}>
-                            <TableCell className="font-mono font-semibold">
-                              {r.currency_code}
-                            </TableCell>
-                            <TableCell>1 - UKA</TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtNum(r.buy_foreign)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtIDR(r.buy_idr)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtNum(r.sell_foreign)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">
-                              {fmtIDR(r.sell_idr)}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                            <TableCell className="text-right font-mono">
-                              {r.mid_rate !== null ? (
-                                fmtNum(r.mid_rate, 4)
-                              ) : (
-                                <span className="text-amber-600 text-xs">
-                                  belum diisi
-                                </span>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right font-mono">0</TableCell>
-                          </TableRow>
-                        ))
+                        lkubRows.map((r) => {
+                          const saldoAkhirValas = r.opening_foreign + r.buy_foreign - r.sell_foreign;
+                          const saldoAkhirIdr = r.mid_rate !== null ? saldoAkhirValas * r.mid_rate : 0;
+                          
+                          return (
+                            <TableRow key={r.currency_code}>
+                              <TableCell className="font-mono font-semibold">
+                                {r.currency_code}
+                              </TableCell>
+                              <TableCell>1 - UKA</TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(r.opening_foreign)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(r.opening_idr)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(r.buy_foreign)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(r.buy_idr)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(r.sell_foreign)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(r.sell_idr)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtNum(saldoAkhirValas)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {r.mid_rate !== null ? (
+                                  fmtNum(r.mid_rate, 4)
+                                ) : (
+                                  <span className="text-amber-600 text-xs">
+                                    belum diisi
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-right font-mono">
+                                {fmtIDR(saldoAkhirIdr)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })
                       )}
                     </TableBody>
                   </Table>
@@ -962,5 +1076,58 @@ function ReportsPage() {
         </DialogContent>
       </Dialog>
     </div>
+
+      <Dialog open={openingModalOpen} onOpenChange={setOpeningModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set Saldo Awal LKUB</DialogTitle>
+            <DialogDescription>
+              Tentukan saldo awal (carry-over) untuk periode {monthPeriod} di cabang yang dipilih.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Mata Uang</Label>
+              <Select 
+                value={openingForm.currency_id} 
+                onValueChange={(v) => setOpeningForm(prev => ({ ...prev, currency_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih mata uang" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from(idToCode.entries()).map(([id, code]) => (
+                    <SelectItem key={id} value={id}>{code}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Saldo Awal (Valas)</Label>
+              <Input 
+                type="number" 
+                step="0.01" 
+                value={openingForm.foreign}
+                onChange={(e) => setOpeningForm(prev => ({ ...prev, foreign: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Saldo Awal (Rp - Historical Cost)</Label>
+              <Input 
+                type="number" 
+                step="1" 
+                value={openingForm.idr}
+                onChange={(e) => setOpeningForm(prev => ({ ...prev, idr: e.target.value }))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpeningModalOpen(false)}>Batal</Button>
+            <Button onClick={saveOpeningBalance} disabled={openingSaving}>
+              {openingSaving ? "Menyimpan..." : "Simpan Saldo Awal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
   );
 }

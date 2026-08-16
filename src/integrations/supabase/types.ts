@@ -815,6 +815,51 @@ export type Database = {
           },
         ]
       }
+      monthly_balances: {
+        Row: {
+          branch_id: string
+          created_at: string | null
+          currency_id: string
+          id: string
+          opening_balance_foreign: number
+          opening_balance_idr: number
+          period_month: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string | null
+          currency_id: string
+          id?: string
+          opening_balance_foreign?: number
+          opening_balance_idr?: number
+          period_month: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string | null
+          currency_id?: string
+          id?: string
+          opening_balance_foreign?: number
+          opening_balance_idr?: number
+          period_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_balances_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_balances_currency_id_fkey"
+            columns: ["currency_id"]
+            isOneToOne: false
+            referencedRelation: "currencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       monthly_reports: {
         Row: {
           branch_id: string | null
@@ -1259,6 +1304,10 @@ export type Database = {
         Returns: boolean
       }
       admin_confirm_user: { Args: { _user_id: string }; Returns: undefined }
+      calculate_monthly_opening: {
+        Args: { p_branch_id: string; p_target_month: string }
+        Returns: undefined
+      }
       get_lkub_data: {
         Args: { p_branch_id: string; p_period_month: string }
         Returns: {
