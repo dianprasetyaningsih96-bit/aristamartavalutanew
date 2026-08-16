@@ -272,13 +272,21 @@ function RatesPage() {
 
   return (
     <div className="flex flex-col gap-6 p-6">
-      <MasterPageHeader
-        title="Kurs Valuta"
-        description="Setiap cabang dapat memiliki kurs beli & jual sendiri. Jika cabang tidak memiliki kurs, transaksi memakai kurs HQ / Default."
-        onAdd={openCreate}
-        addLabel="Tambah Kurs"
-        canWrite={canWrite}
-      />
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <MasterPageHeader
+          title="Kurs Valuta"
+          description="Setiap cabang dapat memiliki kurs beli & jual sendiri. Jika cabang tidak memiliki kurs, transaksi memakai kurs HQ / Default."
+          onAdd={openCreate}
+          addLabel="Tambah Kurs"
+          canWrite={canWrite}
+        />
+        <Button variant="outline" className="gap-2" asChild>
+          <a href="/rates-history">
+            <History className="h-4 w-4" />
+            Riwayat Kurs
+          </a>
+        </Button>
+      </div>
 
       <div className="flex flex-wrap items-center gap-3">
         <Label className="text-xs text-muted-foreground">Filter cabang:</Label>
