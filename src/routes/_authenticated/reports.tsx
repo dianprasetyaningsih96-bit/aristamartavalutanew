@@ -273,22 +273,26 @@ function ReportsPage() {
   }, [tab, branchId, dateFrom, dateTo, monthPeriod]);
 
   const totals = useMemo(() => {
+    if (tab === "bulanan") {
+      return {
+        count: lkubRows.length, // Or total transaction count if preferred
+        buy: lkubRows.reduce((s, x) => s + Number(x.buy_idr), 0),
+        sell: lkubRows.reduce((s, x) => s + Number(x.sell_idr), 0),
+        suspicious: 0,
+      };
+    }
     const r = rows ?? [];
     return {
       count: r.length,
-      buy: tab === "bulanan" 
-        ? lkubRows.reduce((s, x) => s + Number(x.buy_idr), 0)
-        : r
-          .filter((x) => x.transaction_type === "buy" && x.status === "completed")
-          .reduce((s, x) => s + Number(x.idr_amount), 0),
-      sell: tab === "bulanan"
-        ? lkubRows.reduce((s, x) => s + Number(x.sell_idr), 0)
-        : r
-          .filter((x) => x.transaction_type === "sell" && x.status === "completed")
-          .reduce((s, x) => s + Number(x.idr_amount), 0),
+      buy: r
+        .filter((x) => x.transaction_type === "buy" && x.status === "completed")
+        .reduce((s, x) => s + Number(x.idr_amount), 0),
+      sell: r
+        .filter((x) => x.transaction_type === "sell" && x.status === "completed")
+        .reduce((s, x) => s + Number(x.idr_amount), 0),
       suspicious: r.filter((x) => x.is_suspicious).length,
     };
-  }, [rows]);
+  }, [rows, lkubRows, tab]);
 
   function openFlag(row: TrxRow) {
     setFlagTarget(row);
