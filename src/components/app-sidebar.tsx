@@ -16,6 +16,7 @@ import {
   Clock,
   Scale,
   ShieldAlert,
+  History,
 } from "lucide-react";
 import {
   Sidebar,
@@ -96,6 +97,12 @@ const primary: NavItem[] = [
     url: "/rates",
     icon: LineChart,
     roles: ["super_admin", "branch_manager", "owner"],
+  },
+  {
+    title: "Riwayat Kurs",
+    url: "/rates-history",
+    icon: History,
+    roles: ["super_admin", "branch_manager", "owner", "auditor"],
   },
   {
     title: "Kurs Tengah",
