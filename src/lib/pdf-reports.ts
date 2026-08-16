@@ -268,7 +268,7 @@ export function generateLkubReportPdf(meta: ReportMeta, rows: LkubReportRow[]) {
       }).format(saldoAkhirValas),
       r.mid_rate === null
         ? "-"
-        : new Intl.NumberFormat("id-ID", {
+        : "Rp " + new Intl.NumberFormat("id-ID", {
             minimumFractionDigits: 4,
             maximumFractionDigits: 4,
           }).format(Number(r.mid_rate)),

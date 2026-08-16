@@ -537,7 +537,7 @@ function ReportsPage() {
             r.sell_foreign,
             r.sell_idr,
             saldoAkhirValas,
-            r.mid_rate ?? "",
+            r.mid_rate !== null ? `Rp ${fmtNum(r.mid_rate, 4)}` : "",
             saldoAkhirIdr,
           ]
             .map((v) => `"${String(v ?? "")}"`)
@@ -847,7 +847,7 @@ function ReportsPage() {
                               </TableCell>
                               <TableCell className="text-right font-mono">
                                 {r.mid_rate !== null ? (
-                                  fmtNum(r.mid_rate, 4)
+                                  "Rp " + fmtNum(r.mid_rate, 4)
                                 ) : (
                                   <span className="text-amber-600 text-xs">
                                     belum diisi
