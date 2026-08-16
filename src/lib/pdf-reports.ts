@@ -38,6 +38,8 @@ export interface ReportMeta {
 
 export interface LkubReportRow {
   currency_code: string;
+  saldo_awal_valas: number;
+  saldo_awal_idr: number;
   buy_foreign: number;
   buy_idr: number;
   sell_foreign: number;
@@ -238,30 +240,41 @@ export function generateLkubReportPdf(meta: ReportMeta, rows: LkubReportRow[]) {
     y + 4,
   );
 
-  const body = rows.map((r) => [
-    r.currency_code,
-    "1 - UKA",
-    "0",
-    "0",
-    new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(r.buy_foreign)),
-    fmtIDR(Number(r.buy_idr)),
-    new Intl.NumberFormat("id-ID", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(Number(r.sell_foreign)),
-    fmtIDR(Number(r.sell_idr)),
-    "0",
-    r.mid_rate === null
-      ? "-"
-      : new Intl.NumberFormat("id-ID", {
-          minimumFractionDigits: 4,
-          maximumFractionDigits: 4,
-        }).format(Number(r.mid_rate)),
-    "0",
-  ]);
+  const body = rows.map((r) => {
+    const saldoAkhirValas = Number(r.saldo_awal_valas) + Number(r.buy_foreign) - Number(r.sell_foreign);
+    const saldoAkhirIdr = r.mid_rate ? saldoAkhirValas * Number(r.mid_rate) : 0;
+    
+    return [
+      r.currency_code,
+      "1 - UKA",
+      new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(r.saldo_awal_valas)),
+      fmtIDR(Number(r.saldo_awal_idr)),
+      new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(r.buy_foreign)),
+      fmtIDR(Number(r.buy_idr)),
+      new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(Number(r.sell_foreign)),
+      fmtIDR(Number(r.sell_idr)),
+      new Intl.NumberFormat("id-ID", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(saldoAkhirValas),
+      r.mid_rate === null
+        ? "-"
+        : new Intl.NumberFormat("id-ID", {
+            minimumFractionDigits: 4,
+            maximumFractionDigits: 4,
+          }).format(Number(r.mid_rate)),
+      fmtIDR(saldoAkhirIdr),
+    ];
+  });
 
   table(doc, {
     startY: y + 8,
