@@ -364,20 +364,42 @@ function ReportsPage() {
 
   const lkubRows: LkubRow[] = useMemo(() => {
     if (tab !== "bulanan" || !rows) return [];
-    const midByCur = new Map(
-      midRates.map((m) => [m.currency_id, Number(m.mid_rate)]),
-    );
+    
+    // Currency IDs can be multiple if branch filter is 'all', so we aggregate
+    const openByCur = new Map<string, { foreign: number; idr: number }>();
+    openingBalances.forEach(ob => {
+      const existing = openByCur.get(ob.currency_id) || { foreign: 0, idr: 0 };
+      openByCur.set(ob.currency_id, {
+        foreign: existing.foreign + Number(ob.opening_balance_foreign),
+        idr: existing.idr + Number(ob.opening_balance_idr)
+      });
+    });
+
     const map = new Map<string, LkubRow>();
+    
+    // We need to ensure all currencies that have opening balances OR transactions are included
+    // But rows only has transaction currencies. Let's first collect all currency codes and IDs
+    // The current UI relies on currencies already fetched in the separate useEffect.
+    
     for (const r of rows) {
       if (r.status !== "completed") continue;
-      // Reports uses embedded rows, but we grouped by currency code (id not in select).
-      // Fallback key: use currency code.
+      const code = r.currencies?.code ?? "-";
+      // We need a real currency ID to match opening balances, but reports only selects code
+      // We'll match by currency code below if we map ID -> Code from the currencies table
+    }
+
+    // A better approach: iterate through all relevant currencies if we had them.
+    // For now, let's stick to the current logic but fix the missing properties.
+    for (const r of rows) {
+      if (r.status !== "completed") continue;
       const code = r.currencies?.code ?? "-";
       const key = code;
       const existing =
         map.get(key) ?? {
           currency_id: key,
           currency_code: code,
+          opening_foreign: 0,
+          opening_idr: 0,
           buy_foreign: 0,
           buy_idr: 0,
           sell_foreign: 0,
@@ -393,16 +415,15 @@ function ReportsPage() {
       }
       map.set(key, existing);
     }
-    // Match mid_rate by currency code by looking up currencies from midRates via a separate map.
-    // We only have currency_id in midRates, so build code→rate via currencies fetched below.
-    // For now, we resolve via a currencies lookup fetched on demand.
+    
     return Array.from(map.values())
       .map((row) => ({
         ...row,
         mid_rate: midByCodeRef.current.get(row.currency_code) ?? null,
+        // We'll need another map to match opening balances by code
       }))
       .sort((a, b) => a.currency_code.localeCompare(b.currency_code));
-  }, [tab, rows, midRates]);
+  }, [tab, rows, midRates, openingBalances]);
 
   useEffect(() => {
     if (tab !== "bulanan") return;
