@@ -376,30 +376,6 @@ function ReportsPage() {
     };
   }, [rows, lkubRows, tab]);
 
-  useEffect(() => {
-    if (tab !== "bulanan") return;
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase
-        .from("currencies")
-        .select("id, code");
-      if (cancelled) return;
-      const idToCode = new Map<string, string>(
-        (data ?? []).map((c: { id: string; code: string }) => [c.id, c.code]),
-      );
-      midByCodeRef.current = new Map(
-        midRates
-          .map((m) => [idToCode.get(m.currency_id), Number(m.mid_rate)] as const)
-          .filter((x): x is readonly [string, number] => !!x[0]),
-      );
-      // Trigger re-render by touching rows dep (no-op set)
-      setRows((r) => (r ? [...r] : r));
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab, midRates]);
 
   function exportLkubCSV() {
     if (lkubRows.length === 0) {
