@@ -38,6 +38,8 @@ export interface ReportMeta {
 
 export interface LkubReportRow {
   currency_code: string;
+  saldo_awal_valas: number;
+  saldo_awal_idr: number;
   buy_foreign: number;
   buy_idr: number;
   sell_foreign: number;
