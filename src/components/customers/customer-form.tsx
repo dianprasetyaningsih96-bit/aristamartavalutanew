@@ -301,13 +301,17 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
             </Field>
             <Field label="Kewarganegaraan">
               <Select
-                value={form.nationality ?? "ID"}
+                value={form.nationality || "ID"}
                 onValueChange={(v) => setForm({ ...form, nationality: v })}
               >
-                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-8">
+                  <SelectValue placeholder="Pilih negara" />
+                </SelectTrigger>
                 <SelectContent>
                   {COUNTRIES.map((c) => (
-                    <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                    <SelectItem key={c.code} value={c.code}>
+                      {c.code} — {c.name}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
