@@ -720,14 +720,23 @@ function CustomersPage() {
                   />
                 </Field>
                 <Field label="Kewarganegaraan">
-                  <Input
-                    value={form.nationality ?? ""}
-                    onChange={(e) =>
-                      setForm({ ...form, nationality: e.target.value.toUpperCase() })
+                  <Select
+                    value={form.nationality || "ID"}
+                    onValueChange={(v) =>
+                      setForm({ ...form, nationality: v })
                     }
-                    maxLength={3}
-                    placeholder="ID"
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih negara" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COUNTRIES.map((c) => (
+                        <SelectItem key={c.code} value={c.code}>
+                          {c.code} — {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </Field>
                 {!isCorporate && (
                   <>
