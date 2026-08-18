@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { COUNTRIES } from "@/lib/countries";
+import { up, upReq, UPPERCASE_FORM } from "@/lib/text-case";
 
 export type CustomerType = "individual" | "corporate";
 export type IdType = "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other";
@@ -175,35 +176,35 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
     const now = new Date().toISOString();
     const payload: Record<string, any> = {
       customer_type: d.customer_type,
-      full_name: d.full_name,
+      full_name: upReq(d.full_name),
       id_type: d.id_type,
-      id_number: d.id_number.trim(),
+      id_number: upReq(d.id_number),
       id_expiry_date: d.id_expiry_date || null,
       date_of_birth: d.date_of_birth || null,
-      place_of_birth: d.place_of_birth || null,
+      place_of_birth: up(d.place_of_birth),
       nationality: d.nationality || null,
       gender: d.gender || null,
-      address: d.address || null,
-      city: d.city || null,
-      province: d.province || null,
+      address: up(d.address),
+      city: up(d.city),
+      province: up(d.province),
       postal_code: d.postal_code || null,
       phone: d.phone || null,
       email: d.email || null,
-      occupation: d.occupation || null,
-      employer: d.employer || null,
-      source_of_funds: d.source_of_funds || null,
-      purpose_of_transaction: d.purpose_of_transaction || null,
+      occupation: up(d.occupation),
+      employer: up(d.employer),
+      source_of_funds: up(d.source_of_funds),
+      purpose_of_transaction: up(d.purpose_of_transaction),
       monthly_income_range: d.monthly_income_range || null,
-      company_name: d.company_name || null,
-      npwp_number: d.npwp_number || null,
-      business_type: d.business_type || null,
+      company_name: up(d.company_name),
+      npwp_number: up(d.npwp_number),
+      business_type: up(d.business_type),
       is_pep: d.is_pep,
-      pep_notes: d.pep_notes || null,
+      pep_notes: up(d.pep_notes),
       risk_rating: d.risk_rating,
       kyc_status: d.kyc_status,
-      kyc_notes: d.kyc_notes || null,
+      kyc_notes: up(d.kyc_notes),
       is_blacklisted: d.is_blacklisted,
-      blacklist_reason: d.blacklist_reason || null,
+      blacklist_reason: up(d.blacklist_reason),
       branch_id: d.branch_id || null,
       created_by: user?.id ?? null,
     };
@@ -231,7 +232,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
   const isCorporate = form.customer_type === "corporate";
 
   return (
-    <div className="space-y-4 py-2">
+    <div className={`space-y-4 py-2 ${UPPERCASE_FORM}`}>
       <Tabs defaultValue="identity" className="w-full">
         <div className="-mx-1 overflow-x-auto sm:mx-0">
           <TabsList className="inline-flex w-max min-w-full gap-1 sm:grid sm:w-full sm:grid-cols-4 sm:gap-0">
