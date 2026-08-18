@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
+import { up, UPPERCASE_FORM } from "@/lib/text-case";
 import {
   Select,
   SelectContent,
@@ -433,7 +434,7 @@ function TransactionsPage() {
       idr_amount: idrAmount,
       payment_method: parsed.data.payment_method,
       status: "completed" as const,
-      notes: parsed.data.notes || null,
+      notes: up(parsed.data.notes),
       teller_id: user?.id ?? null,
       ...(isSuperAdmin && parsed.data.transaction_date
         ? { transaction_date: new Date(parsed.data.transaction_date).toISOString() }
@@ -779,7 +780,7 @@ function TransactionsPage() {
 
       {/* Create dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`max-w-2xl max-h-[90vh] overflow-y-auto ${UPPERCASE_FORM}`}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {form.transaction_type === "buy" ? (
