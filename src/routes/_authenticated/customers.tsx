@@ -356,35 +356,35 @@ function CustomersPage() {
     const nowVerified = d.kyc_status === "verified";
     const payload: Record<string, unknown> = {
       customer_type: d.customer_type,
-      full_name: d.full_name,
+      full_name: upReq(d.full_name),
       id_type: d.id_type,
-      id_number: d.id_number.trim(),
+      id_number: upReq(d.id_number),
       id_expiry_date: d.id_expiry_date || null,
       date_of_birth: d.date_of_birth || null,
-      place_of_birth: d.place_of_birth || null,
+      place_of_birth: up(d.place_of_birth),
       nationality: d.nationality || null,
       gender: d.gender || null,
-      address: d.address || null,
-      city: d.city || null,
-      province: d.province || null,
+      address: up(d.address),
+      city: up(d.city),
+      province: up(d.province),
       postal_code: d.postal_code || null,
       phone: d.phone || null,
       email: d.email || null,
-      occupation: d.occupation || null,
-      employer: d.employer || null,
-      source_of_funds: d.source_of_funds || null,
-      purpose_of_transaction: d.purpose_of_transaction || null,
+      occupation: up(d.occupation),
+      employer: up(d.employer),
+      source_of_funds: up(d.source_of_funds),
+      purpose_of_transaction: up(d.purpose_of_transaction),
       monthly_income_range: d.monthly_income_range || null,
-      company_name: d.company_name || null,
-      npwp_number: d.npwp_number || null,
-      business_type: d.business_type || null,
+      company_name: up(d.company_name),
+      npwp_number: up(d.npwp_number),
+      business_type: up(d.business_type),
       is_pep: d.is_pep,
-      pep_notes: d.pep_notes || null,
+      pep_notes: up(d.pep_notes),
       risk_rating: d.risk_rating,
       kyc_status: d.kyc_status,
-      kyc_notes: d.kyc_notes || null,
+      kyc_notes: up(d.kyc_notes),
       is_blacklisted: d.is_blacklisted,
-      blacklist_reason: d.blacklist_reason || null,
+      blacklist_reason: up(d.blacklist_reason),
       branch_id: d.branch_id || null,
     };
     if (!editing) {
@@ -615,7 +615,7 @@ function CustomersPage() {
       </Card>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`max-w-3xl max-h-[90vh] overflow-y-auto ${UPPERCASE_FORM}`}>
           <DialogHeader>
             <DialogTitle>
               {editing ? `Edit Nasabah — ${editing.customer_code}` : "Tambah Nasabah"}
