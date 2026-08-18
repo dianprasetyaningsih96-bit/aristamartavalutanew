@@ -929,7 +929,7 @@ function TransactionsPage() {
                     onValueChange={(v) => setForm({ ...form, customer_id: v })}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Pilih nasabah" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NO_CUSTOMER}>
