@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { COUNTRIES } from "@/lib/countries";
 
 export type CustomerType = "individual" | "corporate";
 export type IdType = "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other";
@@ -299,13 +300,17 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
               />
             </Field>
             <Field label="Kewarganegaraan">
-              <Input
-                className="h-8"
-                value={form.nationality ?? ""}
-                onChange={(e) => setForm({ ...form, nationality: e.target.value.toUpperCase() })}
-                maxLength={3}
-                placeholder="ID"
-              />
+              <Select
+                value={form.nationality ?? "ID"}
+                onValueChange={(v) => setForm({ ...form, nationality: v })}
+              >
+                <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c.code} value={c.code}>{c.code} — {c.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </Field>
             {!isCorporate && (
               <>
