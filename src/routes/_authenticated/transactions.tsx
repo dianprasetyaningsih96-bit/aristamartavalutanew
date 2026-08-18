@@ -12,11 +12,12 @@ import {
   Printer,
   AlertTriangle,
 } from "lucide-react";
-import { Plus } from "lucide-react";
+import { Plus, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { CustomerForm } from "@/components/customers/customer-form";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
+import { COUNTRIES } from "@/lib/countries";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { generateReceiptPdf } from "@/lib/pdf-receipt";
 import { Card, CardContent } from "@/components/ui/card";
@@ -928,7 +929,7 @@ function TransactionsPage() {
                     onValueChange={(v) => setForm({ ...form, customer_id: v })}
                   >
                     <SelectTrigger>
-                      <SelectValue />
+                      <SelectValue placeholder="Pilih nasabah" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value={NO_CUSTOMER}>
