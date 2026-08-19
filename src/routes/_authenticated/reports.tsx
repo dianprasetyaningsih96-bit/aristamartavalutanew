@@ -932,7 +932,7 @@ function ReportsPage() {
                           {r.currencies?.code}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {new Intl.NumberFormat("id-ID").format(
+                          {new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(
                             Number(r.foreign_amount),
                           )}
                         </TableCell>
