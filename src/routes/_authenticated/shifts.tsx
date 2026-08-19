@@ -52,7 +52,12 @@ interface Currency {
 interface Branch { id: string; name: string; code: string }
 
 function formatIDR(n: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 function formatDateTime(s: string | null) {
@@ -382,7 +387,7 @@ function OpenShiftDialog({
                 inputMode="numeric"
                 prefix="Rp"
                 placeholder="Contoh: 50.000.000"
-                value={openingCapital ? new Intl.NumberFormat("id-ID").format(Number(openingCapital)) : ""}
+                value={openingCapital ? new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Number(openingCapital)) : ""}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^\d]/g, "");
                   setOpeningCapital(val);

@@ -112,7 +112,10 @@ function fmtNum(n: number, digits = 2) {
 }
 
 function fmtIDR(n: number) {
-  return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
+  return "Rp " + new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(n));
 }
 function fmtDate(s: string) {
   return new Date(s).toLocaleString("id-ID");
@@ -537,7 +540,7 @@ function ReportsPage() {
             r.sell_foreign,
             r.sell_idr,
             saldoAkhirValas,
-            r.mid_rate !== null ? `Rp ${fmtNum(r.mid_rate, 4)}` : "",
+            r.mid_rate !== null ? `Rp ${fmtNum(r.mid_rate, 0)}` : "",
             saldoAkhirIdr,
           ]
             .map((v) => `"${String(v ?? "")}"`)
@@ -845,13 +848,13 @@ function ReportsPage() {
                               <TableCell className="text-right font-mono">
                                 {fmtNum(saldoAkhirValas)}
                               </TableCell>
-                              <TableCell className="text-right font-mono">
-                                {r.mid_rate !== null ? (
-                                  "Rp " + new Intl.NumberFormat("id-ID", {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0,
-                                  }).format(r.mid_rate)
-                                ) : (
+                                <TableCell className="text-right font-mono">
+                                  {r.mid_rate !== null ? (
+                                    "Rp " + new Intl.NumberFormat("id-ID", {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 0,
+                                    }).format(r.mid_rate)
+                                  ) : (
                                   <span className="text-amber-600 text-xs">
                                     belum diisi
                                   </span>
@@ -929,9 +932,10 @@ function ReportsPage() {
                           {r.currencies?.code}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {new Intl.NumberFormat("id-ID").format(
-                            Number(r.foreign_amount),
-                          )}
+                          {new Intl.NumberFormat("id-ID", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          }).format(Number(r.foreign_amount))}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {fmtIDR(Number(r.idr_amount))}

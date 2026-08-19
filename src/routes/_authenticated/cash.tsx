@@ -104,7 +104,7 @@ const movementSchema = z.object({
 
 function fmt(n: number, decimals = 2) {
   return new Intl.NumberFormat("id-ID", {
-    minimumFractionDigits: decimals,
+    minimumFractionDigits: decimals === 0 ? 0 : 2,
     maximumFractionDigits: decimals,
   }).format(n);
 }
