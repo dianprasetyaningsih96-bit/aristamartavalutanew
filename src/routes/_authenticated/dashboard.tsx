@@ -681,7 +681,7 @@ function DashboardPage() {
                         <TableCell className="text-right font-mono tabular-nums">{nfmt(r.buying_rate)}</TableCell>
                         <TableCell className="text-right font-mono tabular-nums">{nfmt(r.selling_rate)}</TableCell>
                         <TableCell className="text-right font-mono text-xs text-muted-foreground">
-                          {nfmt(r.selling_rate - r.buying_rate)}
+                          {new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(r.selling_rate - r.buying_rate)}
                         </TableCell>
                       </TableRow>
                     ))
