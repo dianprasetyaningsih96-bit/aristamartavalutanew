@@ -11,7 +11,10 @@ export const BRAND = {
 };
 
 export function fmtIDR(n: number) {
-  return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
+  return "Rp " + new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(Math.round(n));
 }
 export function fmtNum(n: number, digits = 2) {
   return new Intl.NumberFormat("id-ID", {
