@@ -112,7 +112,10 @@ function fmtNum(n: number, digits = 2) {
 }
 
 function fmtIDR(n: number) {
-  return "Rp " + new Intl.NumberFormat("id-ID").format(Math.round(n));
+  return "Rp " + new Intl.NumberFormat("id-ID", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(Math.round(n));
 }
 function fmtDate(s: string) {
   return new Date(s).toLocaleString("id-ID");

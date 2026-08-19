@@ -90,7 +90,7 @@ const empty = (): Form => ({
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", {
     minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
+    maximumFractionDigits: 2,
   }).format(n);
 
 function periodLabel(dateStr: string) {
@@ -479,13 +479,13 @@ function MidRatesPage() {
               <Label>Kurs Tengah *</Label>
               <Input
                 type="number"
-                step="0.0001"
+                step="0.01"
                 min={0}
                 value={form.mid_rate || ""}
                 onChange={(e) =>
                   setForm({ ...form, mid_rate: Number(e.target.value) })
                 }
-                placeholder="mis. 17856.0000"
+                placeholder="mis. 17856.00"
               />
             </div>
             <div className="space-y-2 col-span-2">

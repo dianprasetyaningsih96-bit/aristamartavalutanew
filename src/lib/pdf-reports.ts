@@ -102,7 +102,7 @@ export function generateReportPdf(meta: ReportMeta, rows: ReportTrxRow[]) {
       new Intl.NumberFormat("id-ID").format(Number(r.foreign_amount)),
       new Intl.NumberFormat("id-ID", {
         minimumFractionDigits: 2,
-        maximumFractionDigits: 4,
+        maximumFractionDigits: 2,
       }).format(Number(r.rate)),
       fmtIDR(Number(r.idr_amount)),
       r.payment_method,
