@@ -848,13 +848,13 @@ function ReportsPage() {
                               <TableCell className="text-right font-mono">
                                 {fmtNum(saldoAkhirValas)}
                               </TableCell>
-                              <TableCell className="text-right font-mono">
-                                {r.mid_rate !== null ? (
-                                  "Rp " + new Intl.NumberFormat("id-ID", {
-                                    minimumFractionDigits: 0,
-                                    maximumFractionDigits: 0,
-                                  }).format(r.mid_rate)
-                                ) : (
+                                <TableCell className="text-right font-mono">
+                                  {r.mid_rate !== null ? (
+                                    "Rp " + new Intl.NumberFormat("id-ID", {
+                                      minimumFractionDigits: 0,
+                                      maximumFractionDigits: 0,
+                                    }).format(r.mid_rate)
+                                  ) : (
                                   <span className="text-amber-600 text-xs">
                                     belum diisi
                                   </span>
@@ -932,9 +932,10 @@ function ReportsPage() {
                           {r.currencies?.code}
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(
-                            Number(r.foreign_amount),
-                          )}
+                          {new Intl.NumberFormat("id-ID", {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 2,
+                          }).format(Number(r.foreign_amount))}
                         </TableCell>
                         <TableCell className="text-right font-mono">
                           {fmtIDR(Number(r.idr_amount))}
