@@ -245,12 +245,54 @@ function OpenShiftDialog({
   const [branchId, setBranchId] = useState<string>(defaultBranchId ?? (lockBranch ? "" : branches[0]?.id ?? ""));
   const [shiftType, setShiftType] = useState<ShiftType>("pagi");
   const [openingCapital, setOpeningCapital] = useState<string>("");
+  const [prevMorningBalance, setPrevMorningBalance] = useState<number | null>(null);
+  const [loadingPrev, setLoadingPrev] = useState(false);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!branchId && !lockBranch && branches.length) setBranchId(branches[0].id);
   }, [branches, branchId, lockBranch]);
+
+  useEffect(() => {
+    if (shiftType === "siang" && branchId) {
+      (async () => {
+        setLoadingPrev(true);
+        // 1. Get the latest closed morning shift for this branch
+        const { data: shiftData } = await supabase
+          .from("shifts")
+          .select("id")
+          .eq("branch_id", branchId)
+          .eq("shift_type", "pagi")
+          .eq("status", "closed")
+          .order("opened_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (shiftData) {
+          // 2. Get the IDR reconciliation for that shift
+          const { data: reconData } = await supabase
+            .from("shift_reconciliations")
+            .select("actual_amount, currencies!inner(code)")
+            .eq("shift_id", shiftData.id)
+            .eq("currencies.code", "IDR")
+            .maybeSingle();
+
+          if (reconData) {
+            setPrevMorningBalance(Number(reconData.actual_amount));
+          } else {
+            setPrevMorningBalance(null);
+          }
+        } else {
+          setPrevMorningBalance(null);
+        }
+        setLoadingPrev(false);
+      })();
+    } else {
+      setPrevMorningBalance(null);
+    }
+  }, [shiftType, branchId]);
+
 
   const assignedBranch = branches.find((b) => b.id === defaultBranchId);
 
@@ -317,7 +359,22 @@ function OpenShiftDialog({
               </SelectContent>
             </Select>
           </div>
+          {shiftType === "siang" && (
+            <div className="rounded-md bg-muted p-3">
+              <p className="text-sm font-medium">Informasi Saldo Shif Pagi</p>
+              {loadingPrev ? (
+                <p className="text-xs text-muted-foreground">Mencari saldo terakhir...</p>
+              ) : prevMorningBalance !== null ? (
+                <p className="text-lg font-bold text-primary">
+                  {formatIDR(prevMorningBalance)}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">Tidak ditemukan riwayat saldo shif pagi sebelumnya.</p>
+              )}
+            </div>
+          )}
           {shiftType === "pagi" && (
+
             <div className="space-y-2">
               <Label>Modal Awal (IDR) <span className="text-destructive">*</span></Label>
               <Input
