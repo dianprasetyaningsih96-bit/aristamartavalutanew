@@ -371,7 +371,7 @@ function TransactionsPage() {
         {
           p_customer_id: form.customer_id,
           p_new_amount_idr: idrAmount,
-          p_threshold_usd: settings.transaction_threshold_usd,
+          p_threshold_usd: settings.transaction_threshold_usd || 10000,
         }
       );
 
