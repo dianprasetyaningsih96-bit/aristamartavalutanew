@@ -8,6 +8,7 @@ export interface AppSettings {
   shift_siang_start: string;
   shift_siang_end: string;
   prevent_oversell: boolean;
+  transaction_threshold_usd: number;
 }
 
 const DEFAULT: AppSettings = {
@@ -17,6 +18,7 @@ const DEFAULT: AppSettings = {
   shift_siang_start: "15:00",
   shift_siang_end: "22:00",
   prevent_oversell: false,
+  transaction_threshold_usd: 10000,
 };
 
 let cache: AppSettings | null = null;
@@ -26,7 +28,7 @@ async function fetchSettings(): Promise<AppSettings> {
   const { data } = await supabase
     .from("app_settings")
     .select(
-      "company_name, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end, prevent_oversell",
+      "company_name, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end, prevent_oversell, transaction_threshold_usd",
     )
     .eq("id", true)
     .maybeSingle();
@@ -40,6 +42,7 @@ async function fetchSettings(): Promise<AppSettings> {
       trim(data?.shift_siang_start) || DEFAULT.shift_siang_start,
     shift_siang_end: trim(data?.shift_siang_end) || DEFAULT.shift_siang_end,
     prevent_oversell: !!data?.prevent_oversell,
+    transaction_threshold_usd: Number(data?.transaction_threshold_usd) || DEFAULT.transaction_threshold_usd,
   };
   cache = next;
   listeners.forEach((l) => l(next));
