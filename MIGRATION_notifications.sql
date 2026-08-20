@@ -161,7 +161,7 @@ BEGIN
         ARRAY['branch_manager','super_admin','owner','auditor']::public.app_role[],
         CASE WHEN NEW.idr_amount >= 500000000 THEN 'ltkt_threshold' ELSE 'ltkt_threshold' END,
         CASE WHEN NEW.idr_amount >= 500000000 THEN 'critical' ELSE 'warning' END,
-        'Transaksi Nilai Besar: ' || NEW.transaction_number,
+        'Transaksi Nilai Besar: ' || NEW.transaction_no,
         COALESCE(v_customer_name,'-') || ' — ' || NEW.transaction_type || ' Rp ' ||
           to_char(NEW.idr_amount, 'FM999G999G999G999'),
         '/transactions',
@@ -179,7 +179,7 @@ BEGIN
         ARRAY['branch_manager','super_admin','owner','auditor']::public.app_role[],
         'blacklist_attempt', 'critical',
         'Transaksi Nasabah Blacklist',
-        COALESCE(v_customer_name,'-') || ' melakukan transaksi ' || NEW.transaction_number,
+        COALESCE(v_customer_name,'-') || ' melakukan transaksi ' || NEW.transaction_no,
         '/transactions',
         'transactions', NEW.id
       );
@@ -196,7 +196,7 @@ BEGIN
     ) VALUES (
       ARRAY['branch_manager','super_admin','owner','auditor']::public.app_role[],
       'ltkm_suspicious','critical',
-      'LTKM: ' || NEW.transaction_number,
+      'LTKM: ' || NEW.transaction_no,
       'Transaksi ditandai mencurigakan. Segera tinjau untuk pelaporan PPATK.',
       '/reports',
       'transactions', NEW.id
