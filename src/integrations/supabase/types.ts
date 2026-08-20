@@ -23,6 +23,7 @@ export type Database = {
           shift_pagi_start: string | null
           shift_siang_end: string | null
           shift_siang_start: string | null
+          transaction_threshold_usd: number | null
           updated_at: string
           updated_by: string | null
         }
@@ -34,6 +35,7 @@ export type Database = {
           shift_pagi_start?: string | null
           shift_siang_end?: string | null
           shift_siang_start?: string | null
+          transaction_threshold_usd?: number | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -45,6 +47,7 @@ export type Database = {
           shift_pagi_start?: string | null
           shift_siang_end?: string | null
           shift_siang_start?: string | null
+          transaction_threshold_usd?: number | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1307,6 +1310,14 @@ export type Database = {
       calculate_monthly_opening: {
         Args: { p_branch_id: string; p_target_month: string }
         Returns: undefined
+      }
+      check_transaction_threshold: {
+        Args: {
+          p_customer_id: string
+          p_new_amount_idr: number
+          p_threshold_usd: number
+        }
+        Returns: boolean
       }
       get_lkub_data: {
         Args: { p_branch_id: string; p_period_month: string }

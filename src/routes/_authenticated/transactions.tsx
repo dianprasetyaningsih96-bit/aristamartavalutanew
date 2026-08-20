@@ -364,7 +364,28 @@ function TransactionsPage() {
       return;
     }
 
-    // Check inventory if selling and prevent_oversell is active
+    // 1. Check Monthly Threshold for Customers
+    if (form.customer_id !== NO_CUSTOMER) {
+      const { data: withinThreshold, error: thresholdError } = await supabase.rpc(
+        "check_transaction_threshold",
+        {
+          p_customer_id: form.customer_id,
+          p_new_amount_idr: idrAmount,
+          p_threshold_usd: settings.transaction_threshold_usd,
+        }
+      );
+
+      if (thresholdError) {
+        console.error("Threshold check error:", thresholdError);
+      } else if (withinThreshold === false) {
+        toast.error("Melebihi ambang batas bulanan", {
+          description: `Total transaksi nasabah bulan ini akan melebihi batas $${settings.transaction_threshold_usd.toLocaleString()}.`,
+        });
+        return;
+      }
+    }
+
+    // 2. Check inventory if selling and prevent_oversell is active
     if (form.transaction_type === "sell" && settings.prevent_oversell) {
       const branchId = form.branch_id === HQ ? null : form.branch_id;
       

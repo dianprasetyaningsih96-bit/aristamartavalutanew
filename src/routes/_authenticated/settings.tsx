@@ -27,6 +27,7 @@ function SettingsPage() {
   const [siangStart, setSiangStart] = useState(settings.shift_siang_start);
   const [siangEnd, setSiangEnd] = useState(settings.shift_siang_end);
   const [preventOversell, setPreventOversell] = useState(settings.prevent_oversell);
+  const [thresholdUsd, setThresholdUsd] = useState(settings.transaction_threshold_usd);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -36,6 +37,7 @@ function SettingsPage() {
     setSiangStart(settings.shift_siang_start);
     setSiangEnd(settings.shift_siang_end);
     setPreventOversell(settings.prevent_oversell);
+    setThresholdUsd(settings.transaction_threshold_usd);
   }, [settings]);
 
   useEffect(() => {
@@ -62,6 +64,7 @@ function SettingsPage() {
         shift_siang_start: siangStart,
         shift_siang_end: siangEnd,
         prevent_oversell: preventOversell,
+        transaction_threshold_usd: thresholdUsd,
         updated_at: new Date().toISOString(),
         updated_by: userRes.user?.id ?? null,
       })
@@ -198,6 +201,25 @@ function SettingsPage() {
               disabled={loading || saving}
             />
           </div>
+
+          <div className="space-y-2 border-t pt-4">
+            <Label htmlFor="threshold-usd">Ambang Batas Transaksi Bulanan Nasabah (USD)</Label>
+            <div className="flex items-center gap-4">
+              <Input
+                id="threshold-usd"
+                type="number"
+                value={thresholdUsd}
+                onChange={(e) => setThresholdUsd(Number(e.target.value))}
+                placeholder="10000"
+                disabled={loading || saving}
+                className="max-w-[200px]"
+              />
+              <p className="text-sm text-muted-foreground">
+                Maksimal akumulasi transaksi nasabah per bulan dalam ekuivalen USD.
+              </p>
+            </div>
+          </div>
+
           <div className="flex justify-end">
             <Button onClick={handleSave} disabled={saving || loading} className="gap-2">
               <Save className="h-4 w-4" />
