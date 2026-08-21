@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { z } from "zod";
 import {
@@ -8,6 +9,8 @@ import {
   ArrowUpCircle,
   Receipt,
   Search,
+  Check,
+  ChevronsUpDown,
   Ban,
   Printer,
   AlertTriangle,
@@ -35,6 +38,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import {
   Dialog,
   DialogContent,
@@ -956,26 +972,74 @@ function TransactionsPage() {
                 </Card>
               ) : (
                 <>
-                  <Select
-                    value={form.customer_id}
-                    onValueChange={(v) => setForm({ ...form, customer_id: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pilih nasabah" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_CUSTOMER}>
-                        Walk-in (tanpa nasabah terdaftar)
-                      </SelectItem>
-                      {customers.map((c) => (
-                        <SelectItem key={c.id} value={c.id}>
-                          {c.customer_code} — {c.full_name}
-                          {c.is_blacklisted ? " ⛔" : ""}
-                          {c.risk_rating === "high" ? " ⚠️" : ""}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        className={cn(
+                          "w-full justify-between font-normal",
+                          !form.customer_id && "text-muted-foreground"
+                        )}
+                      >
+                        {form.customer_id === NO_CUSTOMER
+                          ? "Walk-in (tanpa nasabah terdaftar)"
+                          : customers.find((c) => c.id === form.customer_id)
+                            ? `${customers.find((c) => c.id === form.customer_id)?.customer_code} — ${customers.find((c) => c.id === form.customer_id)?.full_name}`
+                            : "Pilih nasabah"}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0">
+                      <Command>
+                        <CommandInput placeholder="Cari nasabah (Nama/Kode)..." />
+                        <CommandList>
+                          <CommandEmpty>Nasabah tidak ditemukan.</CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="walk-in"
+                              onSelect={() => {
+                                setForm({ ...form, customer_id: NO_CUSTOMER });
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  form.customer_id === NO_CUSTOMER ? "opacity-100" : "opacity-0"
+                                )}
+                              />
+                              Walk-in (tanpa nasabah terdaftar)
+                            </CommandItem>
+                            {customers.map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={`${c.customer_code} ${c.full_name}`}
+                                onSelect={() => {
+                                  setForm({ ...form, customer_id: c.id });
+                                }}
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    form.customer_id === c.id ? "opacity-100" : "opacity-0"
+                                  )}
+                                />
+                                <div className="flex flex-col">
+                                  <span>{c.customer_code} — {c.full_name}</span>
+                                  {c.is_blacklisted || c.risk_rating === "high" ? (
+                                    <div className="flex gap-1 mt-0.5">
+                                      {c.is_blacklisted && <Badge variant="destructive" className="text-[9px] h-3 px-1">DTTOT</Badge>}
+                                      {c.risk_rating === "high" && <Badge variant="warning" className="text-[9px] h-3 px-1">High Risk</Badge>}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                   {blacklistBlock && (
                     <p className="text-xs text-destructive">
                       Nasabah tercatat dalam DTTOT — transaksi diblokir.
