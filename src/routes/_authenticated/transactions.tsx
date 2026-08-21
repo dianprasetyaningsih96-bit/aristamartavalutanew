@@ -436,12 +436,20 @@ function TransactionsPage() {
       });
       return;
     }
-    if (requiresCDD && parsed.data.customer_id === NO_CUSTOMER) {
-      toast.error("CDD wajib", {
-        description:
-          "Transaksi ≥ Rp 100 juta wajib mencantumkan nasabah terdaftar.",
-      });
-      return;
+    if (requiresCDD) {
+      if (parsed.data.customer_id === NO_CUSTOMER) {
+        toast.error("CDD wajib", {
+          description: "Transaksi ≥ Rp 100 juta wajib mencantumkan nasabah terdaftar.",
+        });
+        return;
+      }
+      
+      if (!isVerified) {
+        toast.error("Nasabah belum memenuhi CDD", {
+          description: "Data identitas nasabah ini belum lengkap atau belum terverifikasi untuk transaksi ≥ Rp 100 juta.",
+        });
+        return;
+      }
     }
     setSaving(true);
     const payload = {
