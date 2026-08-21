@@ -1029,7 +1029,7 @@ function TransactionsPage() {
                                   {c.is_blacklisted || c.risk_rating === "high" ? (
                                     <div className="flex gap-1 mt-0.5">
                                       {c.is_blacklisted && <Badge variant="destructive" className="text-[9px] h-3 px-1">DTTOT</Badge>}
-                                      {c.risk_rating === "high" && <Badge variant="warning" className="text-[9px] h-3 px-1">High Risk</Badge>}
+                                      {c.risk_rating === "high" && <Badge variant="secondary" className="text-[9px] h-3 px-1 border-orange-500 text-orange-500">High Risk</Badge>}
                                     </div>
                                   ) : null}
                                 </div>
