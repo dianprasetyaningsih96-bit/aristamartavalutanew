@@ -270,7 +270,7 @@ function TransactionsPage() {
         .order("code"),
       supabase
         .from("customers")
-        .select("id, customer_code, full_name, risk_rating, is_blacklisted")
+        .select("id, customer_code, full_name, risk_rating, kyc_status, is_blacklisted")
         .order("full_name")
         .limit(500),
       supabase
