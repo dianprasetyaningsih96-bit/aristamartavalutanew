@@ -338,6 +338,7 @@ function TransactionsPage() {
 
   const requiresCDD = idrAmount >= CDD_THRESHOLD_IDR;
   const selectedCustomer = customers.find((c) => c.id === form.customer_id);
+  const isVerified = selectedCustomer?.kyc_status === "verified";
   const blacklistBlock = selectedCustomer?.is_blacklisted;
 
   function openCreate(type: TxType) {
