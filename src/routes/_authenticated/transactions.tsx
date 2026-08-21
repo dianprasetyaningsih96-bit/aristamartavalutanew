@@ -106,6 +106,7 @@ interface CustomerOpt {
   customer_code: string;
   full_name: string;
   risk_rating: string;
+  kyc_status: string;
   is_blacklisted: boolean;
 }
 interface RateRow {
