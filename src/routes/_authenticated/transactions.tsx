@@ -106,6 +106,7 @@ interface CustomerOpt {
   customer_code: string;
   full_name: string;
   risk_rating: string;
+  kyc_status: string;
   is_blacklisted: boolean;
 }
 interface RateRow {
@@ -269,7 +270,7 @@ function TransactionsPage() {
         .order("code"),
       supabase
         .from("customers")
-        .select("id, customer_code, full_name, risk_rating, is_blacklisted")
+        .select("id, customer_code, full_name, risk_rating, kyc_status, is_blacklisted")
         .order("full_name")
         .limit(500),
       supabase
@@ -338,6 +339,7 @@ function TransactionsPage() {
 
   const requiresCDD = idrAmount >= CDD_THRESHOLD_IDR;
   const selectedCustomer = customers.find((c) => c.id === form.customer_id);
+  const isVerified = selectedCustomer?.kyc_status === "verified";
   const blacklistBlock = selectedCustomer?.is_blacklisted;
 
   function openCreate(type: TxType) {
@@ -434,12 +436,20 @@ function TransactionsPage() {
       });
       return;
     }
-    if (requiresCDD && parsed.data.customer_id === NO_CUSTOMER) {
-      toast.error("CDD wajib", {
-        description:
-          "Transaksi ≥ Rp 100 juta wajib mencantumkan nasabah terdaftar.",
-      });
-      return;
+    if (requiresCDD) {
+      if (parsed.data.customer_id === NO_CUSTOMER) {
+        toast.error("CDD wajib", {
+          description: "Transaksi ≥ Rp 100 juta wajib mencantumkan nasabah terdaftar.",
+        });
+        return;
+      }
+      
+      if (!isVerified) {
+        toast.error("Nasabah belum memenuhi CDD", {
+          description: "Data identitas nasabah ini belum lengkap atau belum terverifikasi untuk transaksi ≥ Rp 100 juta.",
+        });
+        return;
+      }
     }
     setSaving(true);
     const payload = {
