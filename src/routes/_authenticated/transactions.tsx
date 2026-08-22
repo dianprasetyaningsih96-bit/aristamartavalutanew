@@ -913,6 +913,7 @@ function TransactionsPage() {
               <Input
                 type="text"
                 inputMode="numeric"
+                prefix="Rp"
                 value={form.rate === 0 ? "" : fmtNum(form.rate, 0) + ",00"}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^\d]/g, "");
