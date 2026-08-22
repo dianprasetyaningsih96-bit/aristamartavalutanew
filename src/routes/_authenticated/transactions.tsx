@@ -900,13 +900,23 @@ function TransactionsPage() {
                 type="text"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
                 value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount)}
+                onKeyDown={(e) => {
+                  // Allow comma and dot specifically
+                  if (e.key === "," || e.key === ".") {
+                    return;
+                  }
+                }}
                 onChange={(e) => {
-                  // Hapus titik ribuan, ganti koma desimal dengan titik untuk parseFloat
-                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
-                  // Pastikan hanya satu titik desimal dan angka yang tersisa
-                  const cleanVal = val.replace(/[^\d.]/g, "");
-                  const num = parseFloat(cleanVal) || 0;
-                  setForm({ ...form, foreign_amount: num });
+                  let raw = e.target.value;
+                  // Handle Indonesian format: dots as thousand separators, comma as decimal
+                  // 1.500,50 -> 1500.50
+                  const clean = raw.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(clean);
+                  if (!isNaN(num)) {
+                    setForm({ ...form, foreign_amount: num });
+                  } else if (raw === "") {
+                    setForm({ ...form, foreign_amount: 0 });
+                  }
                 }}
               />
             </div>
