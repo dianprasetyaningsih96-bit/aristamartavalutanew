@@ -209,8 +209,8 @@ function SettingsPage() {
                 id="threshold-usd"
                 type="text"
                 inputMode="numeric"
-                value={thresholdUsd}
-                onChange={(e) => setThresholdUsd(Number(e.target.value.replace(/[^\d.,]/g, "").replace(",", ".")))}
+                value={thresholdUsd ? new Intl.NumberFormat("id-ID").format(thresholdUsd) : ""}
+                onChange={(e) => setThresholdUsd(Number(e.target.value.replace(/[^\d]/g, "")))}
                 placeholder="10000"
                 disabled={loading || saving}
                 className="max-w-[200px]"
