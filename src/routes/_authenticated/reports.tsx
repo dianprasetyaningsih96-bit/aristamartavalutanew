@@ -1110,19 +1110,25 @@ function ReportsPage() {
             <div className="space-y-2">
               <Label>Saldo Awal (Valas)</Label>
               <Input 
-                type="number" 
-                step="0.01" 
+                type="text"
+                inputMode="decimal"
                 value={openingForm.foreign}
-                onChange={(e) => setOpeningForm(prev => ({ ...prev, foreign: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
+                  setOpeningForm(prev => ({ ...prev, foreign: val }));
+                }}
               />
             </div>
             <div className="space-y-2">
               <Label>Saldo Awal (Rp - Historical Cost)</Label>
               <Input 
-                type="number" 
-                step="1" 
+                type="text"
+                inputMode="numeric"
                 value={openingForm.idr}
-                onChange={(e) => setOpeningForm(prev => ({ ...prev, idr: e.target.value }))}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
+                  setOpeningForm(prev => ({ ...prev, idr: val }));
+                }}
               />
             </div>
           </div>
