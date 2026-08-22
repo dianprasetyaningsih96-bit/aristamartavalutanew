@@ -131,6 +131,8 @@ function RatesPage() {
   const [deleting, setDeleting] = useState<Rate | null>(null);
   const [form, setForm] = useState<Form>(empty());
   const [saving, setSaving] = useState(false);
+  const [buyInput, setBuyInput] = useState("");
+  const [sellInput, setSellInput] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>(ALL);
   // Multi-branch targets when creating (checkbox list). Value HQ = default (null).
   const [multiBranches, setMultiBranches] = useState<string[]>([HQ]);
