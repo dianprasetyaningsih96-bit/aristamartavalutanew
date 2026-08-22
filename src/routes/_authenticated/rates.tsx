@@ -207,8 +207,8 @@ function RatesPage() {
       is_active: row.is_active,
       note: row.note ?? "",
     });
-    setBuyInput(buyVal.toString().replace(".", ","));
-    setSellInput(sellVal.toString().replace(".", ","));
+    setBuyInput(new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(buyVal));
+    setSellInput(new Intl.NumberFormat("id-ID", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(sellVal));
     setMultiBranches([row.branch_id ?? HQ]);
     setOpen(true);
   }
