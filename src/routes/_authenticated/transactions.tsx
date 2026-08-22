@@ -899,10 +899,13 @@ function TransactionsPage() {
               <Input
                 type="text"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
-                value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { maximumFractionDigits: 5 }).format(form.foreign_amount)}
+                value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount)}
                 onChange={(e) => {
+                  // Hapus titik ribuan, ganti koma desimal dengan titik untuk parseFloat
                   const val = e.target.value.replace(/\./g, "").replace(",", ".");
-                  const num = parseFloat(val) || 0;
+                  // Pastikan hanya satu titik desimal dan angka yang tersisa
+                  const cleanVal = val.replace(/[^\d.]/g, "");
+                  const num = parseFloat(cleanVal) || 0;
                   setForm({ ...form, foreign_amount: num });
                 }}
               />
