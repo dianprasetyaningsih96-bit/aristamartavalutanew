@@ -926,12 +926,11 @@ function TransactionsPage() {
             <div className="space-y-2">
               <Label>Kurs *</Label>
               <Input
-                type="text"
+                type="number"
                 prefix="Rp"
-                value={form.rate === 0 ? "" : form.rate.toString() + ",00"}
+                value={form.rate || ""}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d]/g, "");
-                  const num = parseFloat(val) || 0;
+                  const num = parseFloat(e.target.value) || 0;
                   setForm({ ...form, rate: num });
                 }}
               />
