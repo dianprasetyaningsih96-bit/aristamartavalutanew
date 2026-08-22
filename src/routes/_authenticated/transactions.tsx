@@ -900,23 +900,14 @@ function TransactionsPage() {
                 type="text"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
                 value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount)}
-                onKeyDown={(e) => {
-                  // Allow comma and dot specifically
-                  if (e.key === "," || e.key === ".") {
-                    return;
-                  }
-                }}
                 onChange={(e) => {
-                  let raw = e.target.value;
-                  // Handle Indonesian format: dots as thousand separators, comma as decimal
-                  // 1.500,50 -> 1500.50
-                  const clean = raw.replace(/\./g, "").replace(",", ".");
-                  const num = parseFloat(clean);
-                  if (!isNaN(num)) {
-                    setForm({ ...form, foreign_amount: num });
-                  } else if (raw === "") {
-                    setForm({ ...form, foreign_amount: 0 });
-                  }
+                  let val = e.target.value;
+                  // If user is typing a comma at the end, don't let Intl.NumberFormat wipe it out yet
+                  // but we need to store the numeric value.
+                  // Remove thousand separator dots
+                  const normalized = val.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(normalized) || 0;
+                  setForm({ ...form, foreign_amount: num });
                 }}
               />
             </div>
