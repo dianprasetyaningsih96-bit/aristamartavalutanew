@@ -207,9 +207,10 @@ function SettingsPage() {
             <div className="flex items-center gap-4">
               <Input
                 id="threshold-usd"
-                type="number"
+                type="text"
+                inputMode="numeric"
                 value={thresholdUsd}
-                onChange={(e) => setThresholdUsd(Number(e.target.value))}
+                onChange={(e) => setThresholdUsd(Number(e.target.value.replace(/[^\d.,]/g, "").replace(",", ".")))}
                 placeholder="10000"
                 disabled={loading || saving}
                 className="max-w-[200px]"
