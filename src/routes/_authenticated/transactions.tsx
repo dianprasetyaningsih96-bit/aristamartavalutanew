@@ -898,11 +898,10 @@ function TransactionsPage() {
               <Label>Nominal Valas ({currencies.find(c => c.id === form.currency_id)?.code || "-"}) *</Label>
               <Input
                 type="text"
-                inputMode="numeric"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
-                value={form.foreign_amount === 0 ? "" : fmtNum(form.foreign_amount, 0)}
+                value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { maximumFractionDigits: 5 }).format(form.foreign_amount)}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d]/g, "");
+                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
                   const num = parseFloat(val) || 0;
                   setForm({ ...form, foreign_amount: num });
                 }}
@@ -912,7 +911,6 @@ function TransactionsPage() {
               <Label>Kurs *</Label>
               <Input
                 type="text"
-                inputMode="numeric"
                 prefix="Rp"
                 value={form.rate === 0 ? "" : fmtNum(form.rate, 0) + ",00"}
                 onChange={(e) => {
