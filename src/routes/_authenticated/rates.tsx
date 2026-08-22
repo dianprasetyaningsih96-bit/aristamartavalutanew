@@ -111,7 +111,7 @@ const empty = (): Form => ({
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 4,
   }).format(n);
 
