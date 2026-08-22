@@ -898,7 +898,7 @@ function TransactionsPage() {
               <Label>Nominal Valas ({currencies.find(c => c.id === form.currency_id)?.code || "-"}) *</Label>
               <Input
                 type="text"
-                inputMode="decimal"
+                inputMode="numeric"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
                 value={form.foreign_amount === 0 ? "" : fmtNum(form.foreign_amount, 0)}
                 onChange={(e) => {
