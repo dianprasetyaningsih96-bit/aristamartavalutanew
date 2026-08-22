@@ -367,11 +367,13 @@ function TransactionsPage() {
       });
       return;
     }
-    setForm({
+    const newForm = {
       ...emptyForm(),
       transaction_type: type,
       branch_id: activeShift?.branch_id ?? HQ,
-    });
+    };
+    setForm(newForm);
+    setForeignInput("");
     setOpen(true);
   }
 
