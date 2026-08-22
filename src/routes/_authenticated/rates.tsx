@@ -131,6 +131,8 @@ function RatesPage() {
   const [deleting, setDeleting] = useState<Rate | null>(null);
   const [form, setForm] = useState<Form>(empty());
   const [saving, setSaving] = useState(false);
+  const [buyInput, setBuyInput] = useState("");
+  const [sellInput, setSellInput] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>(ALL);
   // Multi-branch targets when creating (checkbox list). Value HQ = default (null).
   const [multiBranches, setMultiBranches] = useState<string[]>([HQ]);
@@ -186,21 +188,27 @@ function RatesPage() {
   function openCreate() {
     setEditing(null);
     setForm(empty());
+    setBuyInput("");
+    setSellInput("");
     setMultiBranches([branchFilter === ALL ? HQ : branchFilter]);
     setOpen(true);
   }
 
   function openEdit(row: Rate) {
     setEditing(row);
+    const buyVal = Number(row.buy_rate);
+    const sellVal = Number(row.sell_rate);
     setForm({
       currency_id: row.currency_id,
       branch_id: row.branch_id ?? HQ,
-      buy_rate: Number(row.buy_rate),
-      sell_rate: Number(row.sell_rate),
+      buy_rate: buyVal,
+      sell_rate: sellVal,
       effective_date: row.effective_date,
       is_active: row.is_active,
       note: row.note ?? "",
     });
+    setBuyInput(fmt(buyVal));
+    setSellInput(fmt(sellVal));
     setMultiBranches([row.branch_id ?? HQ]);
     setOpen(true);
   }
@@ -519,11 +527,16 @@ function RatesPage() {
               <Label>Kurs Beli *</Label>
               <Input
                 type="text"
-                value={form.buy_rate === 0 ? "" : fmt(form.buy_rate)}
+                value={buyInput}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
-                  const num = parseFloat(val) || 0;
+                  const val = e.target.value.replace(/[^\d,\.]/g, "");
+                  setBuyInput(val);
+                  const normalized = val.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(normalized) || 0;
                   setForm({ ...form, buy_rate: num });
+                }}
+                onBlur={() => {
+                  if (form.buy_rate > 0) setBuyInput(fmt(form.buy_rate));
                 }}
               />
             </div>
@@ -531,11 +544,16 @@ function RatesPage() {
               <Label>Kurs Jual *</Label>
               <Input
                 type="text"
-                value={form.sell_rate === 0 ? "" : fmt(form.sell_rate)}
+                value={sellInput}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
-                  const num = parseFloat(val) || 0;
+                  const val = e.target.value.replace(/[^\d,\.]/g, "");
+                  setSellInput(val);
+                  const normalized = val.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(normalized) || 0;
                   setForm({ ...form, sell_rate: num });
+                }}
+                onBlur={() => {
+                  if (form.sell_rate > 0) setSellInput(fmt(form.sell_rate));
                 }}
               />
             </div>

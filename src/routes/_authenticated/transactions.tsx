@@ -242,6 +242,7 @@ function TransactionsPage() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(emptyForm());
+  const [foreignInput, setForeignInput] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [viewing, setViewing] = useState<Transaction | null>(null);
@@ -366,11 +367,13 @@ function TransactionsPage() {
       });
       return;
     }
-    setForm({
+    const newForm = {
       ...emptyForm(),
       transaction_type: type,
       branch_id: activeShift?.branch_id ?? HQ,
-    });
+    };
+    setForm(newForm);
+    setForeignInput("");
     setOpen(true);
   }
 
@@ -899,14 +902,24 @@ function TransactionsPage() {
               <Input
                 type="text"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
-                value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount)}
+                value={foreignInput}
                 onChange={(e) => {
-                  // Hapus titik ribuan, ganti koma desimal dengan titik untuk parseFloat
-                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
-                  // Pastikan hanya satu titik desimal dan angka yang tersisa
-                  const cleanVal = val.replace(/[^\d.]/g, "");
-                  const num = parseFloat(cleanVal) || 0;
+                  let val = e.target.value;
+                  // Allow only digits, one comma, and dots as separators
+                  // But for the state we need it formatted visually
+                  const clean = val.replace(/[^\d,\.]/g, "");
+                  setForeignInput(clean);
+                  
+                  // Parse for DB/Logic: remove dots, replace comma with dot
+                  const normalized = clean.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(normalized) || 0;
                   setForm({ ...form, foreign_amount: num });
+                }}
+                onBlur={() => {
+                  // On blur, format it properly
+                  if (form.foreign_amount > 0) {
+                    setForeignInput(new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount));
+                  }
                 }}
               />
             </div>
