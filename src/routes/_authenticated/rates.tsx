@@ -111,7 +111,7 @@ const empty = (): Form => ({
 
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", {
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 4,
   }).format(n);
 
@@ -207,8 +207,8 @@ function RatesPage() {
       is_active: row.is_active,
       note: row.note ?? "",
     });
-    setBuyInput(fmt(buyVal));
-    setSellInput(fmt(sellVal));
+    setBuyInput(buyVal.toString().replace(".", ","));
+    setSellInput(sellVal.toString().replace(".", ","));
     setMultiBranches([row.branch_id ?? HQ]);
     setOpen(true);
   }
@@ -536,7 +536,7 @@ function RatesPage() {
                   setForm({ ...form, buy_rate: num });
                 }}
                 onBlur={() => {
-                  if (form.buy_rate > 0) setBuyInput(fmt(form.buy_rate));
+                  if (form.buy_rate > 0) setBuyInput(form.buy_rate.toString().replace(".", ","));
                 }}
               />
             </div>
@@ -553,7 +553,7 @@ function RatesPage() {
                   setForm({ ...form, sell_rate: num });
                 }}
                 onBlur={() => {
-                  if (form.sell_rate > 0) setSellInput(fmt(form.sell_rate));
+                  if (form.sell_rate > 0) setSellInput(form.sell_rate.toString().replace(".", ","));
                 }}
               />
             </div>
