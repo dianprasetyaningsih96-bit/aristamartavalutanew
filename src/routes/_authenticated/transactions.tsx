@@ -912,9 +912,8 @@ function TransactionsPage() {
               <Label>Kurs *</Label>
               <Input
                 type="text"
-                inputMode="decimal"
-                prefix="Rp"
-                value={form.rate === 0 ? "" : fmtNum(form.rate, 0)}
+                inputMode="numeric"
+                value={form.rate === 0 ? "" : fmtNum(form.rate, 0) + ",00"}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^\d]/g, "");
                   const num = parseFloat(val) || 0;
