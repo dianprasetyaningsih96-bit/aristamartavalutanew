@@ -902,7 +902,7 @@ function TransactionsPage() {
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
                 value={form.foreign_amount === 0 ? "" : form.foreign_amount.toString()}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d.]/g, "");
+                  const val = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
                   const num = parseFloat(val) || 0;
                   setForm({ ...form, foreign_amount: num });
                 }}
@@ -916,7 +916,7 @@ function TransactionsPage() {
                 prefix="Rp"
                 value={form.rate === 0 ? "" : form.rate.toString()}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d.]/g, "");
+                  const val = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
                   const num = parseFloat(val) || 0;
                   setForm({ ...form, rate: num });
                 }}
