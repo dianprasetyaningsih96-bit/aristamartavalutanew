@@ -928,7 +928,7 @@ function TransactionsPage() {
               <Input
                 type="text"
                 prefix="Rp"
-                value={form.rate === 0 ? "" : fmtNum(form.rate, 0) + ",00"}
+                value={form.rate === 0 ? "" : form.rate.toString() + ",00"}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^\d]/g, "");
                   const num = parseFloat(val) || 0;
