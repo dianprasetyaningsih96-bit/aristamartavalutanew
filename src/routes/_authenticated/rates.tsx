@@ -518,25 +518,25 @@ function RatesPage() {
             <div className="space-y-2">
               <Label>Kurs Beli *</Label>
               <Input
-                type="number"
-                step="0.0001"
-                min={0}
-                value={form.buy_rate || ""}
-                onChange={(e) =>
-                  setForm({ ...form, buy_rate: Number(e.target.value) })
-                }
+                type="text"
+                value={form.buy_rate === 0 ? "" : fmt(form.buy_rate)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(val) || 0;
+                  setForm({ ...form, buy_rate: num });
+                }}
               />
             </div>
             <div className="space-y-2">
               <Label>Kurs Jual *</Label>
               <Input
-                type="number"
-                step="0.0001"
-                min={0}
-                value={form.sell_rate || ""}
-                onChange={(e) =>
-                  setForm({ ...form, sell_rate: Number(e.target.value) })
-                }
+                type="text"
+                value={form.sell_rate === 0 ? "" : fmt(form.sell_rate)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(val) || 0;
+                  setForm({ ...form, sell_rate: num });
+                }}
               />
             </div>
             {spread && (
