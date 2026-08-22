@@ -242,6 +242,7 @@ function TransactionsPage() {
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<Form>(emptyForm());
+  const [foreignInput, setForeignInput] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [viewing, setViewing] = useState<Transaction | null>(null);
