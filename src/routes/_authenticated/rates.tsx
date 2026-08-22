@@ -536,7 +536,7 @@ function RatesPage() {
                   setForm({ ...form, buy_rate: num });
                 }}
                 onBlur={() => {
-                  if (form.buy_rate > 0) setBuyInput(fmt(form.buy_rate));
+                  if (form.buy_rate > 0) setBuyInput(form.buy_rate.toString().replace(".", ","));
                 }}
               />
             </div>
