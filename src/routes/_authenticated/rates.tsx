@@ -207,8 +207,8 @@ function RatesPage() {
       is_active: row.is_active,
       note: row.note ?? "",
     });
-    setBuyInput(fmt(buyVal));
-    setSellInput(fmt(sellVal));
+    setBuyInput(buyVal.toString().replace(".", ","));
+    setSellInput(sellVal.toString().replace(".", ","));
     setMultiBranches([row.branch_id ?? HQ]);
     setOpen(true);
   }
