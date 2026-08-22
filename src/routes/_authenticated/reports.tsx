@@ -1111,10 +1111,10 @@ function ReportsPage() {
               <Label>Saldo Awal (Valas)</Label>
               <Input 
                 type="text"
-                inputMode="decimal"
-                value={openingForm.foreign}
+                inputMode="numeric"
+                value={openingForm.foreign ? fmtNum(Number(openingForm.foreign), 0) : ""}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
+                  const val = e.target.value.replace(/[^\d]/g, "");
                   setOpeningForm(prev => ({ ...prev, foreign: val }));
                 }}
               />
@@ -1124,9 +1124,9 @@ function ReportsPage() {
               <Input 
                 type="text"
                 inputMode="numeric"
-                value={openingForm.idr}
+                value={openingForm.idr ? fmtNum(Number(openingForm.idr), 0) : ""}
                 onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d.,]/g, "").replace(",", ".");
+                  const val = e.target.value.replace(/[^\d]/g, "");
                   setOpeningForm(prev => ({ ...prev, idr: val }));
                 }}
               />
