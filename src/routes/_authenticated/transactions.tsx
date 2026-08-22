@@ -902,15 +902,24 @@ function TransactionsPage() {
               <Input
                 type="text"
                 prefix={currencies.find(c => c.id === form.currency_id)?.code}
-                value={form.foreign_amount === 0 ? "" : new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount)}
+                value={foreignInput}
                 onChange={(e) => {
                   let val = e.target.value;
-                  // If user is typing a comma at the end, don't let Intl.NumberFormat wipe it out yet
-                  // but we need to store the numeric value.
-                  // Remove thousand separator dots
-                  const normalized = val.replace(/\./g, "").replace(",", ".");
+                  // Allow only digits, one comma, and dots as separators
+                  // But for the state we need it formatted visually
+                  const clean = val.replace(/[^\d,\.]/g, "");
+                  setForeignInput(clean);
+                  
+                  // Parse for DB/Logic: remove dots, replace comma with dot
+                  const normalized = clean.replace(/\./g, "").replace(",", ".");
                   const num = parseFloat(normalized) || 0;
                   setForm({ ...form, foreign_amount: num });
+                }}
+                onBlur={() => {
+                  // On blur, format it properly
+                  if (form.foreign_amount > 0) {
+                    setForeignInput(new Intl.NumberFormat("id-ID", { minimumFractionDigits: 0, maximumFractionDigits: 5 }).format(form.foreign_amount));
+                  }
                 }}
               />
             </div>
