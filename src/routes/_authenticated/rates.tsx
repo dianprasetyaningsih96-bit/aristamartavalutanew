@@ -525,37 +525,59 @@ function RatesPage() {
             </div>
             <div className="space-y-2">
               <Label>Kurs Beli *</Label>
-              <Input
-                type="text"
-                value={buyInput}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d,\.]/g, "");
-                  setBuyInput(val);
-                  const normalized = val.replace(/\./g, "").replace(",", ".");
-                  const num = parseFloat(normalized) || 0;
-                  setForm({ ...form, buy_rate: num });
-                }}
-                onBlur={() => {
-                  if (form.buy_rate > 0) setBuyInput(form.buy_rate.toString().replace(".", ","));
-                }}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">Rp</span>
+                <Input
+                  type="text"
+                  className="pl-9"
+                  value={buyInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d,\.]/g, "");
+                    setBuyInput(val);
+                    const normalized = val.replace(/\./g, "").replace(",", ".");
+                    const num = parseFloat(normalized) || 0;
+                    setForm({ ...form, buy_rate: num });
+                  }}
+                  onBlur={() => {
+                    if (form.buy_rate > 0) {
+                      setBuyInput(
+                        new Intl.NumberFormat("id-ID", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(form.buy_rate)
+                      );
+                    }
+                  }}
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Kurs Jual *</Label>
-              <Input
-                type="text"
-                value={sellInput}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/[^\d,\.]/g, "");
-                  setSellInput(val);
-                  const normalized = val.replace(/\./g, "").replace(",", ".");
-                  const num = parseFloat(normalized) || 0;
-                  setForm({ ...form, sell_rate: num });
-                }}
-                onBlur={() => {
-                  if (form.sell_rate > 0) setSellInput(form.sell_rate.toString().replace(".", ","));
-                }}
-              />
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-sm text-muted-foreground">Rp</span>
+                <Input
+                  type="text"
+                  className="pl-9"
+                  value={sellInput}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d,\.]/g, "");
+                    setSellInput(val);
+                    const normalized = val.replace(/\./g, "").replace(",", ".");
+                    const num = parseFloat(normalized) || 0;
+                    setForm({ ...form, sell_rate: num });
+                  }}
+                  onBlur={() => {
+                    if (form.sell_rate > 0) {
+                      setSellInput(
+                        new Intl.NumberFormat("id-ID", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        }).format(form.sell_rate)
+                      );
+                    }
+                  }}
+                />
+              </div>
             </div>
             {spread && (
               <div className="col-span-2 text-xs text-muted-foreground">
