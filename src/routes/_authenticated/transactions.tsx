@@ -244,6 +244,7 @@ function TransactionsPage() {
   const [form, setForm] = useState<Form>(emptyForm());
   const [foreignInput, setForeignInput] = useState("");
   const [saving, setSaving] = useState(false);
+  const [rateInput, setRateInput] = useState("");
 
   const [viewing, setViewing] = useState<Transaction | null>(null);
   const [mustPrint, setMustPrint] = useState(false);
@@ -340,11 +341,10 @@ function TransactionsPage() {
         form.transaction_type === "buy"
           ? Number(match.buy_rate)
           : Number(match.sell_rate);
-      setForm((f) =>
-        f.rate === 0 || f.rate === Number(match.buy_rate) || f.rate === Number(match.sell_rate)
-          ? { ...f, rate: suggested }
-          : f,
-      );
+      if (form.rate === 0 || form.rate === Number(match.buy_rate) || form.rate === Number(match.sell_rate)) {
+        setForm((f) => ({ ...f, rate: suggested }));
+        setRateInput(fmtNum(suggested, 0) + ",00");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.currency_id, form.branch_id, form.transaction_type, rates]);
@@ -374,6 +374,7 @@ function TransactionsPage() {
     };
     setForm(newForm);
     setForeignInput("");
+    setRateInput("");
     setOpen(true);
   }
 
@@ -926,12 +927,25 @@ function TransactionsPage() {
             <div className="space-y-2">
               <Label>Kurs *</Label>
               <Input
-                type="number"
+                type="text"
                 prefix="Rp"
-                value={form.rate || ""}
+                value={rateInput}
                 onChange={(e) => {
-                  const num = parseFloat(e.target.value) || 0;
+                  let val = e.target.value;
+                  // Allow digits, dots, and one comma
+                  const clean = val.replace(/[^\d,\.]/g, "");
+                  setRateInput(clean);
+                  
+                  // Parse for logic: remove dots, replace comma with dot
+                  const normalized = clean.replace(/\./g, "").replace(",", ".");
+                  const num = parseFloat(normalized) || 0;
                   setForm({ ...form, rate: num });
+                }}
+                onBlur={() => {
+                  // Format as Rupiah on blur: dots separator and ,00
+                  if (form.rate > 0) {
+                    setRateInput(fmtNum(form.rate, 0) + ",00");
+                  }
                 }}
               />
               <p className="text-[10px] text-muted-foreground">
