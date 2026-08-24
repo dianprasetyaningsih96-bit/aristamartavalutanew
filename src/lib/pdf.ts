@@ -93,8 +93,8 @@ export function portraitDoc() {
 }
 
 export function receiptDoc() {
-  // 80mm thermal-style receipt (width 80mm, height auto trimmed by content)
-  return new jsPDF({ orientation: "portrait", unit: "mm", format: [80, 200] });
+  // 76 × 297mm thermal receipt paper
+  return new jsPDF({ orientation: "portrait", unit: "mm", format: [76, 297] });
 }
 
 export function table(doc: jsPDF, opts: UserOptions) {
