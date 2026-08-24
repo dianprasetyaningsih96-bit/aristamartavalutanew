@@ -37,16 +37,17 @@ export function generateReceiptPdf(r: ReceiptData) {
 
   const text = (value: string, x: number, size = 7, align: "left" | "center" | "right" = "left", bold = false) => {
     doc.setFont("courier", bold ? "bold" : "normal");
-    doc.setFontSize(size);
-    doc.setTextColor(35, 35, 35);
-    doc.text(value, x, y, { align });
+    // Keep thermal glyphs above the printer's unreliable sub-6pt range.
+    doc.setFontSize(Math.max(size, 7));
+    doc.setTextColor(0, 0, 0);
+    doc.text(value, x, y, { align, renderingMode: "fill" });
   };
   const centered = (value: string, size = 7, bold = false) => {
     text(value, width / 2, size, "center", bold);
-    y += size <= 6 ? 2.8 : 3.7;
+    y += size <= 6 ? 3.1 : 3.9;
   };
   const divider = () => {
-    text("--------------------------------------", width / 2, 6.5, "center");
+    text("--------------------------------------", width / 2, 7, "center");
     y += 3.8;
   };
   const detail = (label: string, value: string) => {
@@ -82,9 +83,9 @@ export function generateReceiptPdf(r: ReceiptData) {
   y += 1;
   divider();
 
-  text("Currency;Amount", left, 6.8, "left", true);
-  text("Rate", 48, 6.8, "right", true);
-  text("TotalRp", right, 6.8, "right", true);
+  text("Currency;Amount", left, 7, "left", true);
+  text("Rate", 48, 7, "right", true);
+  text("TotalRp", right, 7, "right", true);
   y += 3.8;
   divider();
 
