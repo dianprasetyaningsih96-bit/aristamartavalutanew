@@ -83,42 +83,42 @@ export function generateReceiptPdf(r: ReceiptData) {
   y += 1;
   divider();
 
-  text("Currency;Amount", left, 7, "left", true);
-  text("Rate", 48, 7, "right", true);
-  text("TotalRp", right, 7, "right", true);
-  y += 3.8;
+  text("CURRENCY / AMOUNT", left, 8, "left", true);
+  text("RATE", 48, 8, "right", true);
+  text("TOTAL RP", right, 8, "right", true);
+  y += 4.4;
   divider();
 
-  text(r.currency.toUpperCase(), left, 7);
-  text(fmtNum(r.foreign_amount, 2), 35, 7, "right");
-  text("x", 38, 7);
-  text(fmtNum(r.rate, 2), 54, 7, "right");
-  text("=", 56, 7);
-  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 7, "right");
-  y += 4;
-  text("0", 35, 7, "right");
-  text("x", 38, 7);
-  text("0,00", 54, 7, "right");
-  text("=", 56, 7);
-  text("0", right, 7, "right");
-  y += 3.8;
+  text(r.currency.toUpperCase(), left, 8);
+  text(fmtNum(r.foreign_amount, 2), 35, 8, "right");
+  text("x", 38, 8);
+  text(fmtNum(r.rate, 2), 54, 8, "right");
+  text("=", 56, 8);
+  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 8, "right");
+  y += 4.8;
+  text("0", 35, 8, "right");
+  text("x", 38, 8);
+  text("0,00", 54, 8, "right");
+  text("=", 56, 8);
+  text("0", right, 8, "right");
+  y += 4.4;
   divider();
 
-  text("Total Rp =", 49, 7.5, "right", true);
-  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 7.5, "right", true);
-  y += 5;
-  text("(Rp)", left, 9, "left", true);
+  text("TOTAL RP =", 49, 8, "right", true);
+  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 8, "right", true);
+  y += 6;
+  text("(RP)", left, 9, "left", true);
   text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 9, "right", true);
-  y += 5;
+  y += 6;
   divider();
 
   if (r.teller_name) detail("Operator", r.teller_name.toUpperCase());
-  y += 7;
-  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )   ( CASHIER )`, 6.2);
-  y += 5;
-  centered("Attention #", 6.2, true);
-  centered("Claim for shortage of cash after leaving", 5.8);
-  centered("out premises can not be considered", 5.8);
+  y += 8;
+  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )   ( CASHIER )`, 8);
+  y += 6;
+  centered("ATTENTION #", 8, true);
+  centered("Claim for shortage of cash after leaving", 8);
+  centered("out premises can not be considered", 8);
 
   openPdf(doc, `struk-${r.transaction_no}.pdf`);
 }
