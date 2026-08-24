@@ -93,8 +93,16 @@ export function portraitDoc() {
 }
 
 export function receiptDoc() {
-  // 76 × 297mm thermal receipt paper
-  return new jsPDF({ orientation: "portrait", unit: "mm", format: [76, 297] });
+  // 76 × 297mm thermal receipt paper. Higher precision keeps glyphs and
+  // column edges crisp when the browser rasterizes the PDF for printing.
+  return new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: [76, 297],
+    precision: 4,
+    compress: false,
+    putOnlyUsedFonts: true,
+  });
 }
 
 export function table(doc: jsPDF, opts: UserOptions) {
