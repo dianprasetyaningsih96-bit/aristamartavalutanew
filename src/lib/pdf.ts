@@ -93,14 +93,13 @@ export function portraitDoc() {
 }
 
 export function receiptDoc() {
-  // 76 × 297mm thermal receipt paper. Higher precision keeps glyphs and
-  // column edges crisp when the browser rasterizes the PDF for printing.
+  // Fixed 76 × 297mm page for dot-matrix printers; built-in fonts avoid substitution blur.
   return new jsPDF({
     orientation: "portrait",
     unit: "mm",
     format: [76, 297],
     precision: 4,
-    compress: false,
+    compress: true,
     putOnlyUsedFonts: true,
   });
 }
