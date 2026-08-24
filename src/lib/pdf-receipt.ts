@@ -27,34 +27,34 @@ function receiptDate(value: string) {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-/** 76mm thermal receipt, using a balanced monospaced layout for 76 × 297mm paper. */
+/** 76 × 297mm dot-matrix receipt with a printer-safe monospaced layout. */
 export function generateReceiptPdf(r: ReceiptData) {
   const doc = receiptDoc();
   const width = 76;
-  const left = 4;
-  const right = width - 4;
-  let y = 7;
+  const left = 5;
+  const right = width - 5;
+  let y = 8;
 
-  const text = (value: string, x: number, size = 7, align: "left" | "center" | "right" = "left", bold = false) => {
+  const text = (value: string, x: number, size = 8, align: "left" | "center" | "right" = "left", bold = false) => {
+    // Built-in Courier avoids font substitution and keeps dot-matrix columns stable.
     doc.setFont("courier", bold ? "bold" : "normal");
-    // Keep thermal glyphs above the printer's unreliable sub-6pt range.
-    doc.setFontSize(Math.max(size, 7));
+    doc.setFontSize(Math.max(size, 8));
     doc.setTextColor(0, 0, 0);
     doc.text(value, x, y, { align, renderingMode: "fill" });
   };
-  const centered = (value: string, size = 7, bold = false) => {
+  const centered = (value: string, size = 8, bold = false) => {
     text(value, width / 2, size, "center", bold);
-    y += size <= 6 ? 3.1 : 3.9;
+    y += 4.4;
   };
   const divider = () => {
-    text("--------------------------------------", width / 2, 7, "center");
-    y += 3.8;
+    text("------------------------------------", width / 2, 8, "center", true);
+    y += 4.4;
   };
   const detail = (label: string, value: string) => {
-    text(label, left, 7);
-    text(":", 23, 7);
-    text(value, 26, 7);
-    y += 3.6;
+    text(label, left, 8);
+    text(":", 24, 8);
+    text(value, 27, 8);
+    y += 4.2;
   };
 
   centered((r.company_name || BRAND.name).toUpperCase(), 8, true);
