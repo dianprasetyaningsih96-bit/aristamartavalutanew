@@ -57,17 +57,17 @@ export function generateReceiptPdf(r: ReceiptData) {
     y += 4.2;
   };
 
-  centered((r.company_name || BRAND.name).toUpperCase(), 8, true);
-  centered("Authorized Money Changer", 6.8);
-  centered("Jl Raya Uluwatu I 66 X Jimbaran, BALI", 5.8);
-  centered("Telp/WA +62 812-4668-468", 5.8);
-  centered("Izin KUPVA 23/34/KEP.GBI/Dpr/2021", 5.8);
-  centered("NPWP:01.446.521.5-904.000", 5.8);
-  y += 1;
+  centered((r.company_name || BRAND.name).toUpperCase(), 9, true);
+  centered("AUTHORIZED MONEY CHANGER", 8);
+  centered("Jl Raya Uluwatu I 66 X Jimbaran, BALI", 8);
+  centered("Telp/WA +62 812-4668-468", 8);
+  centered("Izin KUPVA 23/34/KEP.GBI/Dpr/2021", 8);
+  centered("NPWP:01.446.521.5-904.000", 8);
+  y += 1.5;
 
-  text(r.transaction_type === "buy" ? "Buying (BN)" : "Selling (JN)", left, 7.5, "left", true);
-  text(`No:${r.transaction_no}`, right, 6.8, "right");
-  y += 4;
+  text(r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)", left, 8, "left", true);
+  text(`NO:${r.transaction_no}`, right, 8, "right");
+  y += 5;
   divider();
 
   detail("Date", receiptDate(r.transaction_date));
