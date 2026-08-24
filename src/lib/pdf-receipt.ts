@@ -27,12 +27,12 @@ function receiptDate(value: string) {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-/** 80mm thermal receipt, using the compact monospaced layout from the reference. */
+/** 76mm thermal receipt, using a balanced monospaced layout for 76 × 297mm paper. */
 export function generateReceiptPdf(r: ReceiptData) {
   const doc = receiptDoc();
-  const width = 80;
-  const left = 5;
-  const right = width - 5;
+  const width = 76;
+  const left = 4;
+  const right = width - 4;
   let y = 7;
 
   const text = (value: string, x: number, size = 7, align: "left" | "center" | "right" = "left", bold = false) => {
@@ -46,13 +46,13 @@ export function generateReceiptPdf(r: ReceiptData) {
     y += size <= 6 ? 2.8 : 3.7;
   };
   const divider = () => {
-    text("------------------------------------------", width / 2, 6.5, "center");
+    text("--------------------------------------", width / 2, 6.5, "center");
     y += 3.8;
   };
   const detail = (label: string, value: string) => {
     text(label, left, 7);
-    text(":", 24, 7);
-    text(value, 27, 7);
+    text(":", 23, 7);
+    text(value, 26, 7);
     y += 3.6;
   };
 
@@ -83,27 +83,27 @@ export function generateReceiptPdf(r: ReceiptData) {
   divider();
 
   text("Currency;Amount", left, 6.8, "left", true);
-  text("Rate", 51, 6.8, "right", true);
+  text("Rate", 48, 6.8, "right", true);
   text("TotalRp", right, 6.8, "right", true);
   y += 3.8;
   divider();
 
   text(r.currency.toUpperCase(), left, 7);
-  text(fmtNum(r.foreign_amount, 2), 38, 7, "right");
-  text("x", 41, 7);
-  text(fmtNum(r.rate, 2), 57, 7, "right");
-  text("=", 59, 7);
+  text(fmtNum(r.foreign_amount, 2), 35, 7, "right");
+  text("x", 38, 7);
+  text(fmtNum(r.rate, 2), 54, 7, "right");
+  text("=", 56, 7);
   text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 7, "right");
   y += 4;
-  text("0", 38, 7, "right");
-  text("x", 41, 7);
-  text("0,00", 57, 7, "right");
-  text("=", 59, 7);
+  text("0", 35, 7, "right");
+  text("x", 38, 7);
+  text("0,00", 54, 7, "right");
+  text("=", 56, 7);
   text("0", right, 7, "right");
   y += 3.8;
   divider();
 
-  text("Total Rp =", 52, 7.5, "right", true);
+  text("Total Rp =", 49, 7.5, "right", true);
   text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 7.5, "right", true);
   y += 5;
   text("(Rp)", left, 9, "left", true);
@@ -113,7 +113,7 @@ export function generateReceiptPdf(r: ReceiptData) {
 
   if (r.teller_name) detail("Operator", r.teller_name.toUpperCase());
   y += 7;
-  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )     ( CASHIER )`, 6.2);
+  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )   ( CASHIER )`, 6.2);
   y += 5;
   centered("Attention #", 6.2, true);
   centered("Claim for shortage of cash after leaving", 5.8);
