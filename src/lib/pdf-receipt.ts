@@ -3,7 +3,7 @@ import {
   BRAND,
   fmtIDR,
   fmtNum,
-  printPdf,
+  openPdf,
 } from "./pdf";
 
 export interface ReceiptData {
@@ -120,5 +120,5 @@ export function generateReceiptPdf(r: ReceiptData) {
   centered("Claim for shortage of cash after leaving", 8);
   centered("out premises can not be considered", 8);
 
-  printPdf(doc, `struk-${r.transaction_no}.pdf`);
+  openPdf(doc, `struk-${r.transaction_no}.pdf`);
 }
