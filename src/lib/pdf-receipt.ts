@@ -3,7 +3,7 @@ import {
   BRAND,
   fmtIDR,
   fmtNum,
-  openPdf,
+  printPdf,
 } from "./pdf";
 
 export interface ReceiptData {
