@@ -23,6 +23,8 @@ import { useAppSettings } from "@/hooks/use-app-settings";
 import { COUNTRIES } from "@/lib/countries";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { generateReceiptPdf } from "@/lib/pdf-receipt";
+import { printReceiptViaSerial } from "@/lib/escpos-receipt";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -249,6 +251,8 @@ function TransactionsPage() {
   const [viewing, setViewing] = useState<Transaction | null>(null);
   const [mustPrint, setMustPrint] = useState(false);
   const [printed, setPrinted] = useState(false);
+  const [printingSerial, setPrintingSerial] = useState(false);
+
   const [voiding, setVoiding] = useState<Transaction | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [showAddCustomer, setShowAddCustomer] = useState(false);
@@ -1275,6 +1279,42 @@ function TransactionsPage() {
               </Button>
             )}
             <Button
+              variant="outline"
+              className="gap-2 font-mono"
+              disabled={printingSerial}
+              onClick={async () => {
+                if (!viewing) return;
+                setPrintingSerial(true);
+                try {
+                  await printReceiptViaSerial({
+                    transaction_no: viewing.transaction_no,
+                    transaction_date: viewing.transaction_date,
+                    transaction_type: viewing.transaction_type,
+                    branch: viewing.branches ?? null,
+                    customer: viewing.customers ?? null,
+                    currency: viewing.currencies?.code ?? "-",
+                    foreign_amount: Number(viewing.foreign_amount),
+                    rate: Number(viewing.rate),
+                    idr_amount: Number(viewing.idr_amount),
+                    payment_method: viewing.payment_method,
+                    teller_name: viewing.profiles?.full_name || undefined,
+                    company_name: settings.company_name,
+                  });
+                  setPrinted(true);
+                  toast.success("Struk terkirim ke printer");
+                } catch (err) {
+                  toast.error(
+                    err instanceof Error ? err.message : "Gagal mencetak struk",
+                  );
+                } finally {
+                  setPrintingSerial(false);
+                }
+              }}
+            >
+              <Printer className="h-4 w-4" />
+              {printingSerial ? "Mencetak..." : "Cetak ke Printer (USB)"}
+            </Button>
+            <Button
               className="gap-2"
               onClick={() => {
                 if (!viewing) return;
@@ -1301,8 +1341,9 @@ function TransactionsPage() {
               }}
             >
               <Printer className="h-4 w-4" />
-              {mustPrint && !printed ? "Cetak Struk (Wajib)" : "Cetak Ulang"}
+              {mustPrint && !printed ? "Cetak Struk PDF (Wajib)" : "Cetak Ulang PDF"}
             </Button>
+
           </DialogFooter>
         </DialogContent>
       </Dialog>
