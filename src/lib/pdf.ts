@@ -131,3 +131,60 @@ export function openPdf(doc: jsPDF, filename: string) {
 export function savePdf(doc: jsPDF, filename: string) {
   doc.save(filename);
 }
+
+/**
+ * Kirim PDF langsung ke dialog printer tanpa membuka tab preview.
+ * Dengan Chrome mode --kiosk-printing, dialog pun tidak muncul (cetak otomatis).
+ */
+export function printPdf(doc: jsPDF, filename: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+    iframe.style.visibility = "hidden";
+
+    let done = false;
+    const cleanup = () => {
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        iframe.remove();
+      }, 60_000);
+    };
+
+    iframe.onload = () => {
+      try {
+        const win = iframe.contentWindow;
+        if (!win) throw new Error("no iframe window");
+        win.focus();
+        win.print();
+        done = true;
+        cleanup();
+      } catch {
+        iframe.remove();
+        URL.revokeObjectURL(url);
+        openPdf(doc, filename);
+      }
+    };
+
+    document.body.appendChild(iframe);
+    iframe.src = url;
+
+    // Fallback bila iframe PDF diblokir / tidak pernah load
+    setTimeout(() => {
+      if (!done) {
+        iframe.remove();
+        URL.revokeObjectURL(url);
+        openPdf(doc, filename);
+      }
+    }, 4000);
+  } catch {
+    openPdf(doc, filename);
+  }
+}

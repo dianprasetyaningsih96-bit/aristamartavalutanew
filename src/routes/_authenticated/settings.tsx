@@ -178,6 +178,37 @@ function SettingsPage() {
 
       <Card className="max-w-2xl">
         <CardHeader>
+          <CardTitle>Cetak Struk Langsung ke Printer</CardTitle>
+          <CardDescription>
+            Klik "Cetak Struk" kini langsung membuka dialog printer (tanpa tab
+            preview PDF). Untuk mencetak otomatis tanpa dialog sama sekali,
+            komputer kasir perlu dijalankan dengan mode kiosk printing.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground">
+          <ol className="list-decimal space-y-1 pl-5">
+            <li>Jadikan printer dot-matrix sebagai printer default di Windows.</li>
+            <li>
+              Atur ukuran kertas kustom 76 × 297 mm pada driver printer tersebut.
+            </li>
+            <li>
+              Buat shortcut Chrome, lalu tambahkan parameter berikut pada kolom
+              Target:
+              <code className="mt-1 block rounded bg-muted px-2 py-1 font-mono text-xs text-foreground">
+                chrome.exe --kiosk-printing
+              </code>
+            </li>
+            <li>Buka aplikasi ini lewat shortcut tersebut — struk akan tercetak otomatis.</li>
+          </ol>
+          <p>
+            Catatan: browser tidak mengizinkan aplikasi web mencetak tanpa dialog
+            kecuali mode kiosk printing diaktifkan di komputer kasir.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card className="max-w-2xl">
+        <CardHeader>
           <CardTitle className="flex items-center gap-2 text-destructive">
             <ShieldAlert className="h-5 w-5" />
             Keamanan & Validasi Transaksi
