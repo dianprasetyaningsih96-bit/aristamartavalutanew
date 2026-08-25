@@ -120,5 +120,5 @@ export function generateReceiptPdf(r: ReceiptData) {
   centered("Claim for shortage of cash after leaving", 8);
   centered("out premises can not be considered", 8);
 
-  openPdf(doc, `struk-${r.transaction_no}.pdf`);
+  printPdf(doc, `struk-${r.transaction_no}.pdf`);
 }
