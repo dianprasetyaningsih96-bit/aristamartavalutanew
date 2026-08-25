@@ -249,6 +249,8 @@ function TransactionsPage() {
   const [viewing, setViewing] = useState<Transaction | null>(null);
   const [mustPrint, setMustPrint] = useState(false);
   const [printed, setPrinted] = useState(false);
+  const [printingSerial, setPrintingSerial] = useState(false);
+
   const [voiding, setVoiding] = useState<Transaction | null>(null);
   const [voidReason, setVoidReason] = useState("");
   const [showAddCustomer, setShowAddCustomer] = useState(false);
