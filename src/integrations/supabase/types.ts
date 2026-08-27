@@ -1307,6 +1307,10 @@ export type Database = {
         Returns: boolean
       }
       admin_confirm_user: { Args: { _user_id: string }; Returns: undefined }
+      admin_delete_transaction: {
+        Args: { _transaction_id: string }
+        Returns: undefined
+      }
       calculate_monthly_opening: {
         Args: { p_branch_id: string; p_target_month: string }
         Returns: undefined
