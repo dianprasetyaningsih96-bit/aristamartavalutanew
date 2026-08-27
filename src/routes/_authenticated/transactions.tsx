@@ -1373,6 +1373,32 @@ function TransactionsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Delete dialog (Super Admin) */}
+      <AlertDialog
+        open={!!deleting}
+        onOpenChange={(o) => {
+          if (!o) setDeleting(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus transaksi permanen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Transaksi {deleting?.transaction_no} akan dihapus permanen, mutasi
+              kas terkait dibatalkan (saldo dikembalikan), dan nomor transaksi
+              pada tanggal tersebut akan diurutkan ulang. Tindakan ini tidak
+              dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={doDelete} disabled={deletingBusy}>
+              {deletingBusy ? "Menghapus…" : "Ya, Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
