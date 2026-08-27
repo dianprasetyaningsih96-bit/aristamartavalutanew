@@ -251,6 +251,8 @@ function TransactionsPage() {
   const [mustPrint, setMustPrint] = useState(false);
   const [printed, setPrinted] = useState(false);
   const [voiding, setVoiding] = useState<Transaction | null>(null);
+  const [deleting, setDeleting] = useState<Transaction | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [showAddCustomer, setShowAddCustomer] = useState(false);
 
