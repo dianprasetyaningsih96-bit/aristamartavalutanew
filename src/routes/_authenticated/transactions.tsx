@@ -12,6 +12,7 @@ import {
   Check,
   ChevronsUpDown,
   Ban,
+  Trash2,
   Printer,
   AlertTriangle,
 } from "lucide-react";
