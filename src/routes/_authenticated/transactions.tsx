@@ -541,6 +541,24 @@ function TransactionsPage() {
     load();
   }
 
+  async function doDelete() {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    const { error } = await supabase.rpc("admin_delete_transaction", {
+      _transaction_id: deleting.id,
+    });
+    setDeletingBusy(false);
+    if (error) {
+      toast.error("Gagal menghapus transaksi", { description: error.message });
+      return;
+    }
+    toast.success("Transaksi dihapus", {
+      description: "Nomor transaksi pada tanggal tersebut telah diurutkan ulang.",
+    });
+    setDeleting(null);
+    load();
+  }
+
   const filtered = useMemo(() => {
     if (!rows) return null;
     const q = search.trim().toLowerCase();
