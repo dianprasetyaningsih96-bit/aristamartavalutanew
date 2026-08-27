@@ -12,6 +12,7 @@ import {
   Check,
   ChevronsUpDown,
   Ban,
+  Trash2,
   Printer,
   AlertTriangle,
 } from "lucide-react";
@@ -250,6 +251,8 @@ function TransactionsPage() {
   const [mustPrint, setMustPrint] = useState(false);
   const [printed, setPrinted] = useState(false);
   const [voiding, setVoiding] = useState<Transaction | null>(null);
+  const [deleting, setDeleting] = useState<Transaction | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [voidReason, setVoidReason] = useState("");
   const [showAddCustomer, setShowAddCustomer] = useState(false);
 
@@ -538,6 +541,24 @@ function TransactionsPage() {
     load();
   }
 
+  async function doDelete() {
+    if (!deleting) return;
+    setDeletingBusy(true);
+    const { error } = await supabase.rpc("admin_delete_transaction", {
+      _transaction_id: deleting.id,
+    });
+    setDeletingBusy(false);
+    if (error) {
+      toast.error("Gagal menghapus transaksi", { description: error.message });
+      return;
+    }
+    toast.success("Transaksi dihapus", {
+      description: "Nomor transaksi pada tanggal tersebut telah diurutkan ulang.",
+    });
+    setDeleting(null);
+    load();
+  }
+
   const filtered = useMemo(() => {
     if (!rows) return null;
     const q = search.trim().toLowerCase();
@@ -817,6 +838,16 @@ function TransactionsPage() {
                             title="Batalkan"
                           >
                             <Ban className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                        {isSuperAdmin && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setDeleting(r)}
+                            title="Hapus transaksi"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
                       </div>
@@ -1338,6 +1369,32 @@ function TransactionsPage() {
             <AlertDialogCancel>Batal</AlertDialogCancel>
             <AlertDialogAction onClick={doVoid}>
               Ya, Batalkan
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete dialog (Super Admin) */}
+      <AlertDialog
+        open={!!deleting}
+        onOpenChange={(o) => {
+          if (!o) setDeleting(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus transaksi permanen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Transaksi {deleting?.transaction_no} akan dihapus permanen, mutasi
+              kas terkait dibatalkan (saldo dikembalikan), dan nomor transaksi
+              pada tanggal tersebut akan diurutkan ulang. Tindakan ini tidak
+              dapat dibatalkan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction onClick={doDelete} disabled={deletingBusy}>
+              {deletingBusy ? "Menghapus…" : "Ya, Hapus"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
