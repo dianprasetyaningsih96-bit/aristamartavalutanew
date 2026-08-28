@@ -1,7 +1,6 @@
 import {
   receiptDoc,
   BRAND,
-  fmtIDR,
   fmtNum,
   openPdf,
 } from "./pdf";
@@ -19,6 +18,10 @@ export interface ReceiptData {
   payment_method?: string;
   teller_name?: string;
   company_name?: string;
+  company_address?: string;
+  company_phone?: string;
+  license_pva?: string;
+  npwp_number?: string;
 }
 
 function receiptDate(value: string) {
@@ -59,10 +62,14 @@ export function generateReceiptPdf(r: ReceiptData) {
 
   centered((r.company_name || BRAND.name).toUpperCase(), 9, true);
   centered("AUTHORIZED MONEY CHANGER", 8);
-  centered("Jl Raya Uluwatu I 66 X Jimbaran, BALI", 8);
-  centered("Telp/WA +62 812-4668-468", 8);
-  centered("Izin KUPVA 23/34/KEP.GBI/Dpr/2021", 8);
-  centered("NPWP:01.446.521.5-904.000", 8);
+  if (r.company_address) {
+    for (const line of doc.splitTextToSize(r.company_address.toUpperCase(), width - 8) as string[]) {
+      centered(line, 8);
+    }
+  }
+  if (r.company_phone) centered(`TELP/WA ${r.company_phone}`, 8);
+  if (r.license_pva) centered(`IZIN PVA ${r.license_pva}`, 8);
+  if (r.npwp_number) centered(`NPWP:${r.npwp_number}`, 8);
   y += 1.5;
 
   text(r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)", left, 8, "left", true);
