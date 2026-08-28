@@ -34,47 +34,48 @@ function receiptDate(value: string) {
 export function generateReceiptPdf(r: ReceiptData) {
   const doc = receiptDoc();
   const width = 76;
-  const left = 5;
-  const right = width - 5;
+  const left = 7;
+  const right = width - 7;
   let y = 8;
 
-  const text = (value: string, x: number, size = 8, align: "left" | "center" | "right" = "left", bold = false) => {
+  const text = (value: string, x: number, size = 7.5, align: "left" | "center" | "right" = "left", bold = false) => {
     // Built-in Courier avoids font substitution and keeps dot-matrix columns stable.
     doc.setFont("courier", bold ? "bold" : "normal");
-    doc.setFontSize(Math.max(size, 8));
+    doc.setFontSize(size);
     doc.setTextColor(0, 0, 0);
     doc.text(value, x, y, { align, renderingMode: "fill" });
   };
-  const centered = (value: string, size = 8, bold = false) => {
+  const centered = (value: string, size = 7.5, bold = false) => {
     text(value, width / 2, size, "center", bold);
-    y += 4.4;
+    y += 4.0;
   };
   const divider = () => {
-    text("------------------------------------", width / 2, 8, "center", true);
-    y += 4.4;
+    doc.setFont("courier", "normal");
+    text("----------------------------------------", width / 2, 7, "center");
+    y += 4.0;
   };
   const detail = (label: string, value: string) => {
-    text(label, left, 8);
-    text(":", 24, 8);
-    text(value, 27, 8);
-    y += 4.2;
+    text(label, left, 7.5);
+    text(":", left + 19, 7.5);
+    text(value, left + 21, 7.5);
+    y += 3.8;
   };
 
-  centered((r.company_name || BRAND.name).toUpperCase(), 9, true);
-  centered("AUTHORIZED MONEY CHANGER", 8);
+  centered((r.company_name || BRAND.name).toUpperCase(), 8.5, true);
+  centered("AUTHORIZED MONEY CHANGER", 7.5);
   if (r.company_address) {
-    for (const line of doc.splitTextToSize(r.company_address.toUpperCase(), width - 8) as string[]) {
-      centered(line, 8);
+    for (const line of doc.splitTextToSize(r.company_address.toUpperCase(), width - 14) as string[]) {
+      centered(line, 7.5);
     }
   }
-  if (r.company_phone) centered(`TELP/WA ${r.company_phone}`, 8);
-  if (r.license_pva) centered(`IZIN PVA ${r.license_pva}`, 8);
-  if (r.npwp_number) centered(`NPWP:${r.npwp_number}`, 8);
+  if (r.company_phone) centered(`TELP/WA ${r.company_phone}`, 7.5);
+  if (r.license_pva) centered(`IZIN PVA ${r.license_pva}`, 7.5);
+  if (r.npwp_number) centered(`NPWP:${r.npwp_number}`, 7.5);
   y += 1.5;
 
-  text(r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)", left, 8, "left", true);
-  text(`NO:${r.transaction_no}`, right, 8, "right");
-  y += 5;
+  text(r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)", left, 7.5, "left", true);
+  text(`NO:${r.transaction_no}`, right, 7.5, "right");
+  y += 4.5;
   divider();
 
   detail("Date", receiptDate(r.transaction_date));
@@ -90,42 +91,42 @@ export function generateReceiptPdf(r: ReceiptData) {
   y += 1;
   divider();
 
-  text("CURRENCY / AMOUNT", left, 8, "left", true);
-  text("RATE", 48, 8, "right", true);
-  text("TOTAL RP", right, 8, "right", true);
-  y += 4.4;
+  text("CURRENCY / AMOUNT    RATE       TOTAL RP", width / 2, 6.8, "center", true);
+  y += 4.0;
   divider();
 
-  text(r.currency.toUpperCase(), left, 8);
-  text(fmtNum(r.foreign_amount, 2), 35, 8, "right");
-  text("x", 38, 8);
-  text(fmtNum(r.rate, 2), 54, 8, "right");
-  text("=", 56, 8);
-  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 8, "right");
-  y += 4.8;
-  text("0", 35, 8, "right");
-  text("x", 38, 8);
-  text("0,00", 54, 8, "right");
-  text("=", 56, 8);
-  text("0", right, 8, "right");
-  y += 4.4;
+  const currStr = r.currency.toUpperCase();
+  const fAmountStr = fmtNum(r.foreign_amount, 2);
+  const rateStr = `x ${fmtNum(r.rate, 2)} =`;
+  const idrStr = new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount));
+
+  // Format a balanced 40-character line with centered alignment and safe margins
+  const leftSide = `${currStr} ${fAmountStr}`;
+  const rightSide = idrStr;
+  const remaining = 40 - leftSide.length - rateStr.length - rightSide.length;
+  const leftPad = Math.max(1, Math.floor(remaining / 2));
+  const rightPad = Math.max(1, remaining - leftPad);
+  const rowText = leftSide + " ".repeat(leftPad) + rateStr + " ".repeat(rightPad) + rightSide;
+
+  text(rowText, width / 2, 6.8, "center", false);
+  y += 4.2;
   divider();
 
-  text("TOTAL RP =", 49, 8, "right", true);
-  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 8, "right", true);
-  y += 6;
-  text("(RP)", left, 9, "left", true);
-  text(new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount)), right, 9, "right", true);
-  y += 6;
+  text("TOTAL RP =", right - doc.getTextWidth(idrStr) - 3, 7, "right", true);
+  text(idrStr, right, 7, "right", true);
+  y += 5.0;
+  text("(RP)", left, 8, "left", true);
+  text(idrStr, right, 8, "right", true);
+  y += 5.0;
   divider();
 
   if (r.teller_name) detail("Operator", r.teller_name.toUpperCase());
   y += 8;
-  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )   ( CASHIER )`, 8);
+  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )   ( CASHIER )`, 7.5);
   y += 6;
-  centered("ATTENTION #", 8, true);
-  centered("Claim for shortage of cash after leaving", 8);
-  centered("out premises can not be considered", 8);
+  centered("ATTENTION #", 7.5, true);
+  centered("Claim for shortage of cash after leaving", 7.5);
+  centered("out premises can not be considered", 7.5);
 
   printPdf(doc, `struk-${r.transaction_no}.pdf`);
 }
