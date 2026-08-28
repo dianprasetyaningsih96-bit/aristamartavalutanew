@@ -10,14 +10,18 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.17"
+    PostgrestVersion: "14.5"
   }
   public: {
     Tables: {
       app_settings: {
         Row: {
+          company_address: string | null
           company_name: string
+          company_phone: string | null
           id: boolean
+          license_pva: string | null
+          npwp_number: string | null
           prevent_oversell: boolean | null
           shift_pagi_end: string | null
           shift_pagi_start: string | null
@@ -28,8 +32,12 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          company_address?: string | null
           company_name?: string
+          company_phone?: string | null
           id?: boolean
+          license_pva?: string | null
+          npwp_number?: string | null
           prevent_oversell?: boolean | null
           shift_pagi_end?: string | null
           shift_pagi_start?: string | null
@@ -40,8 +48,12 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          company_address?: string | null
           company_name?: string
+          company_phone?: string | null
           id?: boolean
+          license_pva?: string | null
+          npwp_number?: string | null
           prevent_oversell?: boolean | null
           shift_pagi_end?: string | null
           shift_pagi_start?: string | null

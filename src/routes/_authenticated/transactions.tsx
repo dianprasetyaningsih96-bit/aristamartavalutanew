@@ -1204,90 +1204,124 @@ function TransactionsPage() {
             <DialogDescription className="text-xs">
               {mustPrint && !printed
                 ? "Cetak struk untuk menyelesaikan transaksi."
-                : "Pratinjau struk thermal 80mm."}
+                : "Pratinjau struk (76 x 297mm) — sama dengan hasil cetak."}
             </DialogDescription>
           </DialogHeader>
           {viewing && (
             <div className="px-4 pb-3">
               <div
                 id="receipt"
-                className="mx-auto w-[280px] bg-white text-slate-900 shadow-sm border border-dashed border-slate-300 px-3 py-4 font-mono text-[11px] leading-tight"
-                style={{ fontFamily: "'JetBrains Mono', ui-monospace, Menlo, monospace" }}
+                className="mx-auto w-[288px] bg-white text-black border border-dashed border-slate-300 px-3 py-4 font-mono text-[10px] leading-[1.35]"
+                style={{ fontFamily: "'Courier New', Courier, ui-monospace, monospace" }}
               >
                 <div className="text-center">
-                  <div className="font-bold text-[13px] tracking-wide uppercase">
+                  <div className="font-bold text-[11px] uppercase">
                     {settings.company_name}
                   </div>
-                  <div className="text-[10px] opacity-70">
-                    Money Changer — Bukan Bank
-                  </div>
-                  {viewing.branches && (
-                    <div className="text-[10px] opacity-70">
-                      {viewing.branches.code} · {viewing.branches.name}
-                    </div>
+                  <div>AUTHORIZED MONEY CHANGER</div>
+                  {settings.company_address && (
+                    <div className="uppercase">{settings.company_address}</div>
                   )}
+                  {settings.company_phone && (
+                    <div>TELP/WA {settings.company_phone}</div>
+                  )}
+                  {settings.license_pva && (
+                    <div>IZIN PVA {settings.license_pva}</div>
+                  )}
+                  {settings.npwp_number && <div>NPWP:{settings.npwp_number}</div>}
+                </div>
+                <div className="mt-2 flex justify-between font-bold">
+                  <span>
+                    {viewing.transaction_type === "buy"
+                      ? "BUYING (BN)"
+                      : "SELLING (JN)"}
+                  </span>
+                  <span>NO:{viewing.transaction_no}</span>
                 </div>
                 <ThermalDivider />
-                <div className="text-center font-bold text-[11px]">
-                  STRUK TRANSAKSI
-                </div>
-                <div className="text-center text-[10px] opacity-80">
-                  {viewing.transaction_type === "buy"
-                    ? "BELI VALAS (Nasabah → Kas)"
-                    : "JUAL VALAS (Kas → Nasabah)"}
-                </div>
-                <ThermalDivider />
-                <ThermalRow k="No. Trx" v={viewing.transaction_no} />
-                <ThermalRow
-                  k="Tanggal"
+                <ThermalDetail
+                  k="Date"
                   v={new Date(viewing.transaction_date).toLocaleString("id-ID", {
-                    dateStyle: "short",
-                    timeStyle: "short",
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
                   })}
                 />
-                <ThermalRow
-                  k="Nasabah"
-                  v={
-                    viewing.customers
-                      ? `${viewing.customers.customer_code}`
-                      : "Walk-in"
-                  }
+                <ThermalDetail
+                  k="Name"
+                  v={(viewing.customers?.full_name || "WALK-IN CUSTOMER").toUpperCase()}
                 />
-                {viewing.customers && (
-                  <div className="text-[10px] opacity-80 text-right -mt-0.5">
-                    {viewing.customers.full_name}
-                  </div>
-                )}
-                <ThermalDivider />
-                <ThermalRow k="Mata Uang" v={viewing.currencies?.code ?? "-"} />
-                <ThermalRow
-                  k="Nominal Valas"
-                  v={fmtNum(Number(viewing.foreign_amount))}
+                <ThermalDetail
+                  k="ID/KTP"
+                  v={viewing.customers?.customer_code || "-"}
                 />
-                <ThermalRow k="Kurs" v={fmtNum(Number(viewing.rate), 4)} />
-                <ThermalRow
-                  k="Metode Bayar"
+                <ThermalDetail k="Nationality" v="-" />
+                <ThermalDetail k="Occupation" v="-" />
+                <ThermalDetail k="DateBirth" v="-" />
+                <ThermalDetail k="PlaceBirth" v="-" />
+                <ThermalDetail
+                  k="Pay type"
                   v={(viewing.payment_method ?? "cash").toUpperCase()}
                 />
+                <ThermalDetail
+                  k="Outlet/DC"
+                  v={(viewing.branches?.name || viewing.branches?.code || "-").toUpperCase()}
+                />
+                <ThermalDetail k="Objective" v="CURRENCY EXCHANGE" />
                 <ThermalDivider />
-                <div className="flex justify-between items-baseline font-bold">
-                  <span className="text-[10px]">
-                    {viewing.transaction_type === "buy"
-                      ? "TOTAL DIBAYAR"
-                      : "TOTAL DITERIMA"}
-                  </span>
-                  <span className="text-[13px]">
-                    {fmtIDR(Number(viewing.idr_amount))}
+                <div className="flex justify-between font-bold">
+                  <span>CURRENCY / AMOUNT</span>
+                  <span>RATE</span>
+                  <span>TOTAL RP</span>
+                </div>
+                <ThermalDivider />
+                <div className="flex justify-between">
+                  <span>{(viewing.currencies?.code ?? "-").toUpperCase()}</span>
+                  <span>{fmtNum(Number(viewing.foreign_amount), 2)}</span>
+                  <span>x {fmtNum(Number(viewing.rate), 2)} =</span>
+                  <span>
+                    {new Intl.NumberFormat("id-ID").format(
+                      Math.round(Number(viewing.idr_amount)),
+                    )}
                   </span>
                 </div>
                 <ThermalDivider />
-                <div className="text-center text-[9px] opacity-70 space-y-0.5">
-                  {viewing.profiles?.full_name && (
-                    <div className="pb-1 italic">User: {viewing.profiles.full_name}</div>
-                  )}
-                  <div>Simpan struk ini sebagai bukti transaksi.</div>
-                  <div>Terima kasih atas kepercayaan Anda.</div>
-                  <div className="pt-1">** KUPVA BB · Bank Indonesia **</div>
+                <div className="flex justify-end gap-2 font-bold">
+                  <span>TOTAL RP =</span>
+                  <span>
+                    {new Intl.NumberFormat("id-ID").format(
+                      Math.round(Number(viewing.idr_amount)),
+                    )}
+                  </span>
+                </div>
+                <div className="mt-1 flex justify-between font-bold text-[11px]">
+                  <span>(RP)</span>
+                  <span>
+                    {new Intl.NumberFormat("id-ID").format(
+                      Math.round(Number(viewing.idr_amount)),
+                    )}
+                  </span>
+                </div>
+                <ThermalDivider />
+                {viewing.profiles?.full_name && (
+                  <ThermalDetail
+                    k="Operator"
+                    v={viewing.profiles.full_name.toUpperCase()}
+                  />
+                )}
+                <div className="mt-6 text-center">
+                  ( {viewing.profiles?.full_name?.toUpperCase() || "CUSTOMER"} )
+                  &nbsp;&nbsp; ( CASHIER )
+                </div>
+                <div className="mt-4 text-center font-bold">ATTENTION #</div>
+                <div className="text-center">
+                  Claim for shortage of cash after leaving
+                </div>
+                <div className="text-center">
+                  out premises can not be considered
                 </div>
               </div>
             </div>
@@ -1322,6 +1356,10 @@ function TransactionsPage() {
                   payment_method: viewing.payment_method,
                   teller_name: viewing.profiles?.full_name || undefined,
                   company_name: settings.company_name,
+                  company_address: settings.company_address,
+                  company_phone: settings.company_phone,
+                  license_pva: settings.license_pva,
+                  npwp_number: settings.npwp_number,
                 });
                 setPrinted(true);
                 if (mustPrint) {
@@ -1455,6 +1493,16 @@ function ThermalDivider() {
       className="my-1.5 border-t border-dashed border-slate-400"
       aria-hidden
     />
+  );
+}
+
+function ThermalDetail({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex gap-1">
+      <span className="w-[70px] shrink-0">{k}</span>
+      <span>:</span>
+      <span className="break-all">{v}</span>
+    </div>
   );
 }
 

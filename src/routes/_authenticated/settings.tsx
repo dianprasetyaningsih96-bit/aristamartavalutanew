@@ -22,6 +22,10 @@ function SettingsPage() {
   const canEdit = hasAnyRole(roles, ["super_admin", "owner"]);
   const { settings, refresh, loading } = useAppSettings();
   const [companyName, setCompanyName] = useState(settings.company_name);
+  const [companyAddress, setCompanyAddress] = useState(settings.company_address);
+  const [companyPhone, setCompanyPhone] = useState(settings.company_phone);
+  const [licensePva, setLicensePva] = useState(settings.license_pva);
+  const [npwpNumber, setNpwpNumber] = useState(settings.npwp_number);
   const [pagiStart, setPagiStart] = useState(settings.shift_pagi_start);
   const [pagiEnd, setPagiEnd] = useState(settings.shift_pagi_end);
   const [siangStart, setSiangStart] = useState(settings.shift_siang_start);
@@ -32,6 +36,10 @@ function SettingsPage() {
 
   useEffect(() => {
     setCompanyName(settings.company_name);
+    setCompanyAddress(settings.company_address);
+    setCompanyPhone(settings.company_phone);
+    setLicensePva(settings.license_pva);
+    setNpwpNumber(settings.npwp_number);
     setPagiStart(settings.shift_pagi_start);
     setPagiEnd(settings.shift_pagi_end);
     setSiangStart(settings.shift_siang_start);
@@ -59,6 +67,10 @@ function SettingsPage() {
       .from("app_settings")
       .update({
         company_name: name,
+        company_address: companyAddress.trim(),
+        company_phone: companyPhone.trim(),
+        license_pva: licensePva.trim(),
+        npwp_number: npwpNumber.trim(),
         shift_pagi_start: pagiStart,
         shift_pagi_end: pagiEnd,
         shift_siang_start: siangStart,
@@ -109,6 +121,52 @@ function SettingsPage() {
               placeholder="Contoh: PT Sinar Valuta Nusantara"
               disabled={loading || saving}
               maxLength={80}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company-address">Alamat</Label>
+            <Input
+              id="company-address"
+              value={companyAddress}
+              onChange={(e) => setCompanyAddress(e.target.value)}
+              placeholder="Jl Raya Uluwatu I 66 X Jimbaran, BALI"
+              disabled={loading || saving}
+              maxLength={160}
+            />
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="company-phone">Telp/WA</Label>
+              <Input
+                id="company-phone"
+                value={companyPhone}
+                onChange={(e) => setCompanyPhone(e.target.value)}
+                placeholder="+62 812-4668-468"
+                disabled={loading || saving}
+                maxLength={40}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="license-pva">Izin PVA</Label>
+              <Input
+                id="license-pva"
+                value={licensePva}
+                onChange={(e) => setLicensePva(e.target.value)}
+                placeholder="23/34/KEP.GBI/Dpr/2021"
+                disabled={loading || saving}
+                maxLength={60}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="npwp-number">NPWP</Label>
+            <Input
+              id="npwp-number"
+              value={npwpNumber}
+              onChange={(e) => setNpwpNumber(e.target.value)}
+              placeholder="01.446.521.5-904.000"
+              disabled={loading || saving}
+              maxLength={40}
             />
           </div>
           <div className="flex justify-end">
