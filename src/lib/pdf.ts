@@ -119,6 +119,39 @@ export function table(doc: jsPDF, opts: UserOptions) {
   });
 }
 
+/** Kirim PDF langsung ke dialog printer tanpa membuka pratinjau. */
+export function printPdf(doc: jsPDF, filename: string) {
+  try {
+    const blob = doc.output("blob");
+    const url = URL.createObjectURL(blob);
+    const frame = document.createElement("iframe");
+    frame.style.position = "fixed";
+    frame.style.right = "0";
+    frame.style.bottom = "0";
+    frame.style.width = "0";
+    frame.style.height = "0";
+    frame.style.border = "0";
+    frame.src = url;
+    frame.onload = () => {
+      try {
+        const win = frame.contentWindow;
+        if (!win) throw new Error("no frame window");
+        win.focus();
+        win.print();
+      } catch {
+        doc.save(filename);
+      }
+      setTimeout(() => {
+        frame.remove();
+        URL.revokeObjectURL(url);
+      }, 60_000);
+    };
+    document.body.appendChild(frame);
+  } catch {
+    doc.save(filename);
+  }
+}
+
 export function openPdf(doc: jsPDF, filename: string) {
   // Open in new tab so the user gets browser print/save UX
   const blob = doc.output("blob");
