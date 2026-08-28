@@ -1204,7 +1204,7 @@ function TransactionsPage() {
             <DialogDescription className="text-xs">
               {mustPrint && !printed
                 ? "Cetak struk untuk menyelesaikan transaksi."
-                : "Pratinjau struk thermal 80mm."}
+                : "Pratinjau struk (76 x 297mm) — sama dengan hasil cetak."}
             </DialogDescription>
           </DialogHeader>
           {viewing && (
@@ -1356,6 +1356,10 @@ function TransactionsPage() {
                   payment_method: viewing.payment_method,
                   teller_name: viewing.profiles?.full_name || undefined,
                   company_name: settings.company_name,
+                  company_address: settings.company_address,
+                  company_phone: settings.company_phone,
+                  license_pva: settings.license_pva,
+                  npwp_number: settings.npwp_number,
                 });
                 setPrinted(true);
                 if (mustPrint) {
@@ -1489,6 +1493,16 @@ function ThermalDivider() {
       className="my-1.5 border-t border-dashed border-slate-400"
       aria-hidden
     />
+  );
+}
+
+function ThermalDetail({ k, v }: { k: string; v: string }) {
+  return (
+    <div className="flex gap-1">
+      <span className="w-[70px] shrink-0">{k}</span>
+      <span>:</span>
+      <span className="break-all">{v}</span>
+    </div>
   );
 }
 
