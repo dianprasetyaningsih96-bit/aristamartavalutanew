@@ -3,6 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 
 export interface AppSettings {
   company_name: string;
+  company_address: string;
+  company_phone: string;
+  license_pva: string;
+  npwp_number: string;
   shift_pagi_start: string;
   shift_pagi_end: string;
   shift_siang_start: string;
@@ -13,6 +17,10 @@ export interface AppSettings {
 
 const DEFAULT: AppSettings = {
   company_name: "KUPVA BB",
+  company_address: "",
+  company_phone: "",
+  license_pva: "",
+  npwp_number: "",
   shift_pagi_start: "08:00",
   shift_pagi_end: "15:00",
   shift_siang_start: "15:00",
@@ -28,14 +36,19 @@ async function fetchSettings(): Promise<AppSettings> {
   const { data } = await supabase
     .from("app_settings")
     .select(
-      "company_name, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end, prevent_oversell, transaction_threshold_usd",
+      "company_name, company_address, company_phone, license_pva, npwp_number, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end, prevent_oversell, transaction_threshold_usd",
     )
     .eq("id", true)
     .maybeSingle();
   const trim = (v: unknown) =>
     typeof v === "string" ? v.slice(0, 5) : undefined;
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
   const next: AppSettings = {
     company_name: (data?.company_name as string) || DEFAULT.company_name,
+    company_address: str((data as Record<string, unknown> | null)?.company_address),
+    company_phone: str((data as Record<string, unknown> | null)?.company_phone),
+    license_pva: str((data as Record<string, unknown> | null)?.license_pva),
+    npwp_number: str((data as Record<string, unknown> | null)?.npwp_number),
     shift_pagi_start: trim(data?.shift_pagi_start) || DEFAULT.shift_pagi_start,
     shift_pagi_end: trim(data?.shift_pagi_end) || DEFAULT.shift_pagi_end,
     shift_siang_start:
