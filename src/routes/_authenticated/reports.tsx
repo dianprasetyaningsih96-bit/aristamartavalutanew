@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Download, FileText, AlertTriangle, Flag, Printer } from "lucide-react";
+import { Download, FileText, AlertTriangle, Flag, Printer, FileSpreadsheet } from "lucide-react";
+import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
@@ -126,58 +127,32 @@ function todayISO(offsetDays = 0) {
   return d.toISOString().slice(0, 10);
 }
 
-function exportCSV(filename: string, rows: TrxRow[]) {
+function exportExcel(filename: string, rows: TrxRow[]) {
   if (rows.length === 0) {
     toast.info("Tidak ada data untuk diunduh");
     return;
   }
-  const header = [
-    "No. Transaksi",
-    "Tanggal",
-    "Jenis",
-    "Cabang",
-    "Nasabah",
-    "No. Identitas",
-    "Mata Uang",
-    "Kurs",
-    "Nominal Valas",
-    "Nominal IDR",
-    "Metode",
-    "Status",
-    "Mencurigakan",
-    "Alasan LTKM",
-  ];
-  const csv = [header.join(",")]
-    .concat(
-      rows.map((r) =>
-        [
-          r.transaction_no,
-          new Date(r.transaction_date).toISOString(),
-          r.transaction_type === "buy" ? "Beli" : "Jual",
-          r.branches?.code ?? "",
-          (r.customers?.full_name ?? "").replace(/"/g, '""'),
-          r.customers?.id_number ?? "",
-          r.currencies?.code ?? "",
-          r.rate,
-          r.foreign_amount,
-          r.idr_amount,
-          r.payment_method,
-          r.status,
-          r.is_suspicious ? "Ya" : "Tidak",
-          (r.suspicious_reason ?? "").replace(/"/g, '""'),
-        ]
-          .map((v) => `"${String(v ?? "")}"`)
-          .join(","),
-      ),
-    )
-    .join("\n");
-  const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
+  const data = rows.map((r) => ({
+    "No. Transaksi": r.transaction_no,
+    "Tanggal": new Date(r.transaction_date).toLocaleString("id-ID"),
+    "Jenis": r.transaction_type === "buy" ? "Beli" : "Jual",
+    "Cabang": r.branches?.name || r.branches?.code || "-",
+    "Nasabah": r.customers?.full_name ?? "WALK-IN",
+    "No. Identitas": r.customers?.id_number ?? "-",
+    "Mata Uang": r.currencies?.code ?? "-",
+    "Kurs": Number(r.rate),
+    "Nominal Valas": Number(r.foreign_amount),
+    "Nominal IDR": Number(r.idr_amount),
+    "Metode": (r.payment_method ?? "cash").toUpperCase(),
+    "Status": r.status,
+    "Mencurigakan": r.is_suspicious ? "Ya" : "Tidak",
+    "Alasan LTKM": r.suspicious_reason ?? "-",
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Laporan Transaksi");
+  XLSX.writeFile(wb, filename);
+  toast.success("File Excel berhasil diunduh");
 }
 
 function ReportsPage() {
@@ -506,57 +481,33 @@ function ReportsPage() {
   }, [tab, rows, midRates, openingBalances, idToCode]);
 
 
-  function exportLkubCSV() {
+  function exportLkubExcel(monthPeriod: string, lkubRows: LkubRow[]) {
     if (lkubRows.length === 0) {
       toast.info("Tidak ada data untuk diunduh");
       return;
     }
-    const header = [
-      "Jenis Valuta",
-      "Jenis Produk",
-      "Saldo Awal (Valas)",
-      "Saldo Awal (Rupiah)",
-      "Volume Pembelian (Valas)",
-      "Volume Pembelian (Rupiah)",
-      "Volume Penjualan (Valas)",
-      "Volume Penjualan (Rupiah)",
-      "Saldo Akhir (Valas)",
-      "Kurs Tengah",
-      "Saldo Akhir (Rupiah)",
-    ];
-    const csv = [header.join(",")]
-      .concat(
-        lkubRows.map((r) => {
-          const saldoAkhirValas = r.opening_foreign + r.buy_foreign - r.sell_foreign;
-          const saldoAkhirIdr = r.mid_rate !== null ? saldoAkhirValas * r.mid_rate : 0;
-          
-          return [
-            r.currency_code,
-            "1 - UKA",
-            r.opening_foreign,
-            r.opening_idr,
-            r.buy_foreign,
-            r.buy_idr,
-            r.sell_foreign,
-            r.sell_idr,
-            saldoAkhirValas,
-            r.mid_rate !== null ? `Rp ${fmtNum(r.mid_rate, 0)}` : "",
-            saldoAkhirIdr,
-          ]
-            .map((v) => `"${String(v ?? "")}"`)
-            .join(",");
-        }),
-      )
-      .join("\n");
-    const blob = new Blob(["\ufeff" + csv], {
-      type: "text/csv;charset=utf-8",
+    const data = lkubRows.map((r) => {
+      const saldoAkhirValas = r.opening_foreign + r.buy_foreign - r.sell_foreign;
+      const saldoAkhirIdr = r.mid_rate !== null ? saldoAkhirValas * r.mid_rate : 0;
+      return {
+        "Jenis Valuta": r.currency_code,
+        "Jenis Produk": "1 - UKA",
+        "Saldo Awal (Valas)": Number(r.opening_foreign),
+        "Saldo Awal (Rupiah)": Number(r.opening_idr),
+        "Volume Pembelian (Valas)": Number(r.buy_foreign),
+        "Volume Pembelian (Rupiah)": Number(r.buy_idr),
+        "Volume Penjualan (Valas)": Number(r.sell_foreign),
+        "Volume Penjualan (Rupiah)": Number(r.sell_idr),
+        "Saldo Akhir (Valas)": saldoAkhirValas,
+        "Kurs Tengah": r.mid_rate !== null ? Number(r.mid_rate) : "-",
+        "Saldo Akhir (Rupiah)": saldoAkhirIdr,
+      };
     });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `LKUB-${monthPeriod}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "LKUB");
+    XLSX.writeFile(wb, `LKUB-${monthPeriod}.xlsx`);
+    toast.success("File Excel LKUB berhasil diunduh");
   }
 
   return (
@@ -568,108 +519,113 @@ function ReportsPage() {
       />
 
       <Card>
-        <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-4 pt-6">
-          {tab === "bulanan" ? (
-            <div className="space-y-2 sm:col-span-2">
-              <Label>Periode (Bulan)</Label>
-              <Input
-                type="month"
-                value={monthPeriod}
-                onChange={(e) => setMonthPeriod(e.target.value)}
-              />
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 flex-1">
+              {tab === "bulanan" ? (
+                <div className="space-y-2 sm:col-span-2">
+                  <Label>Periode (Bulan)</Label>
+                  <Input
+                    type="month"
+                    value={monthPeriod}
+                    onChange={(e) => setMonthPeriod(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label>Dari Tanggal</Label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sampai Tanggal</Label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                    />
+                  </div>
+                </>
+              )}
+              <div className="space-y-2">
+                <Label>Cabang</Label>
+                <Select value={branchId} onValueChange={setBranchId}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Cabang</SelectItem>
+                    {branches.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.code} — {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <Label>Dari Tanggal</Label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Sampai Tanggal</Label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
-              </div>
-            </>
-          )}
-          <div className="space-y-2">
-            <Label>Cabang</Label>
-            <Select value={branchId} onValueChange={setBranchId}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Cabang</SelectItem>
-                {branches.map((b) => (
-                  <SelectItem key={b.id} value={b.id}>
-                    {b.code} — {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-end gap-2">
-            <Button
-              variant="outline"
-              className="flex-1 gap-2"
-              onClick={() =>
-                tab === "bulanan"
-                  ? exportLkubCSV()
-                  : exportCSV(
-                      `laporan-${tab}-${dateFrom}-sd-${dateTo}.csv`,
-                      rows ?? [],
-                    )
-              }
-            >
-              <Download className="h-4 w-4" /> Unduh CSV
-            </Button>
-            <Button
-              variant="outline"
-              className="gap-2"
-              onClick={() => {
-                const label =
-                  branchId === "all"
-                    ? "Semua Cabang"
-                    : branches.find((b) => b.id === branchId)?.name ?? "-";
-                const range =
+
+            <div className="flex flex-wrap items-center gap-2 pt-2 xl:pt-0 shrink-0">
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() =>
                   tab === "bulanan"
-                    ? monthRange(monthPeriod)
-                    : { from: dateFrom, to: dateTo };
-                const meta = {
-                  title,
-                  variant: tab,
-                  branchLabel: label,
-                  dateFrom: range.from,
-                  dateTo: range.to,
-                  totals,
-                };
-                if (tab === "bulanan") {
-                  if (lkubRows.length === 0) {
+                    ? exportLkubExcel(monthPeriod, lkubRows)
+                    : exportExcel(
+                        `laporan-${tab}-${dateFrom}-sd-${dateTo}.xlsx`,
+                        rows ?? [],
+                      )
+                }
+              >
+                <FileSpreadsheet className="h-4 w-4 text-emerald-600" /> Unduh Excel
+              </Button>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => {
+                  const label =
+                    branchId === "all"
+                      ? "Semua Cabang"
+                      : branches.find((b) => b.id === branchId)?.name ?? "-";
+                  const range =
+                    tab === "bulanan"
+                      ? monthRange(monthPeriod)
+                      : { from: dateFrom, to: dateTo };
+                  const meta = {
+                    title,
+                    variant: tab,
+                    branchLabel: label,
+                    dateFrom: range.from,
+                    dateTo: range.to,
+                    totals,
+                  };
+                  if (tab === "bulanan") {
+                    if (lkubRows.length === 0) {
+                      toast.info("Tidak ada data untuk dicetak");
+                      return;
+                    }
+                    generateLkubReportPdf(meta, lkubRows);
+                    return;
+                  }
+                  if (!rows || rows.length === 0) {
                     toast.info("Tidak ada data untuk dicetak");
                     return;
                   }
-                  generateLkubReportPdf(meta, lkubRows);
-                  return;
-                }
-                if (!rows || rows.length === 0) {
-                  toast.info("Tidak ada data untuk dicetak");
-                  return;
-                }
-                if (tab === "ltkm") {
-                  generateLtkmReportPdf(meta, rows);
-                } else {
-                  generateReportPdf(meta, rows);
-                }
-              }}
-            >
-              <Printer className="h-4 w-4" /> Cetak PDF
-            </Button>
+                  if (tab === "ltkm") {
+                    generateLtkmReportPdf(meta, rows);
+                  } else {
+                    generateReportPdf(meta, rows);
+                  }
+                }}
+              >
+                <Printer className="h-4 w-4" /> Cetak PDF
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -746,9 +702,9 @@ function ReportsPage() {
                       size="sm"
                       variant="outline"
                       className="gap-2"
-                      onClick={exportLkubCSV}
+                      onClick={() => exportLkubExcel(monthPeriod, lkubRows)}
                     >
-                      <Download className="h-4 w-4" /> Unduh CSV LKUB
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-600" /> Unduh Excel LKUB
                     </Button>
                     <Button
                       size="sm"
