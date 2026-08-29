@@ -14,6 +14,8 @@ export type NotificationCategory =
 export interface NotificationRow {
   id: string;
   user_id: string | null;
+  branch_id?: string | null;
+  type?: string | null;
   target_roles: string[] | null;
   category: NotificationCategory;
   severity: NotificationSeverity;
@@ -33,42 +35,64 @@ export function useNotifications(limit = 50) {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    const uid = userData.user?.id ?? null;
-    setUserId(uid);
-    if (!uid) {
-      setItems([]);
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData?.user?.id ?? null;
+      setUserId(uid);
+      if (!uid) {
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get current user's profile and roles in parallel
+      const [{ data: profile }, { data: roleRows }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("id, full_name, email, branch_id")
+          .eq("id", uid)
+          .maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]);
+
+      const roles = (roleRows ?? []).map((r) => r.role as string);
+      const isSuperAdmin = roles.includes("super_admin") || roles.includes("owner");
+      const userBranchId = profile?.branch_id ?? null;
+
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error("Error loading notifications:", error);
+        setLoading(false);
+        return;
+      }
+
+      let notifs = (data as unknown as NotificationRow[]) ?? [];
+
+      // Filter on client-side for non-super_admins
+      if (!isSuperAdmin && notifs.length > 0) {
+        notifs = notifs.filter((n) => {
+          if (n.user_id && n.user_id === uid) return true;
+          const matchesRole =
+            !n.target_roles ||
+            n.target_roles.length === 0 ||
+            n.target_roles.some((r) => roles.includes(r));
+          const matchesBranch =
+            !n.branch_id || !userBranchId || n.branch_id === userBranchId;
+          return matchesRole && matchesBranch;
+        });
+      }
+
+      setItems(notifs);
+    } catch (err) {
+      console.error("Unexpected error in useNotifications:", err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // Get current user's profile to check roles/branch
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("branch_id, user_roles(role)")
-      .eq("id", uid)
-      .single();
-
-    const roles = profile?.user_roles?.map((r: any) => r.role) || [];
-    const isSuperAdmin = roles.includes("super_admin");
-
-    let query = supabase
-      .from("notifications")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(limit);
-
-    if (!isSuperAdmin) {
-      // For non-super_admins, filter by:
-      // 1. Direct user_id match
-      // 2. OR: target_roles overlap AND (branch_id matches OR branch_id is null)
-      query = query.or(`user_id.eq.${uid},and(target_roles.overlap.{${roles.join(",")}},or(branch_id.is.null,branch_id.eq.${profile?.branch_id}))`);
-    }
-
-    const { data } = await query;
-
-    setItems((data as NotificationRow[]) ?? []);
-    setLoading(false);
   }, [limit]);
 
   useEffect(() => {
@@ -90,15 +114,63 @@ export function useNotifications(limit = 50) {
     ? items.filter((n) => !(n.read_by ?? []).includes(userId))
     : [];
 
-  const markRead = useCallback(async (id: string) => {
-    await supabase.rpc("mark_notification_read", { _id: id });
-    load();
-  }, [load]);
+  const markRead = useCallback(
+    async (id: string) => {
+      if (!userId) return;
+
+      // Optimistic local state update
+      setItems((prev) =>
+        prev.map((n) =>
+          n.id === id
+            ? {
+                ...n,
+                read_by: Array.from(new Set([...(n.read_by ?? []), userId])),
+              }
+            : n,
+        ),
+      );
+
+      const { error } = await supabase.rpc("mark_notification_read", { _id: id });
+      if (error) {
+        const item = items.find((n) => n.id === id);
+        const readBy = Array.from(new Set([...(item?.read_by ?? []), userId]));
+        await supabase
+          .from("notifications")
+          .update({ read_by: readBy })
+          .eq("id", id);
+      }
+      load();
+    },
+    [userId, items, load],
+  );
 
   const markAllRead = useCallback(async () => {
-    await supabase.rpc("mark_all_notifications_read");
+    if (!userId || items.length === 0) return;
+
+    // Optimistic local state update
+    setItems((prev) =>
+      prev.map((n) => ({
+        ...n,
+        read_by: Array.from(new Set([...(n.read_by ?? []), userId])),
+      })),
+    );
+
+    const { error } = await supabase.rpc("mark_all_notifications_read");
+    if (error) {
+      const unreadList = items.filter((n) => !(n.read_by ?? []).includes(userId));
+      await Promise.all(
+        unreadList.map((n) =>
+          supabase
+            .from("notifications")
+            .update({
+              read_by: Array.from(new Set([...(n.read_by ?? []), userId])),
+            })
+            .eq("id", n.id),
+        ),
+      );
+    }
     load();
-  }, [load]);
+  }, [userId, items, load]);
 
   return { items, unread, loading, userId, markRead, markAllRead, refresh: load };
 }
