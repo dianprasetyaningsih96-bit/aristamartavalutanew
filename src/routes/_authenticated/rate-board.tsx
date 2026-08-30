@@ -389,16 +389,16 @@ export function RateBoardPage() {
         </header>
 
         {/* Board Main Content (2-Column Split matching reference image) */}
-        <main className="relative z-10 flex h-[calc(100%-8.5rem)] w-full gap-2 p-3">
+        <main className="relative z-10 flex h-[calc(100%-8.5rem)] w-full gap-3 p-3">
           {/* Left Column Table */}
           <div className="flex-1 flex flex-col rounded-xl overflow-hidden border border-blue-900/50 bg-[#061633]/80 shadow-lg backdrop-blur-sm">
             {/* Column Header */}
             <div className="grid grid-cols-12 items-center bg-[#081f44] px-4 py-2.5 text-[11px] md:text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-blue-800/60">
               <div className="col-span-1 text-center">Country</div>
               <div className="col-span-2 text-center">Code</div>
-              <div className="col-span-4 pl-2">Currency</div>
-              <div className="col-span-2.5 text-right pr-2 text-cyan-300">We buy</div>
-              <div className="col-span-2.5 text-right pr-2 text-emerald-300">We sell</div>
+              <div className="col-span-3 pl-2">Currency</div>
+              <div className="col-span-3 text-right pr-4 text-cyan-300">We buy</div>
+              <div className="col-span-3 text-right pr-4 text-emerald-300">We sell</div>
             </div>
 
             {/* Rows List */}
@@ -406,7 +406,7 @@ export function RateBoardPage() {
               {leftColumnRates.map((r, idx) => (
                 <div
                   key={r.id}
-                  className={`grid grid-cols-12 items-center px-4 py-1.5 transition-colors ${
+                  className={`grid grid-cols-12 items-center px-4 py-2 transition-colors ${
                     idx % 2 === 0
                       ? "bg-[#0b2758]/90 hover:bg-[#11387d]"
                       : "bg-[#081e46]/90 hover:bg-[#103373]"
@@ -430,17 +430,17 @@ export function RateBoardPage() {
                   </div>
 
                   {/* Currency Name */}
-                  <div className="col-span-4 pl-2 truncate text-xs md:text-sm font-medium text-cyan-100/90">
+                  <div className="col-span-3 pl-2 truncate text-xs md:text-sm font-medium text-cyan-100/90">
                     {r.currencyName}
                   </div>
 
                   {/* We Buy */}
-                  <div className="col-span-2.5 text-right pr-2 font-mono font-bold text-sm md:text-base tracking-tight text-cyan-300">
+                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-cyan-300">
                     {formatRate(r.buyRate, r.decimals)}
                   </div>
 
                   {/* We Sell */}
-                  <div className="col-span-2.5 text-right pr-2 font-mono font-bold text-sm md:text-base tracking-tight text-white">
+                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-white">
                     {formatRate(r.sellRate, r.decimals)}
                   </div>
                 </div>
@@ -459,9 +459,9 @@ export function RateBoardPage() {
             <div className="grid grid-cols-12 items-center bg-[#081f44] px-4 py-2.5 text-[11px] md:text-xs font-bold uppercase tracking-wider text-slate-300 border-b border-blue-800/60">
               <div className="col-span-1 text-center">Country</div>
               <div className="col-span-2 text-center">Code</div>
-              <div className="col-span-4 pl-2">Currency</div>
-              <div className="col-span-2.5 text-right pr-2 text-cyan-300">We buy</div>
-              <div className="col-span-2.5 text-right pr-2 text-emerald-300">We sell</div>
+              <div className="col-span-3 pl-2">Currency</div>
+              <div className="col-span-3 text-right pr-4 text-cyan-300">We buy</div>
+              <div className="col-span-3 text-right pr-4 text-emerald-300">We sell</div>
             </div>
 
             {/* Rows List */}
@@ -469,7 +469,7 @@ export function RateBoardPage() {
               {rightColumnRates.map((r, idx) => (
                 <div
                   key={r.id}
-                  className={`grid grid-cols-12 items-center px-4 py-1.5 transition-colors ${
+                  className={`grid grid-cols-12 items-center px-4 py-2 transition-colors ${
                     idx % 2 === 0
                       ? "bg-[#0b2758]/90 hover:bg-[#11387d]"
                       : "bg-[#081e46]/90 hover:bg-[#103373]"
@@ -493,17 +493,17 @@ export function RateBoardPage() {
                   </div>
 
                   {/* Currency Name */}
-                  <div className="col-span-4 pl-2 truncate text-xs md:text-sm font-medium text-cyan-100/90">
+                  <div className="col-span-3 pl-2 truncate text-xs md:text-sm font-medium text-cyan-100/90">
                     {r.currencyName}
                   </div>
 
                   {/* We Buy */}
-                  <div className="col-span-2.5 text-right pr-2 font-mono font-bold text-sm md:text-base tracking-tight text-cyan-300">
+                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-cyan-300">
                     {formatRate(r.buyRate, r.decimals)}
                   </div>
 
                   {/* We Sell */}
-                  <div className="col-span-2.5 text-right pr-2 font-mono font-bold text-sm md:text-base tracking-tight text-white">
+                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-white">
                     {formatRate(r.sellRate, r.decimals)}
                   </div>
                 </div>
