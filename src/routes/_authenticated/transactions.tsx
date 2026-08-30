@@ -1215,7 +1215,7 @@ function TransactionsPage() {
             <div className="flex-1 overflow-y-auto p-4 bg-slate-100 dark:bg-slate-950 flex justify-center">
               <div
                 id="receipt"
-                className="w-[320px] shrink-0 h-fit bg-white text-black border border-dashed border-slate-400 p-5 font-mono text-[10.5px] leading-[1.35] shadow-lg rounded-xs select-text block"
+                className="w-[330px] shrink-0 h-fit bg-white text-black border border-dashed border-slate-300 px-6 py-6 font-mono text-[10.5px] leading-[1.38] shadow-lg rounded-xs select-text block"
                 style={{
                   backgroundColor: "#ffffff",
                   color: "#000000",

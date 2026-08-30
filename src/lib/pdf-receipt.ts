@@ -75,13 +75,14 @@ export function buildReceiptHtml(r: ReceiptData): string {
     }
     body {
       font-family: 'Courier New', Courier, Consolas, Monaco, monospace;
-      font-size: 11px;
-      line-height: 1.3;
+      font-size: 10.5px;
+      line-height: 1.35;
       color: #000000;
       background: #ffffff;
-      width: 74mm;
+      width: 76mm;
+      max-width: 76mm;
       margin: 0 auto;
-      padding: 4mm 3mm 8mm 3mm;
+      padding: 5mm 6mm 8mm 6mm;
       -webkit-font-smoothing: none;
       -moz-osx-font-smoothing: unset;
       text-rendering: optimizeSpeed;
