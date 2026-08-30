@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, ShieldCheck, Banknote, LineChart, Lock } from "lucide-react";
+import { ArrowRight, ShieldCheck, Banknote, LineChart, Lock, Tv } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
@@ -16,7 +16,13 @@ function Landing() {
           </div>
           <span className="text-lg font-bold tracking-tight">KUPVA BB</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
+          <Button asChild variant="outline" size="sm" className="gap-1.5 border-primary/30 hover:bg-primary/10">
+            <Link to="/rate-board">
+              <Tv className="h-4 w-4 text-primary" />
+              Rate Digital
+            </Link>
+          </Button>
           <Button asChild size="sm">
             <Link to="/auth">
               Masuk <ArrowRight className="ml-1 h-4 w-4" />
@@ -40,9 +46,15 @@ function Landing() {
             APU-PPT Bank Indonesia.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3 sm:mt-8">
-            <Button asChild size="lg">
+            <Button asChild size="lg" className="gap-2 shadow-sm">
               <Link to="/auth">
-                Masuk ke Sistem <ArrowRight className="ml-2 h-4 w-4" />
+                Masuk ke Sistem <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+            <Button asChild size="lg" variant="outline" className="gap-2 border-primary/30 hover:bg-primary/10 font-semibold shadow-xs">
+              <Link to="/rate-board">
+                <Tv className="h-5 w-5 text-primary" />
+                Rate Digital
               </Link>
             </Button>
           </div>

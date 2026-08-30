@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { RateBoardPage } from "./_authenticated/rate-board";
+import { RateBoardPage } from "./rate-board";
 
 export const Route = createFileRoute("/rate-display")({
   component: StandaloneRateDisplay,
