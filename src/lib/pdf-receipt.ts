@@ -30,7 +30,263 @@ function receiptDate(value: string) {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
-/** 76 × 297mm dot-matrix receipt with a printer-safe monospaced layout. */
+/**
+ * Builds pure, high-contrast HTML string optimized for thermal POS printers (58mm / 76mm / 80mm).
+ * Renders native vector text without PDF rasterization or dithering blur on Google Chrome & Firefox.
+ */
+export function buildReceiptHtml(r: ReceiptData): string {
+  const companyName = (r.company_name || BRAND.name).toUpperCase();
+  const dateStr = receiptDate(r.transaction_date);
+  const customerName = (r.customer?.full_name || "WALK-IN CUSTOMER").toUpperCase();
+  const customerCode = r.customer?.customer_code || "-";
+  const currStr = r.currency.toUpperCase();
+  const fAmountStr = fmtNum(r.foreign_amount, 2);
+  const rateStr = fmtNum(r.rate, 2);
+  const idrStr = new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount));
+  const outlet = (r.branch?.name || r.branch?.code || "-").toUpperCase();
+  const payType = (r.payment_method || "Cash").toUpperCase();
+  const operator = (r.teller_name || "CUSTOMER").toUpperCase();
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Struk ${r.transaction_no}</title>
+  <style>
+    @page {
+      size: 76mm auto;
+      margin: 0mm;
+    }
+    @media print {
+      html, body {
+        width: 76mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Courier New', Courier, Consolas, Monaco, monospace;
+      font-size: 11px;
+      line-height: 1.3;
+      color: #000000;
+      background: #ffffff;
+      width: 74mm;
+      margin: 0 auto;
+      padding: 4mm 3mm 8mm 3mm;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: unset;
+      text-rendering: optimizeSpeed;
+    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .text-left { text-align: left; }
+    .bold { font-weight: bold; }
+    .company-title {
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 1px;
+    }
+    .sub-header {
+      font-size: 10px;
+      line-height: 1.2;
+    }
+    .divider {
+      border-top: 1px dashed #000000;
+      margin: 4px 0;
+      width: 100%;
+    }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      width: 100%;
+    }
+    .detail-row {
+      display: flex;
+      font-size: 10.5px;
+      margin-bottom: 1px;
+    }
+    .detail-label {
+      width: 75px;
+      flex-shrink: 0;
+    }
+    .detail-sep {
+      width: 10px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .detail-val {
+      flex: 1;
+      word-break: break-word;
+    }
+    .table-hdr {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 9.5px;
+      padding: 1px 0;
+    }
+    .rate-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      font-size: 10.5px;
+      margin: 2px 0;
+    }
+    .total-box {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      font-weight: bold;
+      font-size: 10.5px;
+      margin-top: 2px;
+    }
+    .grand-total {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 11.5px;
+      margin-top: 2px;
+    }
+    .signatures {
+      margin-top: 18px;
+      display: flex;
+      justify-content: space-around;
+      text-align: center;
+      font-size: 10px;
+    }
+    .attention {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 9.5px;
+      line-height: 1.25;
+    }
+  </style>
+</head>
+<body>
+  <div class="text-center">
+    <div class="company-title">${companyName}</div>
+    <div class="sub-header bold">AUTHORIZED MONEY CHANGER</div>
+    ${r.company_address ? `<div class="sub-header">${r.company_address.toUpperCase()}</div>` : ""}
+    ${r.company_phone ? `<div class="sub-header">TELP/WA ${r.company_phone}</div>` : ""}
+    ${r.license_pva ? `<div class="sub-header">IZIN PVA ${r.license_pva}</div>` : ""}
+    ${r.npwp_number ? `<div class="sub-header">NPWP:${r.npwp_number}</div>` : ""}
+  </div>
+
+  <div class="flex-between bold" style="margin-top: 5px; font-size: 10.5px;">
+    <span>${r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)"}</span>
+    <span>NO:${r.transaction_no}</span>
+  </div>
+  <div class="divider"></div>
+
+  <div class="detail-row"><span class="detail-label">Date</span><span class="detail-sep">:</span><span class="detail-val">${dateStr}</span></div>
+  <div class="detail-row"><span class="detail-label">Name</span><span class="detail-sep">:</span><span class="detail-val">${customerName}</span></div>
+  <div class="detail-row"><span class="detail-label">ID/KTP</span><span class="detail-sep">:</span><span class="detail-val">${customerCode}</span></div>
+  <div class="detail-row"><span class="detail-label">Nationality</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
+  <div class="detail-row"><span class="detail-label">Occupation</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
+  <div class="detail-row"><span class="detail-label">DateBirth</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
+  <div class="detail-row"><span class="detail-label">PlaceBirth</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
+  <div class="detail-row"><span class="detail-label">Pay type</span><span class="detail-sep">:</span><span class="detail-val">${payType}</span></div>
+  <div class="detail-row"><span class="detail-label">Outlet/DC</span><span class="detail-sep">:</span><span class="detail-val">${outlet}</span></div>
+  <div class="detail-row"><span class="detail-label">Objective</span><span class="detail-sep">:</span><span class="detail-val">CURRENCY EXCHANGE</span></div>
+  <div class="divider"></div>
+
+  <div class="table-hdr">
+    <span>CURRENCY / AMOUNT</span>
+    <span>RATE</span>
+    <span>TOTAL RP</span>
+  </div>
+  <div class="divider"></div>
+
+  <div class="rate-row">
+    <span>${currStr} ${fAmountStr}</span>
+    <span>x ${rateStr} =</span>
+    <span>${idrStr}</span>
+  </div>
+  <div class="divider"></div>
+
+  <div class="total-box">
+    <span>TOTAL RP =</span>
+    <span>${idrStr}</span>
+  </div>
+  <div class="grand-total">
+    <span>(RP)</span>
+    <span>${idrStr}</span>
+  </div>
+  <div class="divider"></div>
+
+  ${r.teller_name ? `<div class="detail-row"><span class="detail-label">Operator</span><span class="detail-sep">:</span><span class="detail-val">${r.teller_name.toUpperCase()}</span></div>` : ""}
+
+  <div class="signatures">
+    <span>( ${operator} )</span>
+    <span>( CASHIER )</span>
+  </div>
+
+  <div class="attention">
+    <div class="bold">ATTENTION #</div>
+    <div>Claim for shortage of cash after leaving</div>
+    <div>out premises can not be considered</div>
+  </div>
+</body>
+</html>`;
+}
+
+/**
+ * Direct Thermal Print using native browser HTML/CSS print pipeline.
+ * This bypasses Chrome's PDFium rasterizer dithering, producing crisp 100% sharp dot-matrix text across all browsers.
+ */
+export function printReceiptDirect(r: ReceiptData) {
+  try {
+    const html = buildReceiptHtml(r);
+    const frame = document.createElement("iframe");
+    frame.style.position = "fixed";
+    frame.style.right = "0";
+    frame.style.bottom = "0";
+    frame.style.width = "0";
+    frame.style.height = "0";
+    frame.style.border = "0";
+    frame.style.visibility = "hidden";
+    document.body.appendChild(frame);
+
+    const doc = frame.contentWindow?.document;
+    if (!doc) {
+      generateReceiptPdf(r);
+      return;
+    }
+
+    doc.open();
+    doc.write(html);
+    doc.close();
+
+    // Trigger print once iframe DOM and styles are fully ready
+    setTimeout(() => {
+      try {
+        frame.contentWindow?.focus();
+        frame.contentWindow?.print();
+      } catch (e) {
+        console.error("Direct HTML print failed, falling back to PDF:", e);
+        generateReceiptPdf(r);
+      }
+      setTimeout(() => {
+        frame.remove();
+      }, 60_000);
+    }, 150);
+  } catch (err) {
+    console.error("Direct print exception, using PDF fallback:", err);
+    generateReceiptPdf(r);
+  }
+}
+
+/** 76 × 297mm dot-matrix receipt with a printer-safe monospaced layout (PDF Format). */
 export function generateReceiptPdf(r: ReceiptData) {
   const doc = receiptDoc();
   const width = 76;
@@ -39,7 +295,6 @@ export function generateReceiptPdf(r: ReceiptData) {
   let y = 8;
 
   const text = (value: string, x: number, size = 7.5, align: "left" | "center" | "right" = "left", bold = false) => {
-    // Built-in Courier avoids font substitution and keeps dot-matrix columns stable.
     doc.setFont("courier", bold ? "bold" : "normal");
     doc.setFontSize(size);
     doc.setTextColor(0, 0, 0);
@@ -100,7 +355,6 @@ export function generateReceiptPdf(r: ReceiptData) {
   const rateStr = `x ${fmtNum(r.rate, 2)} =`;
   const idrStr = new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount));
 
-  // Format a balanced 40-character line with centered alignment and safe margins
   const leftSide = `${currStr} ${fAmountStr}`;
   const rightSide = idrStr;
   const remaining = 40 - leftSide.length - rateStr.length - rightSide.length;

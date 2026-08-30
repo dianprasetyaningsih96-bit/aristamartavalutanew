@@ -14,6 +14,7 @@ import {
   Ban,
   Trash2,
   Printer,
+  FileDown,
   AlertTriangle,
 } from "lucide-react";
 import { Plus, UserPlus } from "lucide-react";
@@ -23,7 +24,7 @@ import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
 import { COUNTRIES } from "@/lib/countries";
 import { MasterPageHeader } from "@/components/master-data/page-header";
-import { generateReceiptPdf } from "@/lib/pdf-receipt";
+import { generateReceiptPdf, printReceiptDirect } from "@/lib/pdf-receipt";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1326,24 +1327,59 @@ function TransactionsPage() {
               </div>
             </div>
           )}
-          <DialogFooter className="px-4 pb-4 pt-2 gap-2 sm:gap-2">
-            {(!mustPrint || printed) && (
+          <DialogFooter className="px-4 pb-4 pt-2 flex flex-wrap items-center justify-between gap-2 sm:gap-2">
+            <div className="flex items-center gap-1.5">
+              {(!mustPrint || printed) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setViewing(null);
+                    setMustPrint(false);
+                    setPrinted(false);
+                  }}
+                >
+                  Tutup
+                </Button>
+              )}
               <Button
-                variant="outline"
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                title="Unduh file PDF struk"
                 onClick={() => {
-                  setViewing(null);
-                  setMustPrint(false);
-                  setPrinted(false);
+                  if (!viewing) return;
+                  generateReceiptPdf({
+                    transaction_no: viewing.transaction_no,
+                    transaction_date: viewing.transaction_date,
+                    transaction_type: viewing.transaction_type,
+                    branch: viewing.branches ?? null,
+                    customer: viewing.customers ?? null,
+                    currency: viewing.currencies?.code ?? "-",
+                    foreign_amount: Number(viewing.foreign_amount),
+                    rate: Number(viewing.rate),
+                    idr_amount: Number(viewing.idr_amount),
+                    payment_method: viewing.payment_method,
+                    teller_name: viewing.profiles?.full_name || undefined,
+                    company_name: settings.company_name,
+                    company_address: settings.company_address,
+                    company_phone: settings.company_phone,
+                    license_pva: settings.license_pva,
+                    npwp_number: settings.npwp_number,
+                  });
                 }}
               >
-                Tutup
+                <FileDown className="h-3.5 w-3.5" />
+                Simpan PDF
               </Button>
-            )}
+            </div>
+
             <Button
-              className="gap-2"
+              className="gap-2 bg-primary text-primary-foreground font-semibold"
               onClick={() => {
                 if (!viewing) return;
-                generateReceiptPdf({
+                printReceiptDirect({
                   transaction_no: viewing.transaction_no,
                   transaction_date: viewing.transaction_date,
                   transaction_type: viewing.transaction_type,
@@ -1363,14 +1399,14 @@ function TransactionsPage() {
                 });
                 setPrinted(true);
                 if (mustPrint) {
-                  toast.success("Struk dicetak", {
+                  toast.success("Struk dikirim ke printer", {
                     description: "Transaksi selesai. Anda dapat menutup pratinjau.",
                   });
                 }
               }}
             >
               <Printer className="h-4 w-4" />
-              {mustPrint && !printed ? "Cetak Struk (Wajib)" : "Cetak Ulang"}
+              {mustPrint && !printed ? "Cetak Struk (Wajib)" : "Cetak Struk"}
             </Button>
           </DialogFooter>
         </DialogContent>
