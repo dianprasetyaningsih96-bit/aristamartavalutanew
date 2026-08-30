@@ -76,8 +76,22 @@ export function useAppSettings() {
     } else {
       setLoading(false);
     }
+
+    // Subscribe to real-time changes on app_settings
+    const channel = supabase
+      .channel(`app-settings-realtime-${Math.random().toString(36).slice(2)}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "app_settings" },
+        () => {
+          fetchSettings();
+        },
+      )
+      .subscribe();
+
     return () => {
       listeners.delete(setSettings);
+      supabase.removeChannel(channel);
     };
   }, []);
 

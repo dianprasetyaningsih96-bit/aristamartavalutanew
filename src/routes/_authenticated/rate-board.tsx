@@ -69,6 +69,20 @@ interface BranchItem {
 
 const ALL_HQ = "__all_hq__";
 
+function getCompanyInitials(name?: string): string {
+  if (!name || !name.trim()) return "MC";
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  const filtered =
+    words.length > 2 &&
+    (words[0].toUpperCase() === "PT" || words[0].toUpperCase() === "CV")
+      ? words.slice(1)
+      : words;
+  return (
+    filtered[0][0] + (filtered[1] ? filtered[1][0] : "")
+  ).toUpperCase();
+}
+
 export function RateBoardPage() {
   const { settings } = useAppSettings();
   const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
@@ -342,33 +356,41 @@ export function RateBoardPage() {
         <header className="relative z-10 flex h-20 items-center justify-between border-b border-blue-900/60 bg-[#020b18]/90 px-6 backdrop-blur-md">
           {/* Logo & Main Title */}
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-blue-400/80 bg-gradient-to-tr from-blue-900 via-blue-700 to-cyan-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] overflow-hidden">
+            {/* Logo Container from Database */}
+            <div className="flex h-13 w-13 md:h-14 md:w-14 items-center justify-center rounded-2xl border-2 border-cyan-400/70 bg-gradient-to-tr from-[#0b2758] via-[#081e46] to-[#040f25] shadow-[0_0_15px_rgba(34,211,238,0.35)] overflow-hidden shrink-0">
               {settings.logo_url ? (
                 <img
                   src={settings.logo_url}
-                  alt={settings.company_name}
-                  className="h-full w-full object-contain p-0.5 bg-black/40"
+                  alt={settings.company_name || "Logo"}
+                  className="h-full w-full object-contain p-1"
                   onError={(e) => {
                     (e.target as HTMLElement).style.display = "none";
                   }}
                 />
               ) : (
-                <span className="text-base font-black tracking-wider text-white">
-                  VG
+                <span className="text-base md:text-lg font-black tracking-wider text-cyan-300 font-mono">
+                  {getCompanyInitials(settings.company_name)}
                 </span>
               )}
             </div>
+
+            {/* Money Changer Name & Badges from Database */}
             <div>
-              <div className="flex items-center gap-2.5">
-                <h1 className="text-2xl md:text-3xl font-black tracking-wider text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.3)]">
-                  EXCHANGE RATES
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-xl md:text-2xl lg:text-3xl font-black tracking-wider text-white drop-shadow-[0_2px_10px_rgba(255,255,255,0.3)] uppercase">
+                  {settings.company_name || "EXCHANGE RATES"}
                 </h1>
-                <Badge className="border-cyan-500/40 bg-cyan-950/80 text-[11px] font-bold text-cyan-300">
+                <Badge className="border-cyan-400/50 bg-cyan-950/90 text-[11px] md:text-xs font-black tracking-wider text-cyan-300 shadow-[0_0_10px_rgba(34,211,238,0.25)]">
+                  EXCHANGE RATES
+                </Badge>
+                <Badge className="border-blue-400/50 bg-blue-950/90 text-[11px] md:text-xs font-bold text-blue-300">
                   KUPVA BB
                 </Badge>
               </div>
-              <p className="text-[11px] font-semibold tracking-wider text-cyan-300/80 uppercase">
-                {settings.company_name} • {selectedBranchName}
+              <p className="text-[11px] md:text-xs font-semibold tracking-wider text-cyan-300/90 uppercase mt-0.5">
+                {selectedBranchName}
+                {settings.license_pva ? ` • IZIN PVA: ${settings.license_pva}` : ""}
+                {settings.company_phone ? ` • TELP: ${settings.company_phone}` : ""}
               </p>
             </div>
           </div>
