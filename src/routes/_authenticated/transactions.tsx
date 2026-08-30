@@ -1182,7 +1182,7 @@ function TransactionsPage() {
         }}
       >
         <DialogContent
-          className="max-w-[22rem] p-0 gap-0 bg-muted/40"
+          className="sm:max-w-[440px] w-[95vw] max-h-[92vh] flex flex-col p-0 gap-0 overflow-hidden bg-background shadow-2xl rounded-2xl border"
           onEscapeKeyDown={(e) => {
             if (mustPrint && !printed) e.preventDefault();
           }}
@@ -1193,26 +1193,29 @@ function TransactionsPage() {
             if (mustPrint && !printed) e.preventDefault();
           }}
         >
-          <DialogHeader className="px-4 pt-4 pb-2">
-            <DialogTitle className="flex items-center gap-2 text-sm">
-              <Receipt className="h-4 w-4" /> Struk Transaksi
+          <DialogHeader className="px-5 py-3 border-b bg-muted/30 shrink-0">
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                <Receipt className="h-4 w-4 text-primary" /> Struk Transaksi
+              </DialogTitle>
               {mustPrint && !printed && (
-                <Badge variant="destructive" className="ml-auto text-[10px]">
+                <Badge variant="destructive" className="text-[10px] animate-pulse">
                   Wajib Cetak
                 </Badge>
               )}
-            </DialogTitle>
-            <DialogDescription className="text-xs">
+            </div>
+            <DialogDescription className="text-xs text-muted-foreground mt-0.5">
               {mustPrint && !printed
                 ? "Cetak struk untuk menyelesaikan transaksi."
-                : "Pratinjau struk (76 x 297mm) — sama dengan hasil cetak."}
+                : "Pratinjau struk (76 × 297mm) — sesuai hasil cetak printer thermal."}
             </DialogDescription>
           </DialogHeader>
+
           {viewing && (
-            <div className="px-4 pb-3">
+            <div className="flex-1 overflow-y-auto px-4 py-4 bg-muted/20 flex justify-center">
               <div
                 id="receipt"
-                className="mx-auto w-[288px] bg-white text-black border border-dashed border-slate-300 px-3 py-4 font-mono text-[10px] leading-[1.35]"
+                className="w-[300px] bg-white text-black border border-dashed border-slate-300 px-3.5 py-4 font-mono text-[10px] leading-[1.35] shadow-sm select-text"
                 style={{ fontFamily: "'Courier New', Courier, ui-monospace, monospace" }}
               >
                 <div className="text-center">
@@ -1327,10 +1330,12 @@ function TransactionsPage() {
               </div>
             </div>
           )}
-          <DialogFooter className="px-4 pb-4 pt-2 flex flex-wrap items-center justify-between gap-2 sm:gap-2">
-            <div className="flex items-center gap-1.5">
+
+          <DialogFooter className="px-4 py-3 border-t bg-background shrink-0 flex flex-row items-center justify-between gap-2">
+            <div>
               {(!mustPrint || printed) && (
                 <Button
+                  type="button"
                   variant="outline"
                   size="sm"
                   onClick={() => {
@@ -1342,11 +1347,14 @@ function TransactionsPage() {
                   Tutup
                 </Button>
               )}
+            </div>
+
+            <div className="flex items-center gap-2">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                className="gap-1.5 text-xs border-slate-300 hover:bg-muted"
                 title="Unduh file PDF struk"
                 onClick={() => {
                   if (!viewing) return;
@@ -1373,41 +1381,43 @@ function TransactionsPage() {
                 <FileDown className="h-3.5 w-3.5" />
                 Simpan PDF
               </Button>
-            </div>
 
-            <Button
-              className="gap-2 bg-primary text-primary-foreground font-semibold"
-              onClick={() => {
-                if (!viewing) return;
-                printReceiptDirect({
-                  transaction_no: viewing.transaction_no,
-                  transaction_date: viewing.transaction_date,
-                  transaction_type: viewing.transaction_type,
-                  branch: viewing.branches ?? null,
-                  customer: viewing.customers ?? null,
-                  currency: viewing.currencies?.code ?? "-",
-                  foreign_amount: Number(viewing.foreign_amount),
-                  rate: Number(viewing.rate),
-                  idr_amount: Number(viewing.idr_amount),
-                  payment_method: viewing.payment_method,
-                  teller_name: viewing.profiles?.full_name || undefined,
-                  company_name: settings.company_name,
-                  company_address: settings.company_address,
-                  company_phone: settings.company_phone,
-                  license_pva: settings.license_pva,
-                  npwp_number: settings.npwp_number,
-                });
-                setPrinted(true);
-                if (mustPrint) {
-                  toast.success("Struk dikirim ke printer", {
-                    description: "Transaksi selesai. Anda dapat menutup pratinjau.",
+              <Button
+                type="button"
+                size="sm"
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-sm"
+                onClick={() => {
+                  if (!viewing) return;
+                  printReceiptDirect({
+                    transaction_no: viewing.transaction_no,
+                    transaction_date: viewing.transaction_date,
+                    transaction_type: viewing.transaction_type,
+                    branch: viewing.branches ?? null,
+                    customer: viewing.customers ?? null,
+                    currency: viewing.currencies?.code ?? "-",
+                    foreign_amount: Number(viewing.foreign_amount),
+                    rate: Number(viewing.rate),
+                    idr_amount: Number(viewing.idr_amount),
+                    payment_method: viewing.payment_method,
+                    teller_name: viewing.profiles?.full_name || undefined,
+                    company_name: settings.company_name,
+                    company_address: settings.company_address,
+                    company_phone: settings.company_phone,
+                    license_pva: settings.license_pva,
+                    npwp_number: settings.npwp_number,
                   });
-                }
-              }}
-            >
-              <Printer className="h-4 w-4" />
-              {mustPrint && !printed ? "Cetak Struk (Wajib)" : "Cetak Struk"}
-            </Button>
+                  setPrinted(true);
+                  if (mustPrint) {
+                    toast.success("Struk dikirim ke printer", {
+                      description: "Transaksi selesai. Anda dapat menutup pratinjau.",
+                    });
+                  }
+                }}
+              >
+                <Printer className="h-4 w-4" />
+                {mustPrint && !printed ? "Cetak Struk (Wajib)" : "Cetak Struk"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
