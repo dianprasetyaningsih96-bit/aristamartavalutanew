@@ -82,17 +82,24 @@ export function buildReceiptHtml(r: ReceiptData): string {
   <style>
     @page {
       size: 76mm auto;
-      margin: 0mm;
+      margin: 0;
     }
     @media print {
       html, body {
-        width: 76mm !important;
+        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+      }
+      .receipt-wrapper {
+        width: 58mm !important;
+        max-width: 58mm !important;
+        margin-left: 9.5mm !important;
+        margin-right: auto !important;
+        padding: 2mm 0 6mm 0 !important;
       }
     }
     * {
@@ -102,34 +109,37 @@ export function buildReceiptHtml(r: ReceiptData): string {
     }
     body {
       font-family: 'Courier New', Courier, Consolas, Monaco, monospace;
-      font-size: 10.5px;
-      line-height: 1.35;
+      font-size: 9.5px;
+      line-height: 1.32;
       color: #000000;
       background: #ffffff;
-      width: 76mm;
-      max-width: 76mm;
-      margin: 0 auto;
-      padding: 5mm 6mm 8mm 6mm;
       -webkit-font-smoothing: none;
       -moz-osx-font-smoothing: unset;
       text-rendering: optimizeSpeed;
+    }
+    .receipt-wrapper {
+      width: 58mm;
+      max-width: 58mm;
+      margin-left: 9.5mm;
+      margin-right: auto;
+      padding: 3mm 0 6mm 0;
     }
     .text-center { text-align: center; }
     .text-right { text-align: right; }
     .text-left { text-align: left; }
     .bold { font-weight: bold; }
     .company-title {
-      font-size: 12px;
+      font-size: 11px;
       font-weight: bold;
       margin-bottom: 1px;
     }
     .sub-header {
-      font-size: 10px;
+      font-size: 9px;
       line-height: 1.2;
     }
     .divider {
       border-top: 1px dashed #000000;
-      margin: 4px 0;
+      margin: 3px 0;
       width: 100%;
     }
     .flex-between {
@@ -140,15 +150,15 @@ export function buildReceiptHtml(r: ReceiptData): string {
     }
     .detail-row {
       display: flex;
-      font-size: 10.5px;
+      font-size: 9.5px;
       margin-bottom: 1px;
     }
     .detail-label {
-      width: 75px;
+      width: 66px;
       flex-shrink: 0;
     }
     .detail-sep {
-      width: 10px;
+      width: 8px;
       flex-shrink: 0;
       text-align: center;
     }
@@ -160,109 +170,112 @@ export function buildReceiptHtml(r: ReceiptData): string {
       display: flex;
       justify-content: space-between;
       font-weight: bold;
-      font-size: 9.5px;
+      font-size: 9px;
       padding: 1px 0;
     }
     .rate-row {
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      font-size: 10.5px;
+      font-size: 9.5px;
       margin: 2px 0;
     }
     .total-box {
       display: flex;
       justify-content: flex-end;
-      gap: 8px;
+      gap: 6px;
       font-weight: bold;
-      font-size: 10.5px;
+      font-size: 9.5px;
       margin-top: 2px;
     }
     .grand-total {
       display: flex;
       justify-content: space-between;
       font-weight: bold;
-      font-size: 11.5px;
+      font-size: 10.5px;
       margin-top: 2px;
     }
     .signatures {
-      margin-top: 18px;
+      margin-top: 14px;
       display: flex;
-      justify-content: space-around;
+      justify-content: space-between;
+      padding: 0 4px;
       text-align: center;
-      font-size: 10px;
+      font-size: 9px;
     }
     .attention {
-      margin-top: 12px;
+      margin-top: 10px;
       text-align: center;
-      font-size: 9.5px;
+      font-size: 8.5px;
       line-height: 1.25;
     }
   </style>
 </head>
 <body>
-  <div class="text-center">
-    <div class="company-title">${companyName}</div>
-    <div class="sub-header bold">AUTHORIZED MONEY CHANGER</div>
-    ${r.company_address ? `<div class="sub-header">${r.company_address.toUpperCase()}</div>` : ""}
-    ${r.company_phone ? `<div class="sub-header">TELP/WA ${r.company_phone}</div>` : ""}
-    ${r.license_pva ? `<div class="sub-header">IZIN PVA ${r.license_pva}</div>` : ""}
-    ${r.npwp_number ? `<div class="sub-header">NPWP:${r.npwp_number}</div>` : ""}
-  </div>
+  <div class="receipt-wrapper">
+    <div class="text-center">
+      <div class="company-title">${companyName}</div>
+      <div class="sub-header bold">AUTHORIZED MONEY CHANGER</div>
+      ${r.company_address ? `<div class="sub-header">${r.company_address.toUpperCase()}</div>` : ""}
+      ${r.company_phone ? `<div class="sub-header">TELP/WA ${r.company_phone}</div>` : ""}
+      ${r.license_pva ? `<div class="sub-header">IZIN PVA ${r.license_pva}</div>` : ""}
+      ${r.npwp_number ? `<div class="sub-header">NPWP:${r.npwp_number}</div>` : ""}
+    </div>
 
-  <div class="flex-between bold" style="margin-top: 5px; font-size: 10.5px;">
-    <span>${r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)"}</span>
-    <span>NO:${r.transaction_no}</span>
-  </div>
-  <div class="divider"></div>
+    <div class="flex-between bold" style="margin-top: 4px; font-size: 9.5px;">
+      <span>${r.transaction_type === "buy" ? "BUYING (BN)" : "SELLING (JN)"}</span>
+      <span>NO:${r.transaction_no}</span>
+    </div>
+    <div class="divider"></div>
 
-  <div class="detail-row"><span class="detail-label">Date</span><span class="detail-sep">:</span><span class="detail-val">${dateStr}</span></div>
-  <div class="detail-row"><span class="detail-label">Name</span><span class="detail-sep">:</span><span class="detail-val">${customerName}</span></div>
-  <div class="detail-row"><span class="detail-label">ID/KTP</span><span class="detail-sep">:</span><span class="detail-val">${customerCode}</span></div>
-  <div class="detail-row"><span class="detail-label">Nationality</span><span class="detail-sep">:</span><span class="detail-val">${custNationality}</span></div>
-  <div class="detail-row"><span class="detail-label">Occupation</span><span class="detail-sep">:</span><span class="detail-val">${custOccupation}</span></div>
-  <div class="detail-row"><span class="detail-label">DateBirth</span><span class="detail-sep">:</span><span class="detail-val">${custDateBirth}</span></div>
-  <div class="detail-row"><span class="detail-label">PlaceBirth</span><span class="detail-sep">:</span><span class="detail-val">${custPlaceBirth}</span></div>
-  <div class="detail-row"><span class="detail-label">Pay type</span><span class="detail-sep">:</span><span class="detail-val">${payType}</span></div>
-  <div class="detail-row"><span class="detail-label">Outlet/DC</span><span class="detail-sep">:</span><span class="detail-val">${outlet}</span></div>
-  <div class="detail-row"><span class="detail-label">Objective</span><span class="detail-sep">:</span><span class="detail-val">CURRENCY EXCHANGE</span></div>
-  <div class="divider"></div>
+    <div class="detail-row"><span class="detail-label">Date</span><span class="detail-sep">:</span><span class="detail-val">${dateStr}</span></div>
+    <div class="detail-row"><span class="detail-label">Name</span><span class="detail-sep">:</span><span class="detail-val">${customerName}</span></div>
+    <div class="detail-row"><span class="detail-label">ID/KTP</span><span class="detail-sep">:</span><span class="detail-val">${customerCode}</span></div>
+    <div class="detail-row"><span class="detail-label">Nationality</span><span class="detail-sep">:</span><span class="detail-val">${custNationality}</span></div>
+    <div class="detail-row"><span class="detail-label">Occupation</span><span class="detail-sep">:</span><span class="detail-val">${custOccupation}</span></div>
+    <div class="detail-row"><span class="detail-label">DateBirth</span><span class="detail-sep">:</span><span class="detail-val">${custDateBirth}</span></div>
+    <div class="detail-row"><span class="detail-label">PlaceBirth</span><span class="detail-sep">:</span><span class="detail-val">${custPlaceBirth}</span></div>
+    <div class="detail-row"><span class="detail-label">Pay type</span><span class="detail-sep">:</span><span class="detail-val">${payType}</span></div>
+    <div class="detail-row"><span class="detail-label">Outlet/DC</span><span class="detail-sep">:</span><span class="detail-val">${outlet}</span></div>
+    <div class="detail-row"><span class="detail-label">Objective</span><span class="detail-sep">:</span><span class="detail-val">CURRENCY EXCHANGE</span></div>
+    <div class="divider"></div>
 
-  <div class="table-hdr">
-    <span>CURRENCY / AMOUNT</span>
-    <span>RATE</span>
-    <span>TOTAL RP</span>
-  </div>
-  <div class="divider"></div>
+    <div class="table-hdr">
+      <span>CURRENCY / AMOUNT</span>
+      <span>RATE</span>
+      <span>TOTAL RP</span>
+    </div>
+    <div class="divider"></div>
 
-  <div class="rate-row">
-    <span>${currStr} ${fAmountStr}</span>
-    <span>x ${rateStr} =</span>
-    <span>${idrStr}</span>
-  </div>
-  <div class="divider"></div>
+    <div class="rate-row">
+      <span>${currStr} ${fAmountStr}</span>
+      <span>x ${rateStr} =</span>
+      <span>${idrStr}</span>
+    </div>
+    <div class="divider"></div>
 
-  <div class="total-box">
-    <span>TOTAL RP =</span>
-    <span>${idrStr}</span>
-  </div>
-  <div class="grand-total">
-    <span>(RP)</span>
-    <span>${idrStr}</span>
-  </div>
-  <div class="divider"></div>
+    <div class="total-box">
+      <span>TOTAL RP =</span>
+      <span>${idrStr}</span>
+    </div>
+    <div class="grand-total">
+      <span>(RP)</span>
+      <span>${idrStr}</span>
+    </div>
+    <div class="divider"></div>
 
-  ${r.teller_name ? `<div class="detail-row"><span class="detail-label">Operator</span><span class="detail-sep">:</span><span class="detail-val">${r.teller_name.toUpperCase()}</span></div>` : ""}
+    ${r.teller_name ? `<div class="detail-row"><span class="detail-label">Operator</span><span class="detail-sep">:</span><span class="detail-val">${r.teller_name.toUpperCase()}</span></div>` : ""}
 
-  <div class="signatures">
-    <span>( ${operator} )</span>
-    <span>( CASHIER )</span>
-  </div>
+    <div class="signatures">
+      <span>( ${operator} )</span>
+      <span>( CASHIER )</span>
+    </div>
 
-  <div class="attention">
-    <div class="bold">ATTENTION #</div>
-    <div>Claim for shortage of cash after leaving</div>
-    <div>out premises can not be considered</div>
+    <div class="attention">
+      <div class="bold">ATTENTION #</div>
+      <div>Claim for shortage of cash after leaving</div>
+      <div>our premises cannot be considered</div>
+    </div>
   </div>
 </body>
 </html>`;

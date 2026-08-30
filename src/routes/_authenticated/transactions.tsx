@@ -1366,7 +1366,7 @@ function TransactionsPage() {
                 <div className="mt-5 text-center">
                   <div className="font-bold">ATTENTION #</div>
                   <div className="text-[9.5px]">Claim for shortage of cash after leaving</div>
-                  <div className="text-[9.5px]">out premises can not be considered</div>
+                  <div className="text-[9.5px]">our premises cannot be considered</div>
                 </div>
               </div>
             </div>
