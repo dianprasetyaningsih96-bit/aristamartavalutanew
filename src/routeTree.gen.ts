@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as RateDisplayRouteImport } from './routes/rate-display'
 import { Route as AuthenticatedApprovalsRouteImport } from './routes/_authenticated/approvals'
 import { Route as AuthenticatedAuditRouteImport } from './routes/_authenticated/audit'
 import { Route as AuthenticatedBranchesRouteImport } from './routes/_authenticated/branches'
@@ -22,6 +23,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedDttotRouteImport } from './routes/_authenticated/dttot'
 import { Route as AuthenticatedMidRatesRouteImport } from './routes/_authenticated/mid-rates'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedRateBoardRouteImport } from './routes/_authenticated/rate-board'
 import { Route as AuthenticatedRatesRouteImport } from './routes/_authenticated/rates'
 import { Route as AuthenticatedRatesHistoryRouteImport } from './routes/_authenticated/rates-history'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -43,6 +45,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RateDisplayRoute = RateDisplayRouteImport.update({
+  id: '/rate-display',
+  path: '/rate-display',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedApprovalsRoute = AuthenticatedApprovalsRouteImport.update({
@@ -96,6 +103,11 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRateBoardRoute = AuthenticatedRateBoardRouteImport.update({
+  id: '/rate-board',
+  path: '/rate-board',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedRatesRoute = AuthenticatedRatesRouteImport.update({
   id: '/rates',
   path: '/rates',
@@ -143,6 +155,7 @@ const AuthenticatedUsersUserIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/rate-display': typeof RateDisplayRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/branches': typeof AuthenticatedBranchesRoute
@@ -153,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/dttot': typeof AuthenticatedDttotRoute
   '/mid-rates': typeof AuthenticatedMidRatesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/rate-board': typeof AuthenticatedRateBoardRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/rates-history': typeof AuthenticatedRatesHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -165,6 +179,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/rate-display': typeof RateDisplayRoute
   '/approvals': typeof AuthenticatedApprovalsRoute
   '/audit': typeof AuthenticatedAuditRoute
   '/branches': typeof AuthenticatedBranchesRoute
@@ -175,6 +190,7 @@ export interface FileRoutesByTo {
   '/dttot': typeof AuthenticatedDttotRoute
   '/mid-rates': typeof AuthenticatedMidRatesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
+  '/rate-board': typeof AuthenticatedRateBoardRoute
   '/rates': typeof AuthenticatedRatesRoute
   '/rates-history': typeof AuthenticatedRatesHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
@@ -189,6 +205,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/rate-display': typeof RateDisplayRoute
   '/_authenticated/approvals': typeof AuthenticatedApprovalsRoute
   '/_authenticated/audit': typeof AuthenticatedAuditRoute
   '/_authenticated/branches': typeof AuthenticatedBranchesRoute
@@ -199,6 +216,7 @@ export interface FileRoutesById {
   '/_authenticated/dttot': typeof AuthenticatedDttotRoute
   '/_authenticated/mid-rates': typeof AuthenticatedMidRatesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
+  '/_authenticated/rate-board': typeof AuthenticatedRateBoardRoute
   '/_authenticated/rates': typeof AuthenticatedRatesRoute
   '/_authenticated/rates-history': typeof AuthenticatedRatesHistoryRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
@@ -213,6 +231,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/rate-display'
     | '/approvals'
     | '/audit'
     | '/branches'
@@ -223,6 +242,7 @@ export interface FileRouteTypes {
     | '/dttot'
     | '/mid-rates'
     | '/notifications'
+    | '/rate-board'
     | '/rates'
     | '/rates-history'
     | '/reports'
@@ -235,6 +255,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/rate-display'
     | '/approvals'
     | '/audit'
     | '/branches'
@@ -245,6 +266,7 @@ export interface FileRouteTypes {
     | '/dttot'
     | '/mid-rates'
     | '/notifications'
+    | '/rate-board'
     | '/rates'
     | '/rates-history'
     | '/reports'
@@ -258,6 +280,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/rate-display'
     | '/_authenticated/approvals'
     | '/_authenticated/audit'
     | '/_authenticated/branches'
@@ -268,6 +291,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dttot'
     | '/_authenticated/mid-rates'
     | '/_authenticated/notifications'
+    | '/_authenticated/rate-board'
     | '/_authenticated/rates'
     | '/_authenticated/rates-history'
     | '/_authenticated/reports'
@@ -282,6 +306,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  RateDisplayRoute: typeof RateDisplayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -305,6 +330,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rate-display': {
+      id: '/rate-display'
+      path: '/rate-display'
+      fullPath: '/rate-display'
+      preLoaderRoute: typeof RateDisplayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/approvals': {
@@ -375,6 +407,13 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/rate-board': {
+      id: '/_authenticated/rate-board'
+      path: '/rate-board'
+      fullPath: '/rate-board'
+      preLoaderRoute: typeof AuthenticatedRateBoardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/rates': {
@@ -458,6 +497,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDttotRoute: typeof AuthenticatedDttotRoute
   AuthenticatedMidRatesRoute: typeof AuthenticatedMidRatesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
+  AuthenticatedRateBoardRoute: typeof AuthenticatedRateBoardRoute
   AuthenticatedRatesRoute: typeof AuthenticatedRatesRoute
   AuthenticatedRatesHistoryRoute: typeof AuthenticatedRatesHistoryRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
@@ -478,6 +518,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDttotRoute: AuthenticatedDttotRoute,
   AuthenticatedMidRatesRoute: AuthenticatedMidRatesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
+  AuthenticatedRateBoardRoute: AuthenticatedRateBoardRoute,
   AuthenticatedRatesRoute: AuthenticatedRatesRoute,
   AuthenticatedRatesHistoryRoute: AuthenticatedRatesHistoryRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
@@ -494,6 +535,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  RateDisplayRoute: RateDisplayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

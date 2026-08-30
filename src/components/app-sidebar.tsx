@@ -17,6 +17,7 @@ import {
   Scale,
   ShieldAlert,
   History,
+  Tv,
 } from "lucide-react";
 import {
   Sidebar,
@@ -115,6 +116,12 @@ const primary: NavItem[] = [
     url: "/currencies",
     icon: Coins,
     roles: ["super_admin", "owner"],
+  },
+  {
+    title: "Papan Kurs (TV)",
+    url: "/rate-board",
+    icon: Tv,
+    roles: ALL,
   },
 ];
 

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Pencil, Trash2, LineChart, History } from "lucide-react";
+import { Pencil, Trash2, LineChart, History, Tv } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
@@ -288,12 +288,20 @@ function RatesPage() {
           addLabel="Tambah Kurs"
           canWrite={canWrite}
         />
-        <Button variant="outline" className="gap-2" asChild>
-          <a href="/rates-history">
-            <History className="h-4 w-4" />
-            Riwayat Kurs
-          </a>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="gap-2" asChild>
+            <a href="/rate-board">
+              <Tv className="h-4 w-4 text-blue-500" />
+              Papan Kurs (TV)
+            </a>
+          </Button>
+          <Button variant="outline" className="gap-2" asChild>
+            <a href="/rates-history">
+              <History className="h-4 w-4" />
+              Riwayat Kurs
+            </a>
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
