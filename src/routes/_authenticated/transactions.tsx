@@ -24,7 +24,7 @@ import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
 import { COUNTRIES } from "@/lib/countries";
 import { MasterPageHeader } from "@/components/master-data/page-header";
-import { generateReceiptPdf, printReceiptDirect } from "@/lib/pdf-receipt";
+import { generateReceiptPdf, printReceiptDirect, formatBirthDate } from "@/lib/pdf-receipt";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,7 +105,14 @@ interface Transaction {
   teller_id: string | null;
   currencies?: { code: string; name: string } | null;
   branches?: { code: string; name: string } | null;
-  customers?: { customer_code: string; full_name: string } | null;
+  customers?: {
+    customer_code: string;
+    full_name: string;
+    nationality?: string | null;
+    occupation?: string | null;
+    date_of_birth?: string | null;
+    place_of_birth?: string | null;
+  } | null;
   profiles?: { full_name: string | null } | null;
 }
 
@@ -261,7 +268,7 @@ function TransactionsPage() {
     let query = supabase
       .from("transactions")
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name), profiles!teller_id(full_name)",
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name, nationality, occupation, date_of_birth, place_of_birth), profiles!teller_id(full_name)",
       )
       .order("transaction_date", { ascending: false })
       .limit(200);
@@ -499,7 +506,7 @@ function TransactionsPage() {
       .from("transactions")
       .insert(payload)
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name), profiles!teller_id(full_name)",
+        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name, nationality, occupation, date_of_birth, place_of_birth), profiles!teller_id(full_name)",
       )
       .single();
     setSaving(false);
@@ -1270,10 +1277,22 @@ function TransactionsPage() {
                   k="ID/KTP"
                   v={viewing.customers?.customer_code || "-"}
                 />
-                <ThermalDetail k="Nationality" v="-" />
-                <ThermalDetail k="Occupation" v="-" />
-                <ThermalDetail k="DateBirth" v="-" />
-                <ThermalDetail k="PlaceBirth" v="-" />
+                <ThermalDetail
+                  k="Nationality"
+                  v={(viewing.customers?.nationality || "-").toUpperCase()}
+                />
+                <ThermalDetail
+                  k="Occupation"
+                  v={(viewing.customers?.occupation || "-").toUpperCase()}
+                />
+                <ThermalDetail
+                  k="DateBirth"
+                  v={formatBirthDate(viewing.customers?.date_of_birth)}
+                />
+                <ThermalDetail
+                  k="PlaceBirth"
+                  v={(viewing.customers?.place_of_birth || "-").toUpperCase()}
+                />
                 <ThermalDetail
                   k="Pay type"
                   v={(viewing.payment_method ?? "cash").toUpperCase()}

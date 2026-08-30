@@ -10,7 +10,14 @@ export interface ReceiptData {
   transaction_date: string;
   transaction_type: "buy" | "sell";
   branch?: { code: string; name: string } | null;
-  customer?: { customer_code: string; full_name: string } | null;
+  customer?: {
+    customer_code: string;
+    full_name: string;
+    nationality?: string | null;
+    occupation?: string | null;
+    date_of_birth?: string | null;
+    place_of_birth?: string | null;
+  } | null;
   currency: string;
   foreign_amount: number;
   rate: number;
@@ -30,6 +37,22 @@ function receiptDate(value: string) {
   return `${pad(date.getDate())}-${pad(date.getMonth() + 1)}-${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
 }
 
+export function formatBirthDate(dob?: string | null): string {
+  if (!dob) return "-";
+  try {
+    const match = dob.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[3]}-${match[2]}-${match[1]}`;
+    }
+    const d = new Date(dob);
+    if (isNaN(d.getTime())) return dob;
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${pad(d.getDate())}-${pad(d.getMonth() + 1)}-${d.getFullYear()}`;
+  } catch {
+    return dob;
+  }
+}
+
 /**
  * Builds pure, high-contrast HTML string optimized for thermal POS printers (58mm / 76mm / 80mm).
  * Renders native vector text without PDF rasterization or dithering blur on Google Chrome & Firefox.
@@ -39,6 +62,10 @@ export function buildReceiptHtml(r: ReceiptData): string {
   const dateStr = receiptDate(r.transaction_date);
   const customerName = (r.customer?.full_name || "WALK-IN CUSTOMER").toUpperCase();
   const customerCode = r.customer?.customer_code || "-";
+  const custNationality = (r.customer?.nationality || "-").toUpperCase();
+  const custOccupation = (r.customer?.occupation || "-").toUpperCase();
+  const custDateBirth = formatBirthDate(r.customer?.date_of_birth);
+  const custPlaceBirth = (r.customer?.place_of_birth || "-").toUpperCase();
   const currStr = r.currency.toUpperCase();
   const fAmountStr = fmtNum(r.foreign_amount, 2);
   const rateStr = fmtNum(r.rate, 2);
@@ -192,10 +219,10 @@ export function buildReceiptHtml(r: ReceiptData): string {
   <div class="detail-row"><span class="detail-label">Date</span><span class="detail-sep">:</span><span class="detail-val">${dateStr}</span></div>
   <div class="detail-row"><span class="detail-label">Name</span><span class="detail-sep">:</span><span class="detail-val">${customerName}</span></div>
   <div class="detail-row"><span class="detail-label">ID/KTP</span><span class="detail-sep">:</span><span class="detail-val">${customerCode}</span></div>
-  <div class="detail-row"><span class="detail-label">Nationality</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
-  <div class="detail-row"><span class="detail-label">Occupation</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
-  <div class="detail-row"><span class="detail-label">DateBirth</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
-  <div class="detail-row"><span class="detail-label">PlaceBirth</span><span class="detail-sep">:</span><span class="detail-val">-</span></div>
+  <div class="detail-row"><span class="detail-label">Nationality</span><span class="detail-sep">:</span><span class="detail-val">${custNationality}</span></div>
+  <div class="detail-row"><span class="detail-label">Occupation</span><span class="detail-sep">:</span><span class="detail-val">${custOccupation}</span></div>
+  <div class="detail-row"><span class="detail-label">DateBirth</span><span class="detail-sep">:</span><span class="detail-val">${custDateBirth}</span></div>
+  <div class="detail-row"><span class="detail-label">PlaceBirth</span><span class="detail-sep">:</span><span class="detail-val">${custPlaceBirth}</span></div>
   <div class="detail-row"><span class="detail-label">Pay type</span><span class="detail-sep">:</span><span class="detail-val">${payType}</span></div>
   <div class="detail-row"><span class="detail-label">Outlet/DC</span><span class="detail-sep">:</span><span class="detail-val">${outlet}</span></div>
   <div class="detail-row"><span class="detail-label">Objective</span><span class="detail-sep">:</span><span class="detail-val">CURRENCY EXCHANGE</span></div>
@@ -337,10 +364,10 @@ export function generateReceiptPdf(r: ReceiptData) {
   detail("Date", receiptDate(r.transaction_date));
   detail("Name", (r.customer?.full_name || "WALK-IN CUSTOMER").toUpperCase());
   detail("ID/KTP", r.customer?.customer_code || "-");
-  detail("Nationality", "-");
-  detail("Occupation", "-");
-  detail("DateBirth", "-");
-  detail("PlaceBirth", "-");
+  detail("Nationality", (r.customer?.nationality || "-").toUpperCase());
+  detail("Occupation", (r.customer?.occupation || "-").toUpperCase());
+  detail("DateBirth", formatBirthDate(r.customer?.date_of_birth));
+  detail("PlaceBirth", (r.customer?.place_of_birth || "-").toUpperCase());
   detail("Pay type", (r.payment_method || "Cash").toUpperCase());
   detail("Outlet/DC", (r.branch?.name || r.branch?.code || "-").toUpperCase());
   detail("Objective", "CURRENCY EXCHANGE");
