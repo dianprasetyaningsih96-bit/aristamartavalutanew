@@ -397,14 +397,29 @@ export function RateBoardPage() {
 
           {/* Right Header: Clock & Quick Controls */}
           <div className="flex items-center gap-4">
-            {/* Live Clock Display */}
+            {/* Live Clock Display in WITA */}
             <div className="text-right">
               <div className="flex items-center justify-end gap-2 text-xl md:text-2xl font-black tracking-widest text-cyan-400 font-mono drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]">
                 <Clock className="h-5 w-5 text-cyan-400 animate-pulse" />
-                {format(currentTime, "HH:mm:ss")} <span className="text-xs text-cyan-200">WIB</span>
+                {new Intl.DateTimeFormat("id-ID", {
+                  timeZone: "Asia/Makassar",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                  hour12: false,
+                })
+                  .format(currentTime)
+                  .replace(/\./g, ":")}{" "}
+                <span className="text-xs text-cyan-200">WITA</span>
               </div>
               <div className="text-[11px] font-medium text-slate-300">
-                {format(currentTime, "EEEE, dd MMMM yyyy", { locale: idLocale })}
+                {new Intl.DateTimeFormat("id-ID", {
+                  timeZone: "Asia/Makassar",
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }).format(currentTime)}
               </div>
             </div>
 
