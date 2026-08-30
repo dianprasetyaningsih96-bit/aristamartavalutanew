@@ -104,7 +104,13 @@ interface Transaction {
   notes: string | null;
   teller_id: string | null;
   currencies?: { code: string; name: string } | null;
-  branches?: { code: string; name: string } | null;
+  branches?: {
+    code: string;
+    name: string;
+    address?: string | null;
+    city?: string | null;
+    phone?: string | null;
+  } | null;
   customers?: {
     customer_code: string;
     full_name: string;
@@ -268,7 +274,7 @@ function TransactionsPage() {
     let query = supabase
       .from("transactions")
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name, nationality, occupation, date_of_birth, place_of_birth), profiles!teller_id(full_name)",
+        "*, currencies(code, name), branches(code, name, address, city, phone), customers(customer_code, full_name, nationality, occupation, date_of_birth, place_of_birth), profiles!teller_id(full_name)",
       )
       .order("transaction_date", { ascending: false })
       .limit(200);
@@ -506,7 +512,7 @@ function TransactionsPage() {
       .from("transactions")
       .insert(payload)
       .select(
-        "*, currencies(code, name), branches(code, name), customers(customer_code, full_name, nationality, occupation, date_of_birth, place_of_birth), profiles!teller_id(full_name)",
+        "*, currencies(code, name), branches(code, name, address, city, phone), customers(customer_code, full_name, nationality, occupation, date_of_birth, place_of_birth), profiles!teller_id(full_name)",
       )
       .single();
     setSaving(false);
@@ -1235,11 +1241,13 @@ function TransactionsPage() {
                     {settings.company_name}
                   </div>
                   <div className="font-bold">AUTHORIZED MONEY CHANGER</div>
-                  {settings.company_address && (
-                    <div className="uppercase">{settings.company_address}</div>
+                  {(viewing.branches?.address || settings.company_address) && (
+                    <div className="uppercase">
+                      {viewing.branches?.address || settings.company_address}
+                    </div>
                   )}
-                  {settings.company_phone && (
-                    <div>TELP/WA {settings.company_phone}</div>
+                  {(viewing.branches?.phone || settings.company_phone) && (
+                    <div>TELP/WA {viewing.branches?.phone || settings.company_phone}</div>
                   )}
                   {settings.license_pva && (
                     <div>IZIN PVA {settings.license_pva}</div>
@@ -1404,8 +1412,8 @@ function TransactionsPage() {
                     payment_method: viewing.payment_method,
                     teller_name: viewing.profiles?.full_name || undefined,
                     company_name: settings.company_name,
-                    company_address: settings.company_address,
-                    company_phone: settings.company_phone,
+                    company_address: viewing.branches?.address || settings.company_address,
+                    company_phone: viewing.branches?.phone || settings.company_phone,
                     license_pva: settings.license_pva,
                     npwp_number: settings.npwp_number,
                   });
@@ -1434,8 +1442,8 @@ function TransactionsPage() {
                     payment_method: viewing.payment_method,
                     teller_name: viewing.profiles?.full_name || undefined,
                     company_name: settings.company_name,
-                    company_address: settings.company_address,
-                    company_phone: settings.company_phone,
+                    company_address: viewing.branches?.address || settings.company_address,
+                    company_phone: viewing.branches?.phone || settings.company_phone,
                     license_pva: settings.license_pva,
                     npwp_number: settings.npwp_number,
                   });

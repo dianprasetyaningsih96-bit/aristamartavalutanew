@@ -66,7 +66,14 @@ interface TrxRow {
   branches?: { code: string; name: string } | null;
 }
 
-interface Branch { id: string; code: string; name: string }
+interface Branch {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  city?: string | null;
+  phone?: string | null;
+}
 
 const LTKT_THRESHOLD = 500_000_000;
 
@@ -255,7 +262,7 @@ function ReportsPage() {
   useEffect(() => {
     supabase
       .from("branches")
-      .select("id, code, name")
+      .select("id, code, name, address, city, phone")
       .order("code")
       .then(({ data }) => setBranches((data as Branch[]) ?? []));
   }, []);
@@ -588,10 +595,12 @@ function ReportsPage() {
                 variant="outline"
                 className="gap-2"
                 onClick={() => {
+                  const selectedBranch = branches.find((b) => b.id === branchId);
                   const label =
                     branchId === "all"
                       ? "Semua Cabang"
-                      : branches.find((b) => b.id === branchId)?.name ?? "-";
+                      : selectedBranch?.name ?? "-";
+                  const branchAddress = selectedBranch?.address || undefined;
                   const range =
                     tab === "bulanan"
                       ? monthRange(monthPeriod)
@@ -600,6 +609,7 @@ function ReportsPage() {
                     title,
                     variant: tab,
                     branchLabel: label,
+                    branchAddress,
                     dateFrom: range.from,
                     dateTo: range.to,
                     totals,
@@ -714,16 +724,19 @@ function ReportsPage() {
                           toast.info("Tidak ada data untuk dicetak");
                           return;
                         }
+                        const selectedBranch = branches.find((b) => b.id === branchId);
                         const label =
                           branchId === "all"
                             ? "Semua Cabang"
-                            : branches.find((b) => b.id === branchId)?.name ?? "-";
+                            : selectedBranch?.name ?? "-";
+                        const branchAddress = selectedBranch?.address || undefined;
                         const range = monthRange(monthPeriod);
                         generateLkubReportPdf(
                           {
                             title,
                             variant: "bulanan",
                             branchLabel: label,
+                            branchAddress,
                             dateFrom: range.from,
                             dateTo: range.to,
                             totals,

@@ -31,6 +31,7 @@ export interface ReportMeta {
   title: string;
   variant: "harian" | "bulanan" | "ltkt" | "ltkm";
   branchLabel: string;
+  branchAddress?: string;
   dateFrom: string;
   dateTo: string;
   totals: { count: number; buy: number; sell: number; suspicious: number };
@@ -77,7 +78,7 @@ function metaBox(doc: jsPDF, y: number, meta: ReportMeta) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...BRAND.muted);
-  const line = `Periode: ${meta.dateFrom} s/d ${meta.dateTo}   ·   Cabang: ${meta.branchLabel}`;
+  const line = `Periode: ${meta.dateFrom} s/d ${meta.dateTo}   ·   Cabang: ${meta.branchLabel}${meta.branchAddress ? " — " + meta.branchAddress : ""}`;
   doc.text(line, 12, y);
   return y + 4;
 }

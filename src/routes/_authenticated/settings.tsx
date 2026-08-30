@@ -12,6 +12,9 @@ import {
   UploadCloud,
   Image as ImageIcon,
   Trash2,
+  Building2,
+  MapPin,
+  Phone,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_PROJECT_ID, SUPABASE_URL } from "@/integrations/supabase/config";
@@ -22,10 +25,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   component: SettingsPage,
 });
+
+interface BranchSetting {
+  id: string;
+  code: string;
+  name: string;
+  address: string;
+  city: string;
+  phone: string;
+  is_head_office: boolean;
+}
 
 function SettingsPage() {
   const navigate = useNavigate();
@@ -39,6 +53,8 @@ function SettingsPage() {
   const [npwpNumber, setNpwpNumber] = useState(settings.npwp_number);
   const [logoUrl, setLogoUrl] = useState(settings.logo_url || "");
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [branches, setBranches] = useState<BranchSetting[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
   const [pagiStart, setPagiStart] = useState(settings.shift_pagi_start);
   const [pagiEnd, setPagiEnd] = useState(settings.shift_pagi_end);
   const [siangStart, setSiangStart] = useState(settings.shift_siang_start);
@@ -47,6 +63,33 @@ function SettingsPage() {
   const [thresholdUsd, setThresholdUsd] = useState(settings.transaction_threshold_usd);
   const [saving, setSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function loadBranches() {
+    setBranchesLoading(true);
+    const { data } = await supabase
+      .from("branches")
+      .select("id, code, name, address, city, phone, is_head_office")
+      .order("is_head_office", { ascending: false })
+      .order("code");
+    setBranchesLoading(false);
+    if (data) {
+      setBranches(
+        data.map((b) => ({
+          id: b.id,
+          code: b.code,
+          name: b.name,
+          address: b.address || "",
+          city: b.city || "",
+          phone: b.phone || "",
+          is_head_office: !!b.is_head_office,
+        })),
+      );
+    }
+  }
+
+  useEffect(() => {
+    loadBranches();
+  }, []);
 
   useEffect(() => {
     setCompanyName(settings.company_name);
@@ -151,12 +194,18 @@ function SettingsPage() {
     }
     setSaving(true);
     const { data: userRes } = await supabase.auth.getUser();
-    const { error } = await supabase
+
+    // Determine primary/head office address and phone for global fallbacks
+    const headOffice = branches.find((b) => b.is_head_office) || branches[0];
+    const primaryAddress = headOffice?.address || companyAddress;
+    const primaryPhone = headOffice?.phone || companyPhone;
+
+    const { error: settingsError } = await supabase
       .from("app_settings")
       .update({
         company_name: name,
-        company_address: companyAddress.trim(),
-        company_phone: companyPhone.trim(),
+        company_address: primaryAddress.trim(),
+        company_phone: primaryPhone.trim(),
         license_pva: licensePva.trim(),
         npwp_number: npwpNumber.trim(),
         logo_url: logoUrl.trim() || null,
@@ -170,13 +219,33 @@ function SettingsPage() {
         updated_by: userRes.user?.id ?? null,
       })
       .eq("id", true);
-    setSaving(false);
-    if (error) {
-      toast.error("Gagal menyimpan: " + error.message);
+
+    if (settingsError) {
+      setSaving(false);
+      toast.error("Gagal menyimpan: " + settingsError.message);
       return;
     }
+
+    // Save each branch's address, city, and phone to branches table
+    for (const b of branches) {
+      const { error: branchError } = await supabase
+        .from("branches")
+        .update({
+          address: b.address.trim() || null,
+          city: b.city.trim() || null,
+          phone: b.phone.trim() || null,
+        })
+        .eq("id", b.id);
+
+      if (branchError) {
+        console.error("Gagal memperbarui cabang:", b.code, branchError);
+      }
+    }
+
+    setSaving(false);
     await refresh();
-    toast.success("Pengaturan & Logo berhasil tersimpan di database");
+    await loadBranches();
+    toast.success("Pengaturan & Alamat Cabang berhasil disimpan");
   }
 
   return (
@@ -188,7 +257,7 @@ function SettingsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Pengaturan</h1>
           <p className="text-sm text-muted-foreground">
-            Konfigurasi identitas money changer & logo
+            Konfigurasi identitas money changer, logo, dan alamat per cabang
           </p>
         </div>
       </div>
@@ -197,7 +266,7 @@ function SettingsPage() {
         <CardHeader>
           <CardTitle>Identitas Money Changer</CardTitle>
           <CardDescription>
-            Informasi dan logo ini akan ditampilkan pada sidebar, header, papan kurs TV, kwitansi, dan laporan.
+            Informasi, logo, dan alamat cabang ini akan ditampilkan pada sidebar, header, papan kurs TV, kwitansi, dan laporan.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -284,29 +353,8 @@ function SettingsPage() {
               maxLength={80}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="company-address">Alamat</Label>
-            <Input
-              id="company-address"
-              value={companyAddress}
-              onChange={(e) => setCompanyAddress(e.target.value)}
-              placeholder="Jl Raya Uluwatu I 66 X Jimbaran, BALI"
-              disabled={loading || saving}
-              maxLength={160}
-            />
-          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="company-phone">Telp/WA</Label>
-              <Input
-                id="company-phone"
-                value={companyPhone}
-                onChange={(e) => setCompanyPhone(e.target.value)}
-                placeholder="+62 812-4668-468"
-                disabled={loading || saving}
-                maxLength={40}
-              />
-            </div>
             <div className="space-y-2">
               <Label htmlFor="license-pva">Izin PVA</Label>
               <Input
@@ -318,22 +366,127 @@ function SettingsPage() {
                 maxLength={60}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="npwp-number">NPWP</Label>
+              <Input
+                id="npwp-number"
+                value={npwpNumber}
+                onChange={(e) => setNpwpNumber(e.target.value)}
+                placeholder="01.446.521.5-904.000"
+                disabled={loading || saving}
+                maxLength={40}
+              />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="npwp-number">NPWP</Label>
-            <Input
-              id="npwp-number"
-              value={npwpNumber}
-              onChange={(e) => setNpwpNumber(e.target.value)}
-              placeholder="01.446.521.5-904.000"
-              disabled={loading || saving}
-              maxLength={40}
-            />
+
+          {/* Section Alamat & Kontak per Cabang */}
+          <div className="space-y-4 pt-3 border-t">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                <MapPin className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold">Alamat & Kontak Setiap Cabang</h3>
+                <p className="text-xs text-muted-foreground">
+                  Alamat dan no. telepon ini akan otomatis dicetak pada struk dan laporan sesuai cabang masing-masing.
+                </p>
+              </div>
+            </div>
+
+            {branchesLoading && branches.length === 0 ? (
+              <div className="flex items-center justify-center p-6 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" /> Memuat data cabang…
+              </div>
+            ) : branches.length === 0 ? (
+              <div className="p-4 text-center text-xs text-muted-foreground border rounded-lg bg-muted/10">
+                Belum ada data cabang terdaftar.
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                {branches.map((b, idx) => (
+                  <div
+                    key={b.id}
+                    className="rounded-xl border bg-muted/15 p-4 space-y-3 transition-colors hover:bg-muted/25 shadow-xs"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">
+                          {b.code}
+                        </span>
+                        <span className="font-semibold text-sm">{b.name}</span>
+                      </div>
+                      {b.is_head_office ? (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">
+                          Kantor Pusat
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-[10px]">
+                          Cabang
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <Label htmlFor={`branch-addr-${b.id}`} className="text-xs font-medium">
+                        Alamat Lengkap Cabang
+                      </Label>
+                      <Input
+                        id={`branch-addr-${b.id}`}
+                        value={b.address}
+                        onChange={(e) => {
+                          const updated = [...branches];
+                          updated[idx] = { ...b, address: e.target.value };
+                          setBranches(updated);
+                        }}
+                        placeholder="Contoh: Jl. Raya Uluwatu I No. 66 Jimbaran, Badung, Bali"
+                        disabled={loading || saving}
+                      />
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`branch-city-${b.id}`} className="text-xs font-medium">
+                          Kota / Kabupaten
+                        </Label>
+                        <Input
+                          id={`branch-city-${b.id}`}
+                          value={b.city}
+                          onChange={(e) => {
+                            const updated = [...branches];
+                            updated[idx] = { ...b, city: e.target.value };
+                            setBranches(updated);
+                          }}
+                          placeholder="Contoh: Badung"
+                          disabled={loading || saving}
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label htmlFor={`branch-phone-${b.id}`} className="text-xs font-medium">
+                          No. Telp / WhatsApp Cabang
+                        </Label>
+                        <Input
+                          id={`branch-phone-${b.id}`}
+                          value={b.phone}
+                          onChange={(e) => {
+                            const updated = [...branches];
+                            updated[idx] = { ...b, phone: e.target.value };
+                            setBranches(updated);
+                          }}
+                          placeholder="Contoh: +62 812-4668-468"
+                          disabled={loading || saving}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
           <div className="flex justify-end pt-2">
             <Button onClick={handleSave} disabled={saving || loading || uploadingLogo} className="gap-2">
               <Save className="h-4 w-4" />
-              {saving ? "Menyimpan…" : "Simpan"}
+              {saving ? "Menyimpan…" : "Simpan Pengaturan"}
             </Button>
           </div>
         </CardContent>
