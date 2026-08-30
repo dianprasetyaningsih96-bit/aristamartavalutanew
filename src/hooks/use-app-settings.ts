@@ -7,6 +7,7 @@ export interface AppSettings {
   company_phone: string;
   license_pva: string;
   npwp_number: string;
+  logo_url: string;
   shift_pagi_start: string;
   shift_pagi_end: string;
   shift_siang_start: string;
@@ -21,6 +22,7 @@ const DEFAULT: AppSettings = {
   company_phone: "",
   license_pva: "",
   npwp_number: "",
+  logo_url: "",
   shift_pagi_start: "08:00",
   shift_pagi_end: "15:00",
   shift_siang_start: "15:00",
@@ -36,7 +38,7 @@ async function fetchSettings(): Promise<AppSettings> {
   const { data } = await supabase
     .from("app_settings")
     .select(
-      "company_name, company_address, company_phone, license_pva, npwp_number, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end, prevent_oversell, transaction_threshold_usd",
+      "company_name, company_address, company_phone, license_pva, npwp_number, shift_pagi_start, shift_pagi_end, shift_siang_start, shift_siang_end, prevent_oversell, transaction_threshold_usd, logo_url",
     )
     .eq("id", true)
     .maybeSingle();
@@ -49,6 +51,7 @@ async function fetchSettings(): Promise<AppSettings> {
     company_phone: str((data as Record<string, unknown> | null)?.company_phone),
     license_pva: str((data as Record<string, unknown> | null)?.license_pva),
     npwp_number: str((data as Record<string, unknown> | null)?.npwp_number),
+    logo_url: str((data as Record<string, unknown> | null)?.logo_url),
     shift_pagi_start: trim(data?.shift_pagi_start) || DEFAULT.shift_pagi_start,
     shift_pagi_end: trim(data?.shift_pagi_end) || DEFAULT.shift_pagi_end,
     shift_siang_start:

@@ -190,8 +190,19 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="border-b border-sidebar-border">
         <div className="flex items-center gap-2 px-2 py-2">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[image:var(--gradient-glow)] text-primary-foreground shadow-lg">
-            <Banknote className="h-5 w-5" />
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[image:var(--gradient-glow)] text-primary-foreground shadow-lg overflow-hidden">
+            {settings.logo_url ? (
+              <img
+                src={settings.logo_url}
+                alt={settings.company_name}
+                className="h-full w-full object-contain p-0.5 bg-card/80"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
+            ) : (
+              <Banknote className="h-5 w-5" />
+            )}
           </div>
           {!collapsed && (
             <div className="min-w-0">

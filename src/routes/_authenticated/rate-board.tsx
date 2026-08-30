@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getCurrencyInfo } from "@/lib/currency-flags";
+import { useAppSettings } from "@/hooks/use-app-settings";
 import { format } from "date-fns";
 import { id as idLocale } from "date-fns/locale";
 
@@ -69,6 +70,7 @@ interface BranchItem {
 const ALL_HQ = "__all_hq__";
 
 export function RateBoardPage() {
+  const { settings } = useAppSettings();
   const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
   const [rates, setRates] = useState<RateItem[]>([]);
   const [branches, setBranches] = useState<BranchItem[]>([]);
@@ -340,10 +342,21 @@ export function RateBoardPage() {
         <header className="relative z-10 flex h-20 items-center justify-between border-b border-blue-900/60 bg-[#020b18]/90 px-6 backdrop-blur-md">
           {/* Logo & Main Title */}
           <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-blue-400/80 bg-gradient-to-tr from-blue-900 via-blue-700 to-cyan-500 shadow-[0_0_15px_rgba(59,130,246,0.5)]">
-              <span className="text-base font-black tracking-wider text-white">
-                VG
-              </span>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-blue-400/80 bg-gradient-to-tr from-blue-900 via-blue-700 to-cyan-500 shadow-[0_0_15px_rgba(59,130,246,0.5)] overflow-hidden">
+              {settings.logo_url ? (
+                <img
+                  src={settings.logo_url}
+                  alt={settings.company_name}
+                  className="h-full w-full object-contain p-0.5 bg-black/40"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="text-base font-black tracking-wider text-white">
+                  VG
+                </span>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2.5">
@@ -355,7 +368,7 @@ export function RateBoardPage() {
                 </Badge>
               </div>
               <p className="text-[11px] font-semibold tracking-wider text-cyan-300/80 uppercase">
-                VALUTA GUARDIAN MONEY CHANGER • {selectedBranchName}
+                {settings.company_name} • {selectedBranchName}
               </p>
             </div>
           </div>

@@ -1,7 +1,18 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "sonner";
-import { Settings as SettingsIcon, Save, PlugZap, Loader2, CheckCircle2, XCircle, ShieldAlert } from "lucide-react";
+import {
+  Settings as SettingsIcon,
+  Save,
+  PlugZap,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  ShieldAlert,
+  UploadCloud,
+  Image as ImageIcon,
+  Trash2,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { SUPABASE_PROJECT_ID, SUPABASE_URL } from "@/integrations/supabase/config";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
@@ -26,6 +37,8 @@ function SettingsPage() {
   const [companyPhone, setCompanyPhone] = useState(settings.company_phone);
   const [licensePva, setLicensePva] = useState(settings.license_pva);
   const [npwpNumber, setNpwpNumber] = useState(settings.npwp_number);
+  const [logoUrl, setLogoUrl] = useState(settings.logo_url || "");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [pagiStart, setPagiStart] = useState(settings.shift_pagi_start);
   const [pagiEnd, setPagiEnd] = useState(settings.shift_pagi_end);
   const [siangStart, setSiangStart] = useState(settings.shift_siang_start);
@@ -33,6 +46,7 @@ function SettingsPage() {
   const [preventOversell, setPreventOversell] = useState(settings.prevent_oversell);
   const [thresholdUsd, setThresholdUsd] = useState(settings.transaction_threshold_usd);
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setCompanyName(settings.company_name);
@@ -40,6 +54,7 @@ function SettingsPage() {
     setCompanyPhone(settings.company_phone);
     setLicensePva(settings.license_pva);
     setNpwpNumber(settings.npwp_number);
+    setLogoUrl(settings.logo_url || "");
     setPagiStart(settings.shift_pagi_start);
     setPagiEnd(settings.shift_pagi_end);
     setSiangStart(settings.shift_siang_start);
@@ -54,6 +69,79 @@ function SettingsPage() {
       navigate({ to: "/dashboard" });
     }
   }, [userLoading, canEdit, navigate]);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size limit (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("Ukuran file terlalu besar. Maksimal 5 MB.");
+      return;
+    }
+
+    // Check type
+    if (!file.type.startsWith("image/")) {
+      toast.error("Format file harus berupa gambar (PNG, JPG, SVG, WebP).");
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split(".").pop();
+      const fileName = `logo-${Date.now()}.${fileExt}`;
+      const filePath = `logos/${fileName}`;
+
+      // 1. Try uploading to Supabase Storage bucket
+      const { error: uploadError } = await supabase.storage
+        .from("company_assets")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: true,
+        });
+
+      if (!uploadError) {
+        const { data: publicUrlData } = supabase.storage
+          .from("company_assets")
+          .getPublicUrl(filePath);
+
+        setLogoUrl(publicUrlData.publicUrl);
+        toast.success("Logo berhasil diunggah ke storage");
+      } else {
+        // 2. Fallback: encode as base64 data URI directly into database
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const base64 = event.target?.result as string;
+          setLogoUrl(base64);
+          toast.success("Logo berhasil dimuat");
+        };
+        reader.readAsDataURL(file);
+      }
+    } catch (err: any) {
+      console.error("Gagal mengunggah logo:", err);
+      // Fallback to base64
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        setLogoUrl(base64);
+        toast.success("Logo berhasil dimuat");
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploadingLogo(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleRemoveLogo = () => {
+    setLogoUrl("");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    toast.info("Logo dihapus. Klik Simpan untuk memperbarui database.");
+  };
 
   async function handleSave() {
     const name = companyName.trim();
@@ -71,6 +159,7 @@ function SettingsPage() {
         company_phone: companyPhone.trim(),
         license_pva: licensePva.trim(),
         npwp_number: npwpNumber.trim(),
+        logo_url: logoUrl.trim() || null,
         shift_pagi_start: pagiStart,
         shift_pagi_end: pagiEnd,
         shift_siang_start: siangStart,
@@ -87,7 +176,7 @@ function SettingsPage() {
       return;
     }
     await refresh();
-    toast.success("Pengaturan tersimpan");
+    toast.success("Pengaturan & Logo berhasil tersimpan di database");
   }
 
   return (
@@ -99,7 +188,7 @@ function SettingsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Pengaturan</h1>
           <p className="text-sm text-muted-foreground">
-            Konfigurasi identitas money changer
+            Konfigurasi identitas money changer & logo
           </p>
         </div>
       </div>
@@ -108,10 +197,82 @@ function SettingsPage() {
         <CardHeader>
           <CardTitle>Identitas Money Changer</CardTitle>
           <CardDescription>
-            Nama ini akan ditampilkan pada sidebar, header, kwitansi, dan laporan.
+            Informasi dan logo ini akan ditampilkan pada sidebar, header, papan kurs TV, kwitansi, dan laporan.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-5">
+          {/* Logo Upload Section */}
+          <div className="space-y-2.5">
+            <Label className="text-sm font-medium">Logo Money Changer</Label>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+              {/* Preview Box */}
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-muted-foreground/30 bg-muted/20 p-2 overflow-hidden shadow-inner relative group">
+                {logoUrl ? (
+                  <img
+                    src={logoUrl}
+                    alt="Logo Preview"
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground text-center">
+                    <ImageIcon className="h-8 w-8 opacity-40 mb-1" />
+                    <span className="text-[10px]">Belum ada logo</span>
+                  </div>
+                )}
+                {uploadingLogo && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-xs">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons & Info */}
+              <div className="flex flex-1 flex-col gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                  disabled={loading || saving || uploadingLogo}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={loading || saving || uploadingLogo}
+                  >
+                    {uploadingLogo ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <UploadCloud className="h-4 w-4" />
+                    )}
+                    {logoUrl ? "Ganti Logo" : "Unggah Logo"}
+                  </Button>
+                  {logoUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={handleRemoveLogo}
+                      disabled={loading || saving || uploadingLogo}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Hapus
+                    </Button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
+                  Format yang didukung: PNG, JPG, SVG, WebP (Maksimal 5 MB). Disarankan logo berlatar belakang transparan.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-2">
             <Label htmlFor="company-name">Nama Money Changer</Label>
             <Input
@@ -169,8 +330,8 @@ function SettingsPage() {
               maxLength={40}
             />
           </div>
-          <div className="flex justify-end">
-            <Button onClick={handleSave} disabled={saving || loading} className="gap-2">
+          <div className="flex justify-end pt-2">
+            <Button onClick={handleSave} disabled={saving || loading || uploadingLogo} className="gap-2">
               <Save className="h-4 w-4" />
               {saving ? "Menyimpan…" : "Simpan"}
             </Button>

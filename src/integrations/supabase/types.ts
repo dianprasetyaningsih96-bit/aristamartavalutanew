@@ -21,6 +21,7 @@ export type Database = {
           company_phone: string | null
           id: boolean
           license_pva: string | null
+          logo_url: string | null
           npwp_number: string | null
           prevent_oversell: boolean | null
           shift_pagi_end: string | null
@@ -37,6 +38,7 @@ export type Database = {
           company_phone?: string | null
           id?: boolean
           license_pva?: string | null
+          logo_url?: string | null
           npwp_number?: string | null
           prevent_oversell?: boolean | null
           shift_pagi_end?: string | null
@@ -53,6 +55,7 @@ export type Database = {
           company_phone?: string | null
           id?: boolean
           license_pva?: string | null
+          logo_url?: string | null
           npwp_number?: string | null
           prevent_oversell?: boolean | null
           shift_pagi_end?: string | null
