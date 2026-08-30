@@ -1212,17 +1212,22 @@ function TransactionsPage() {
           </DialogHeader>
 
           {viewing && (
-            <div className="flex-1 overflow-y-auto px-4 py-4 bg-muted/20 flex justify-center">
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-100 dark:bg-slate-950 flex justify-center">
               <div
                 id="receipt"
-                className="w-[300px] bg-white text-black border border-dashed border-slate-300 px-3.5 py-4 font-mono text-[10px] leading-[1.35] shadow-sm select-text"
-                style={{ fontFamily: "'Courier New', Courier, ui-monospace, monospace" }}
+                className="w-[320px] shrink-0 h-fit bg-white text-black border border-dashed border-slate-400 p-5 font-mono text-[10.5px] leading-[1.35] shadow-lg rounded-xs select-text block"
+                style={{
+                  backgroundColor: "#ffffff",
+                  color: "#000000",
+                  fontFamily: "'Courier New', Courier, ui-monospace, monospace",
+                }}
               >
+                {/* Header Identitas */}
                 <div className="text-center">
-                  <div className="font-bold text-[11px] uppercase">
+                  <div className="font-bold text-[12px] uppercase">
                     {settings.company_name}
                   </div>
-                  <div>AUTHORIZED MONEY CHANGER</div>
+                  <div className="font-bold">AUTHORIZED MONEY CHANGER</div>
                   {settings.company_address && (
                     <div className="uppercase">{settings.company_address}</div>
                   )}
@@ -1234,7 +1239,9 @@ function TransactionsPage() {
                   )}
                   {settings.npwp_number && <div>NPWP:{settings.npwp_number}</div>}
                 </div>
-                <div className="mt-2 flex justify-between font-bold">
+
+                {/* Info Transaksi */}
+                <div className="mt-2.5 flex justify-between font-bold">
                   <span>
                     {viewing.transaction_type === "buy"
                       ? "BUYING (BN)"
@@ -1243,6 +1250,7 @@ function TransactionsPage() {
                   <span>NO:{viewing.transaction_no}</span>
                 </div>
                 <ThermalDivider />
+
                 <ThermalDetail
                   k="Date"
                   v={new Date(viewing.transaction_date).toLocaleString("id-ID", {
@@ -1276,15 +1284,17 @@ function TransactionsPage() {
                 />
                 <ThermalDetail k="Objective" v="CURRENCY EXCHANGE" />
                 <ThermalDivider />
-                <div className="flex justify-between font-bold">
+
+                {/* Rincian Valuta */}
+                <div className="flex justify-between font-bold text-[10px]">
                   <span>CURRENCY / AMOUNT</span>
                   <span>RATE</span>
                   <span>TOTAL RP</span>
                 </div>
                 <ThermalDivider />
-                <div className="flex justify-between">
-                  <span>{(viewing.currencies?.code ?? "-").toUpperCase()}</span>
-                  <span>{fmtNum(Number(viewing.foreign_amount), 2)}</span>
+
+                <div className="flex justify-between items-baseline my-1">
+                  <span>{(viewing.currencies?.code ?? "-").toUpperCase()} {fmtNum(Number(viewing.foreign_amount), 2)}</span>
                   <span>x {fmtNum(Number(viewing.rate), 2)} =</span>
                   <span>
                     {new Intl.NumberFormat("id-ID").format(
@@ -1293,7 +1303,9 @@ function TransactionsPage() {
                   </span>
                 </div>
                 <ThermalDivider />
-                <div className="flex justify-end gap-2 font-bold">
+
+                {/* Total */}
+                <div className="flex justify-end gap-3 font-bold">
                   <span>TOTAL RP =</span>
                   <span>
                     {new Intl.NumberFormat("id-ID").format(
@@ -1301,7 +1313,7 @@ function TransactionsPage() {
                     )}
                   </span>
                 </div>
-                <div className="mt-1 flex justify-between font-bold text-[11px]">
+                <div className="mt-1 flex justify-between font-bold text-[11.5px]">
                   <span>(RP)</span>
                   <span>
                     {new Intl.NumberFormat("id-ID").format(
@@ -1310,22 +1322,24 @@ function TransactionsPage() {
                   </span>
                 </div>
                 <ThermalDivider />
+
+                {/* Operator & Signatures */}
                 {viewing.profiles?.full_name && (
                   <ThermalDetail
                     k="Operator"
                     v={viewing.profiles.full_name.toUpperCase()}
                   />
                 )}
-                <div className="mt-6 text-center">
-                  ( {viewing.profiles?.full_name?.toUpperCase() || "CUSTOMER"} )
-                  &nbsp;&nbsp; ( CASHIER )
+
+                <div className="mt-6 flex justify-around text-center">
+                  <span>( {viewing.profiles?.full_name?.toUpperCase() || "CUSTOMER"} )</span>
+                  <span>( CASHIER )</span>
                 </div>
-                <div className="mt-4 text-center font-bold">ATTENTION #</div>
-                <div className="text-center">
-                  Claim for shortage of cash after leaving
-                </div>
-                <div className="text-center">
-                  out premises can not be considered
+
+                <div className="mt-5 text-center">
+                  <div className="font-bold">ATTENTION #</div>
+                  <div className="text-[9.5px]">Claim for shortage of cash after leaving</div>
+                  <div className="text-[9.5px]">out premises can not be considered</div>
                 </div>
               </div>
             </div>
