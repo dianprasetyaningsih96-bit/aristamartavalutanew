@@ -554,16 +554,20 @@ export function RateBoardPage() {
 
         {/* Board Footer with Running Marquee & Hotline */}
         <footer className="relative z-10 flex h-14 items-center justify-between border-t border-blue-900/60 bg-[#020b18]/95 px-6">
-          {/* Customer Support Phone */}
+          {/* Customer Support Phone from Database */}
           <div className="flex items-center gap-2 text-xs md:text-sm font-bold text-cyan-400 shrink-0">
             <PhoneCall className="h-4 w-4 text-cyan-400" />
-            <span>☎ 021-555-0199 / WhatsApp CS</span>
+            <span>
+              {settings.company_phone
+                ? `☎ ${settings.company_phone} / WhatsApp CS`
+                : "☎ CS / WhatsApp Tersedia"}
+            </span>
           </div>
 
           {/* Marquee Ticker */}
           <div className="mx-6 flex-1 overflow-hidden">
             <div className="whitespace-nowrap text-xs md:text-sm font-semibold tracking-wide text-slate-300 animate-pulse">
-              ★ KURS DAPAT BERUBAH SEWAKTU-WAKTU MENGIKUTI PERGERAKAN PASAR VALAS INTERNASIONAL • TRANSAKSI AMAN, RESMI BERIZIN BANK INDONESIA • TERIMA PENUKARAN MATA UANG UTAMA DUNIA ★
+              ★ {settings.company_name ? `${settings.company_name.toUpperCase()} • ` : ""}KURS DAPAT BERUBAH SEWAKTU-WAKTU MENGIKUTI PERGERAKAN PASAR VALAS INTERNASIONAL • TRANSAKSI AMAN, RESMI BERIZIN BANK INDONESIA • TERIMA PENUKARAN MATA UANG UTAMA DUNIA ★
             </div>
           </div>
 
