@@ -69,6 +69,23 @@ interface BranchItem {
 
 const ALL_HQ = "__all_hq__";
 
+// Ordered priority for rate board display:
+// 1. USD, 2. AUD, 3. EURO (EUR), 4. YEN (JPY), 5. GBP, 6. SGD, 7. NZD, 8. CAD, 9. CHF, 10. HKD
+const CURRENCY_ORDER: Record<string, number> = {
+  USD: 1,
+  AUD: 2,
+  EUR: 3,
+  EURO: 3,
+  JPY: 4,
+  YEN: 4,
+  GBP: 5,
+  SGD: 6,
+  NZD: 7,
+  CAD: 8,
+  CHF: 9,
+  HKD: 10,
+};
+
 function getCompanyInitials(name?: string): string {
   if (!name || !name.trim()) return "MC";
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -203,6 +220,19 @@ export function RateBoardPage() {
     const foreignCurrencies = currencies.filter(
       (c) => c.code.toUpperCase() !== "IDR",
     );
+
+    // Sort according to user's desired sequence:
+    // 1. USD, 2. AUD, 3. EURO, 4. YEN, 5. GBP, 6. SGD, 7. NZD, 8. CAD, 9. CHF, 10. HKD
+    foreignCurrencies.sort((a, b) => {
+      const codeA = a.code.toUpperCase();
+      const codeB = b.code.toUpperCase();
+      const orderA = CURRENCY_ORDER[codeA] ?? 999;
+      const orderB = CURRENCY_ORDER[codeB] ?? 999;
+      if (orderA !== orderB) {
+        return orderA - orderB;
+      }
+      return codeA.localeCompare(codeB);
+    });
 
     const list = foreignCurrencies.map((cur) => {
       // Find branch specific rate or fallback to HQ/general rate
