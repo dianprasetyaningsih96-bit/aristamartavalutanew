@@ -533,14 +533,18 @@ export function RateBoardPage() {
                   </div>
 
                   {/* We Sell */}
-                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-white">
+                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-emerald-400">
                     {formatRate(r.sellRate, r.decimals)}
                   </div>
                 </div>
               ))}
               {leftColumnRates.length === 0 && (
                 <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-                  Tidak ada data kurs
+                  {loading ? (
+                    <span className="text-cyan-400 animate-pulse">Memuat data kurs…</span>
+                  ) : (
+                    "Tidak ada data kurs"
+                  )}
                 </div>
               )}
             </div>
@@ -596,14 +600,18 @@ export function RateBoardPage() {
                   </div>
 
                   {/* We Sell */}
-                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-white">
+                  <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-emerald-400">
                     {formatRate(r.sellRate, r.decimals)}
                   </div>
                 </div>
               ))}
               {rightColumnRates.length === 0 && (
                 <div className="flex flex-1 items-center justify-center text-sm text-slate-400">
-                  Tidak ada data kurs
+                  {loading ? (
+                    <span className="text-cyan-400 animate-pulse">Memuat data kurs…</span>
+                  ) : (
+                    "Tidak ada data kurs"
+                  )}
                 </div>
               )}
             </div>
