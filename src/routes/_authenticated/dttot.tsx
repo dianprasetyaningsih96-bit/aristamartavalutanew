@@ -446,26 +446,39 @@ function DttotPage() {
         ? "organization"
         : "individual";
 
-    // 4. Date of Birth parsing
+    // 4. Date of Birth parsing with strict calendar validation (1-31, 1-12, 1900-2100)
     let dateOfBirth: string | null = null;
     if (rawTglLahir) {
-      const singleDateMatch = rawTglLahir.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-      if (singleDateMatch) {
-        const day = singleDateMatch[1].padStart(2, "0");
-        const month = singleDateMatch[2].padStart(2, "0");
-        const year = singleDateMatch[3];
-        dateOfBirth = `${year}-${month}-${day}`;
-      } else if (/^\d{4}-\d{2}-\d{2}$/.test(rawTglLahir)) {
-        dateOfBirth = rawTglLahir;
+      const cleanTgl = String(rawTglLahir).replace(/^["']+|["']+$/g, "").trim();
+      // Check single date DD/MM/YYYY or DD-MM-YYYY
+      const dmy = cleanTgl.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (dmy) {
+        const d = parseInt(dmy[1], 10);
+        const m = parseInt(dmy[2], 10);
+        const y = parseInt(dmy[3], 10);
+        if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100) {
+          dateOfBirth = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        }
+      } else {
+        // Check single date YYYY-MM-DD
+        const ymd = cleanTgl.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+        if (ymd) {
+          const y = parseInt(ymd[1], 10);
+          const m = parseInt(ymd[2], 10);
+          const d = parseInt(ymd[3], 10);
+          if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100) {
+            dateOfBirth = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+          }
+        }
       }
     }
 
-    // Combine full notes
+    // Combine full notes and preserve non-standard birth dates in text
     let fullNotes = rawDesc;
-    if (rawTglLahir && !dateOfBirth) {
+    if (rawTglLahir && !dateOfBirth && rawTglLahir !== "-") {
       fullNotes = fullNotes
-        ? `${fullNotes}\n[Tgl Lahir: ${rawTglLahir}]`
-        : `Tgl Lahir: ${rawTglLahir}`;
+        ? `${fullNotes}\n[Tgl Lahir BI: ${rawTglLahir}]`
+        : `Tgl Lahir BI: ${rawTglLahir}`;
     }
 
     return {
@@ -533,16 +546,26 @@ function DttotPage() {
         return;
       }
 
-      // Chunked insert into Supabase dttot_list
+      // Chunked insert / upsert into Supabase dttot_list
       const chunkSize = 50;
       let insertedCount = 0;
       for (let i = 0; i < payloads.length; i += chunkSize) {
         const chunk = payloads.slice(i, i + chunkSize);
-        const { error: insertErr } = await supabase.from("dttot_list").insert(chunk);
+        
+        // Use upsert on reference_code when present, or insert
+        const { error: insertErr } = await supabase
+          .from("dttot_list")
+          .upsert(chunk, { onConflict: "reference_code", ignoreDuplicates: false });
+
         if (insertErr) {
-          console.error("Chunk insert error:", insertErr);
-          toast.error("Gagal mengimpor sebagian data", { description: insertErr.message });
-          break;
+          console.error("Chunk upsert error, trying standard insert:", insertErr);
+          // Fallback to standard insert if upsert constraint differs
+          const { error: fallbackErr } = await supabase.from("dttot_list").insert(chunk);
+          if (fallbackErr) {
+            console.error("Insert error:", fallbackErr);
+            toast.error("Gagal mengimpor sebagian data", { description: fallbackErr.message });
+            break;
+          }
         }
         insertedCount += chunk.length;
       }
