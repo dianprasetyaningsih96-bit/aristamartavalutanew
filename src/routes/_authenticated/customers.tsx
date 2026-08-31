@@ -388,6 +388,40 @@ function CustomersPage() {
       blacklist_reason: up(d.blacklist_reason),
       branch_id: d.branch_id || null,
     };
+
+    // Real-time screening against DTTOT list
+    try {
+      const custName = (d.full_name || "").toLowerCase().trim();
+      const custId = (d.id_number || "").toLowerCase().replace(/[^0-9a-z]/g, "");
+
+      const { data: dttotMatches } = await supabase
+        .from("dttot_list")
+        .select("reference_code, full_name, aliases, identity_number")
+        .eq("is_active", true);
+
+      if (dttotMatches) {
+        const found = dttotMatches.find((dt) => {
+          const dtName = (dt.full_name || "").toLowerCase().trim();
+          const dtAliases = (dt.aliases || "").toLowerCase();
+          const dtIds = (dt.identity_number || "").toLowerCase();
+
+          if (custId && custId.length >= 6 && dtIds && dtIds.includes(custId)) return true;
+          if (custName && dtName && (custName === dtName || dtName.includes(custName) || dtAliases.includes(custName))) return true;
+          return false;
+        });
+
+        if (found) {
+          payload.is_blacklisted = true;
+          payload.blacklist_reason = `Teridentifikasi DTTOT Bank Indonesia (Kode: ${found.reference_code || "DTTOT"})`;
+          toast.error("PERINGATAN DTTOT BANK INDONESIA", {
+            description: `Nasabah cocok dengan data DTTOT (${found.full_name} - ${found.reference_code || ""}). Status DTTOT/Blacklist diaktifkan otomatis.`,
+          });
+        }
+      }
+    } catch (e) {
+      console.warn("Screening error:", e);
+    }
+
     if (!editing) {
       payload.created_by = user?.id ?? null;
     }

@@ -84,18 +84,18 @@ interface DttotRow {
 }
 
 const schema = z.object({
-  reference_code: z.string().trim().max(50).optional().or(z.literal("")),
+  reference_code: z.string().trim().max(100).optional().or(z.literal("")),
   entity_type: z.enum(["individual", "organization"]),
-  full_name: z.string().trim().min(2, "Nama minimal 2 karakter").max(200),
-  aliases: z.string().trim().max(500).optional().or(z.literal("")),
-  identity_number: z.string().trim().max(100).optional().or(z.literal("")),
-  place_of_birth: z.string().trim().max(100).optional().or(z.literal("")),
+  full_name: z.string().trim().min(2, "Nama minimal 2 karakter").max(500),
+  aliases: z.string().trim().max(5000).optional().or(z.literal("")),
+  identity_number: z.string().trim().max(1000).optional().or(z.literal("")),
+  place_of_birth: z.string().trim().max(300).optional().or(z.literal("")),
   date_of_birth: z.string().optional().or(z.literal("")),
-  nationality: z.string().trim().max(100).optional().or(z.literal("")),
-  address: z.string().trim().max(500).optional().or(z.literal("")),
-  source: z.string().trim().max(200).optional().or(z.literal("")),
+  nationality: z.string().trim().max(300).optional().or(z.literal("")),
+  address: z.string().trim().max(3000).optional().or(z.literal("")),
+  source: z.string().trim().max(300).optional().or(z.literal("")),
   listed_at: z.string().optional().or(z.literal("")),
-  notes: z.string().trim().max(1000).optional().or(z.literal("")),
+  notes: z.string().trim().max(10000).optional().or(z.literal("")),
   is_active: z.boolean(),
 });
 
@@ -302,81 +302,298 @@ function DttotPage() {
     XLSX.writeFile(wb, "template-dttot.xlsx");
   }
 
+  // Helper to parse CSV lines handling semicolon/comma and multi-line quotes
+  function parseCsvText(text: string): Record<string, string>[] {
+    // Detect delimiter (semicolon or comma)
+    const firstLine = text.split(/\r?\n/)[0] || "";
+    const delimiter = (firstLine.match(/;/g) || []).length >= (firstLine.match(/,/g) || []).length ? ";" : ",";
+
+    const lines: string[][] = [];
+    let currentRow: string[] = [];
+    let currentField = "";
+    let insideQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (char === '"') {
+        if (insideQuotes && nextChar === '"') {
+          currentField += '"';
+          i++; // skip escaped quote
+        } else {
+          insideQuotes = !insideQuotes;
+        }
+      } else if (char === delimiter && !insideQuotes) {
+        currentRow.push(currentField.trim());
+        currentField = "";
+      } else if ((char === "\r" || char === "\n") && !insideQuotes) {
+        if (char === "\r" && nextChar === "\n") i++;
+        currentRow.push(currentField.trim());
+        if (currentRow.some((c) => c.length > 0)) {
+          lines.push(currentRow);
+        }
+        currentRow = [];
+        currentField = "";
+      } else {
+        currentField += char;
+      }
+    }
+    if (currentField.length > 0 || currentRow.length > 0) {
+      currentRow.push(currentField.trim());
+      if (currentRow.some((c) => c.length > 0)) {
+        lines.push(currentRow);
+      }
+    }
+
+    if (lines.length <= 1) return [];
+    const headers = lines[0].map((h) =>
+      h.replace(/^["']+|["']+$/g, "").trim().toLowerCase()
+    );
+    const results: Record<string, string>[] = [];
+
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i];
+      const obj: Record<string, string> = {};
+      headers.forEach((h, colIdx) => {
+        obj[h] = row[colIdx] ?? "";
+      });
+      results.push(obj);
+    }
+    return results;
+  }
+
+  // Normalizer for Bank Indonesia and generic DTTOT records
+  function normalizeDttotRecord(r: Record<string, unknown>) {
+    const getVal = (...keys: string[]): string => {
+      for (const key of keys) {
+        for (const [k, v] of Object.entries(r)) {
+          if (
+            k.toLowerCase().trim() === key.toLowerCase().trim() &&
+            v !== undefined &&
+            v !== null
+          ) {
+            return String(v).trim();
+          }
+        }
+      }
+      return "";
+    };
+
+    const rawName = getVal("nama", "full_name", "name", "nama lengkap");
+    const rawDesc = getVal("deskripsi", "description", "notes", "keterangan", "catatan");
+    const rawTerduga = getVal("terduga", "entity_type", "tipe", "type", "jenis");
+    const rawKode = getVal("kode densus", "kode", "kode_densus", "reference_code", "ref_code");
+    const rawTempatLahir = getVal("tempat lahir", "tempat_lahir", "place_of_birth", "pob");
+    const rawTglLahir = getVal("tanggal lahir", "tanggal_lahir", "date_of_birth", "dob");
+    const rawWn = getVal("wn/asal negara", "wn", "kewarganegaraan", "nationality", "negara");
+    const rawAlamat = getVal("alamat", "address", "domisili");
+
+    // 1. Split full name & aliases
+    let fullName = rawName;
+    let aliases = getVal("aliases", "alias", "nama_alias");
+    if (/(\s+alias\s+|\s+ALIAS\s+|\s+Alias\s+)/i.test(fullName)) {
+      const parts = fullName.split(/\s+alias\s+|\s+ALIAS\s+|\s+Alias\s+/i);
+      fullName = parts[0].replace(/^["']+|["']+$/g, "").trim();
+      const extractedAliases = parts
+        .slice(1)
+        .map((p) => p.replace(/^["']+|["']+$/g, "").trim())
+        .filter(Boolean);
+      aliases = aliases
+        ? `${aliases}, ${extractedAliases.join(", ")}`
+        : extractedAliases.join(", ");
+    }
+
+    // 2. Extract NIK & Paspor numbers
+    const extractedIds: string[] = [];
+    const rawIdentity = getVal("identity_number", "nik", "paspor", "passport", "no_identitas");
+    if (rawIdentity) extractedIds.push(rawIdentity);
+
+    if (rawDesc || rawName) {
+      const textToScan = `${rawName}\n${rawDesc}`;
+      // 15/16-digit NIK
+      const nik16 = textToScan.match(/\b\d{15,16}\b/g);
+      if (nik16) nik16.forEach((n) => extractedIds.push(n));
+
+      // NIK alphanumeric patterns (e.g. 64020U205820003, 33.7413.140383.0001)
+      const nikAlpha = textToScan.match(/(?:NIK|KTP|No\.?\s*KTP)[^\n\r]*?([0-9A-Za-z\.\-]{8,25})/gi);
+      if (nikAlpha) {
+        nikAlpha.forEach((m) => {
+          const clean = m.replace(/^(?:NIK|KTP|No\.?\s*KTP|nomor|no|an\.?|[\s:;,-])+/gi, "").trim();
+          if (clean.length >= 7) extractedIds.push(clean);
+        });
+      }
+
+      // Paspor matches (e.g. A00044599, A6889028, S835649, PA2564100)
+      const pasporRegex = /(?:paspor|passport)[^\n\r]*?([A-Za-z][0-9]{6,8}|[A-Za-z0-9]{7,10})/gi;
+      let pMatch;
+      while ((pMatch = pasporRegex.exec(textToScan)) !== null) {
+        if (pMatch[1] && !pMatch[1].toLowerCase().includes("paspor")) {
+          extractedIds.push(pMatch[1].trim());
+        }
+      }
+    }
+
+    const identityNumber = Array.from(
+      new Set(extractedIds.map((i) => i.trim()).filter(Boolean))
+    ).join(", ");
+
+    // 3. Entity Type mapping
+    const entityType: "individual" | "organization" =
+      rawTerduga.toLowerCase().includes("korporasi") ||
+      rawTerduga.toLowerCase().includes("organisasi") ||
+      rawTerduga.toLowerCase().includes("organization")
+        ? "organization"
+        : "individual";
+
+    // 4. Date of Birth parsing
+    let dateOfBirth: string | null = null;
+    if (rawTglLahir) {
+      const singleDateMatch = rawTglLahir.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+      if (singleDateMatch) {
+        const day = singleDateMatch[1].padStart(2, "0");
+        const month = singleDateMatch[2].padStart(2, "0");
+        const year = singleDateMatch[3];
+        dateOfBirth = `${year}-${month}-${day}`;
+      } else if (/^\d{4}-\d{2}-\d{2}$/.test(rawTglLahir)) {
+        dateOfBirth = rawTglLahir;
+      }
+    }
+
+    // Combine full notes
+    let fullNotes = rawDesc;
+    if (rawTglLahir && !dateOfBirth) {
+      fullNotes = fullNotes
+        ? `${fullNotes}\n[Tgl Lahir: ${rawTglLahir}]`
+        : `Tgl Lahir: ${rawTglLahir}`;
+    }
+
+    return {
+      reference_code: rawKode || null,
+      entity_type: entityType,
+      full_name: fullName,
+      aliases: aliases || null,
+      identity_number: identityNumber || null,
+      place_of_birth: rawTempatLahir || null,
+      date_of_birth: dateOfBirth,
+      nationality: rawWn || null,
+      address: rawAlamat || null,
+      source: "Bank Indonesia (DTTOT)",
+      listed_at: new Date().toISOString().slice(0, 10),
+      notes: fullNotes || null,
+      is_active: true,
+    };
+  }
+
   async function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setImporting(true);
     try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-        defval: "",
-      });
+      let rawRows: Record<string, unknown>[] = [];
+      const fileName = file.name.toLowerCase();
+
+      if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
+        const text = await file.text();
+        rawRows = parseCsvText(text);
+      } else {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: "array" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+          defval: "",
+        });
+      }
+
+      if (rawRows.length === 0) {
+        toast.error("File kosong atau format tidak dapat dibaca");
+        setImporting(false);
+        return;
+      }
+
       const payloads: Array<Record<string, unknown>> = [];
       const errors: string[] = [];
-      json.forEach((r, idx) => {
-        const row = {
-          reference_code: String(r.reference_code ?? "").trim() || "",
-          entity_type: String(r.entity_type ?? "individual").trim(),
-          full_name: String(r.full_name ?? "").trim(),
-          aliases: String(r.aliases ?? "").trim(),
-          identity_number: String(r.identity_number ?? "").trim(),
-          place_of_birth: String(r.place_of_birth ?? "").trim(),
-          date_of_birth: String(r.date_of_birth ?? "").trim(),
-          nationality: String(r.nationality ?? "").trim(),
-          address: String(r.address ?? "").trim(),
-          source: String(r.source ?? "").trim(),
-          listed_at: String(r.listed_at ?? "").trim(),
-          notes: String(r.notes ?? "").trim(),
-          is_active:
-            r.is_active === false ||
-            String(r.is_active ?? "true").toLowerCase() === "false"
-              ? false
-              : true,
-        };
-        const parsed = schema.safeParse(row);
+
+      rawRows.forEach((r, idx) => {
+        const normalized = normalizeDttotRecord(r);
+        const parsed = schema.safeParse(normalized);
         if (!parsed.success) {
           errors.push(`Baris ${idx + 2}: ${parsed.error.issues[0]?.message}`);
           return;
         }
-        const d = parsed.data;
-        payloads.push({
-          reference_code: d.reference_code || null,
-          entity_type: d.entity_type,
-          full_name: d.full_name,
-          aliases: d.aliases || null,
-          identity_number: d.identity_number || null,
-          place_of_birth: d.place_of_birth || null,
-          date_of_birth: d.date_of_birth || null,
-          nationality: d.nationality || null,
-          address: d.address || null,
-          source: d.source || null,
-          listed_at: d.listed_at || null,
-          notes: d.notes || null,
-          is_active: d.is_active,
-        });
+        payloads.push(parsed.data);
       });
+
       if (payloads.length === 0) {
-        toast.error("Tidak ada baris valid untuk diimpor", {
+        toast.error("Tidak ada baris DTTOT valid untuk diimpor", {
           description: errors[0],
         });
         setImporting(false);
         return;
       }
-      const { error } = await supabase.from("dttot_list").insert(payloads);
-      if (error) {
-        toast.error("Gagal impor DTTOT", { description: error.message });
-      } else {
-        toast.success(`Berhasil impor ${payloads.length} entri`, {
-          description:
-            errors.length > 0
-              ? `${errors.length} baris dilewati karena tidak valid`
-              : undefined,
-        });
-        load();
+
+      // Chunked insert into Supabase dttot_list
+      const chunkSize = 50;
+      let insertedCount = 0;
+      for (let i = 0; i < payloads.length; i += chunkSize) {
+        const chunk = payloads.slice(i, i + chunkSize);
+        const { error: insertErr } = await supabase.from("dttot_list").insert(chunk);
+        if (insertErr) {
+          console.error("Chunk insert error:", insertErr);
+          toast.error("Gagal mengimpor sebagian data", { description: insertErr.message });
+          break;
+        }
+        insertedCount += chunk.length;
       }
+
+      // Automatically sync customer database against DTTOT list
+      try {
+        const { data: activeDttot } = await supabase
+          .from("dttot_list")
+          .select("full_name, identity_number, reference_code")
+          .eq("is_active", true);
+
+        const { data: customerList } = await supabase
+          .from("customers")
+          .select("id, full_name, id_number, is_blacklisted");
+
+        if (activeDttot && customerList) {
+          for (const cust of customerList) {
+            const custName = (cust.full_name || "").toLowerCase().trim();
+            const custId = (cust.id_number || "").toLowerCase().replace(/[^0-9a-z]/g, "");
+
+            const match = activeDttot.find((d) => {
+              const dName = (d.full_name || "").toLowerCase().trim();
+              const dId = (d.identity_number || "").toLowerCase();
+              if (custName && dName && (custName === dName || dName.includes(custName))) return true;
+              if (custId && dId && dId.includes(custId)) return true;
+              return false;
+            });
+
+            if (match && !cust.is_blacklisted) {
+              await supabase
+                .from("customers")
+                .update({
+                  is_blacklisted: true,
+                  blacklist_reason: `Teridentifikasi DTTOT Bank Indonesia (Kode: ${match.reference_code || "DTTOT"})`,
+                })
+                .eq("id", cust.id);
+            }
+          }
+        }
+      } catch (syncErr) {
+        console.warn("Auto customer sync error:", syncErr);
+      }
+
+      toast.success(`Berhasil mengimpor ${insertedCount} data DTTOT Bank Indonesia`, {
+        description:
+          errors.length > 0
+            ? `${errors.length} baris dilewati karena format tidak sesuai`
+            : "Data siap digunakan untuk screening & pemblokiran transaksi otomatis.",
+      });
+
+      load();
     } catch (err) {
       toast.error("Gagal membaca file", {
         description: err instanceof Error ? err.message : "Unknown error",

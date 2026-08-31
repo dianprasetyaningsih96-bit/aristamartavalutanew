@@ -16,6 +16,7 @@ import {
   Printer,
   FileDown,
   AlertTriangle,
+  ShieldAlert,
 } from "lucide-react";
 import { Plus, UserPlus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -139,6 +140,7 @@ interface CustomerOpt {
   risk_rating: string;
   kyc_status: string;
   is_blacklisted: boolean;
+  blacklist_reason?: string | null;
 }
 interface RateRow {
   currency_id: string;
@@ -305,7 +307,7 @@ function TransactionsPage() {
         .order("code"),
       supabase
         .from("customers")
-        .select("id, customer_code, full_name, risk_rating, kyc_status, is_blacklisted")
+        .select("id, customer_code, full_name, risk_rating, kyc_status, is_blacklisted, blacklist_reason")
         .order("full_name")
         .limit(500),
       supabase
@@ -1113,9 +1115,20 @@ function TransactionsPage() {
                     </PopoverContent>
                   </Popover>
                   {blacklistBlock && (
-                    <p className="text-xs text-destructive">
-                      Nasabah tercatat dalam DTTOT — transaksi diblokir.
-                    </p>
+                    <div className="rounded-lg border border-destructive/60 bg-destructive/10 p-3 text-destructive space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-xs uppercase tracking-wide">
+                        <ShieldAlert className="h-4 w-4 shrink-0 text-destructive" />
+                        <span>Peringatan Regulasi APU-PPT Bank Indonesia</span>
+                      </div>
+                      <p className="text-xs font-medium">
+                        Nasabah ini terdaftar dalam <strong>DTTOT (Daftar Terduga Teroris & Organisasi Teroris)</strong>. Sesuai ketentuan Bank Indonesia, <strong>transaksi DITOLAK & DIBLOKIR otomatis oleh sistem</strong>.
+                      </p>
+                      {selectedCustomer?.blacklist_reason && (
+                        <p className="text-[11px] text-muted-foreground">
+                          Keterangan: {selectedCustomer.blacklist_reason}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </>
               )}
@@ -1170,8 +1183,16 @@ function TransactionsPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button onClick={save} disabled={saving || blacklistBlock}>
-              {saving ? "Menyimpan…" : "Simpan Transaksi"}
+            <Button
+              onClick={save}
+              disabled={saving || blacklistBlock}
+              className={blacklistBlock ? "bg-destructive text-destructive-foreground cursor-not-allowed" : ""}
+            >
+              {saving
+                ? "Menyimpan…"
+                : blacklistBlock
+                ? "⛔ Transaksi Diblokir (DTTOT)"
+                : "Simpan Transaksi"}
             </Button>
           </DialogFooter>
         </DialogContent>
