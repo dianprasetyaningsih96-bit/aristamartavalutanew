@@ -2,8 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Pencil, Trash2, ShieldAlert, Search, Upload, Download } from "lucide-react";
 import * as XLSX from "xlsx";
+import {
+  Pencil,
+  Trash2,
+  ShieldAlert,
+  Search,
+  Upload,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
@@ -151,6 +162,13 @@ function DttotPage() {
     load();
   }, []);
 
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
+
+  useEffect(() => {
+    setPage(1);
+  }, [q, typeFilter, statusFilter]);
+
   const filtered = useMemo(() => {
     if (!rows) return null;
     const needle = q.trim().toLowerCase();
@@ -167,6 +185,13 @@ function DttotPage() {
       );
     });
   }, [rows, q, typeFilter, statusFilter]);
+
+  const totalPages = Math.max(1, Math.ceil((filtered?.length ?? 0) / PAGE_SIZE));
+  const paginatedRows = useMemo(() => {
+    if (!filtered) return null;
+    const start = (page - 1) * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, page]);
 
   function openCreate() {
     setEditing(null);
@@ -726,7 +751,7 @@ function DttotPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((row) => (
+                paginatedRows?.map((row) => (
                   <TableRow key={row.id}>
                     <TableCell className="font-mono text-xs">
                       {row.reference_code ?? "—"}
@@ -788,6 +813,68 @@ function DttotPage() {
               )}
             </TableBody>
           </Table>
+
+          {filtered && filtered.length > 0 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t p-4 bg-muted/20">
+              <div className="text-xs text-muted-foreground">
+                Menampilkan <span className="font-semibold text-foreground">{(page - 1) * PAGE_SIZE + 1}</span>–
+                <span className="font-semibold text-foreground">{Math.min(page * PAGE_SIZE, filtered.length)}</span> dari{" "}
+                <span className="font-semibold text-foreground">{filtered.length}</span> data
+                {filtered.length !== (rows?.length ?? 0) && (
+                  <span> (difilter dari {rows?.length ?? 0} total)</span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(1)}
+                  disabled={page <= 1}
+                  title="Halaman Pertama"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2.5 text-xs gap-1"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" /> Sebelumnya
+                </Button>
+
+                <div className="flex items-center gap-1 px-1">
+                  <span className="text-xs text-muted-foreground">Hal.</span>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded bg-muted">
+                    {page} / {totalPages}
+                  </span>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2.5 text-xs gap-1"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                >
+                  Selanjutnya <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setPage(totalPages)}
+                  disabled={page >= totalPages}
+                  title="Halaman Terakhir"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
