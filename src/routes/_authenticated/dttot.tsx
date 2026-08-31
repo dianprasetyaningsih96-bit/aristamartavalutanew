@@ -138,7 +138,8 @@ function DttotPage() {
     const { data, error } = await supabase
       .from("dttot_list")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(2000);
     if (error) {
       toast.error("Gagal memuat DTTOT", { description: error.message });
       return;
@@ -505,18 +506,22 @@ function DttotPage() {
     setImporting(true);
     try {
       let rawRows: Record<string, unknown>[] = [];
-      const fileName = file.name.toLowerCase();
+      const buf = await file.arrayBuffer();
+      
+      // XLSX handles both CSV (semicolon/comma) and Excel XLSX/XLS files robustly
+      const wb = XLSX.read(buf, { type: "array", raw: true });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
+        defval: "",
+      });
 
-      if (fileName.endsWith(".csv") || fileName.endsWith(".txt")) {
+      // Fallback to text parser if XLSX yielded fewer rows
+      if (rawRows.length <= 1) {
         const text = await file.text();
-        rawRows = parseCsvText(text);
-      } else {
-        const buf = await file.arrayBuffer();
-        const wb = XLSX.read(buf, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, {
-          defval: "",
-        });
+        const csvRows = parseCsvText(text);
+        if (csvRows.length > rawRows.length) {
+          rawRows = csvRows;
+        }
       }
 
       if (rawRows.length === 0) {
