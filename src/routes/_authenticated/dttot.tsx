@@ -365,15 +365,20 @@ function DttotPage() {
   }
 
   // Normalizer for Bank Indonesia and generic DTTOT records
-  function normalizeDttotRecord(r: Record<string, unknown>) {
+  function normalizeDttotRecord(r: Record<string, unknown>, idx: number) {
     const getVal = (...keys: string[]): string => {
       for (const key of keys) {
         for (const [k, v] of Object.entries(r)) {
-          if (
-            k.toLowerCase().trim() === key.toLowerCase().trim() &&
-            v !== undefined &&
-            v !== null
-          ) {
+          const normK = k
+            .replace(/^\uFEFF/, "")
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .toLowerCase()
+            .trim();
+          const normTarget = key
+            .replace(/[^a-zA-Z0-9]/g, "")
+            .toLowerCase()
+            .trim();
+          if (normK === normTarget && v !== undefined && v !== null) {
             return String(v).trim();
           }
         }
@@ -381,14 +386,28 @@ function DttotPage() {
       return "";
     };
 
-    const rawName = getVal("nama", "full_name", "name", "nama lengkap");
+    let rawName = getVal("nama", "full_name", "name", "nama lengkap", "organisasi");
     const rawDesc = getVal("deskripsi", "description", "notes", "keterangan", "catatan");
     const rawTerduga = getVal("terduga", "entity_type", "tipe", "type", "jenis");
     const rawKode = getVal("kode densus", "kode", "kode_densus", "reference_code", "ref_code");
     const rawTempatLahir = getVal("tempat lahir", "tempat_lahir", "place_of_birth", "pob");
     const rawTglLahir = getVal("tanggal lahir", "tanggal_lahir", "date_of_birth", "dob");
-    const rawWn = getVal("wn/asal negara", "wn", "kewarganegaraan", "nationality", "negara");
-    const rawAlamat = getVal("alamat", "address", "domisili");
+    const rawWn = getVal("wn/asal negara", "wn", "kewarganegaraan", "nationality", "negara", "asal negara");
+    const rawAlamat = getVal("alamat", "address", "domisili", "lokasi");
+
+    // Fallback name if column name was not found
+    if (!rawName || rawName.length < 2) {
+      // Find first string value in object
+      for (const [k, v] of Object.entries(r)) {
+        if (v && String(v).trim().length >= 2) {
+          rawName = String(v).trim();
+          break;
+        }
+      }
+      if (!rawName || rawName.length < 2) {
+        rawName = rawKode ? `DTTOT ${rawKode}` : `Entri DTTOT #${idx + 1}`;
+      }
+    }
 
     // 1. Split full name & aliases
     let fullName = rawName;
@@ -447,41 +466,6 @@ function DttotPage() {
         ? "organization"
         : "individual";
 
-    // 4. Date of Birth parsing with strict calendar validation (1-31, 1-12, 1900-2100)
-    let dateOfBirth: string | null = null;
-    if (rawTglLahir) {
-      const cleanTgl = String(rawTglLahir).replace(/^["']+|["']+$/g, "").trim();
-      // Check single date DD/MM/YYYY or DD-MM-YYYY
-      const dmy = cleanTgl.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-      if (dmy) {
-        const d = parseInt(dmy[1], 10);
-        const m = parseInt(dmy[2], 10);
-        const y = parseInt(dmy[3], 10);
-        if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100) {
-          dateOfBirth = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-        }
-      } else {
-        // Check single date YYYY-MM-DD
-        const ymd = cleanTgl.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-        if (ymd) {
-          const y = parseInt(ymd[1], 10);
-          const m = parseInt(ymd[2], 10);
-          const d = parseInt(ymd[3], 10);
-          if (d >= 1 && d <= 31 && m >= 1 && m <= 12 && y >= 1900 && y <= 2100) {
-            dateOfBirth = `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-          }
-        }
-      }
-    }
-
-    // Combine full notes and preserve non-standard birth dates in text
-    let fullNotes = rawDesc;
-    if (rawTglLahir && !dateOfBirth && rawTglLahir !== "-") {
-      fullNotes = fullNotes
-        ? `${fullNotes}\n[Tgl Lahir BI: ${rawTglLahir}]`
-        : `Tgl Lahir BI: ${rawTglLahir}`;
-    }
-
     return {
       reference_code: rawKode || null,
       entity_type: entityType,
@@ -489,12 +473,12 @@ function DttotPage() {
       aliases: aliases || null,
       identity_number: identityNumber || null,
       place_of_birth: rawTempatLahir || null,
-      date_of_birth: dateOfBirth,
+      date_of_birth: rawTglLahir || null,
       nationality: rawWn || null,
       address: rawAlamat || null,
       source: "Bank Indonesia (DTTOT)",
       listed_at: new Date().toISOString().slice(0, 10),
-      notes: fullNotes || null,
+      notes: rawDesc || null,
       is_active: true,
     };
   }
@@ -534,19 +518,14 @@ function DttotPage() {
       const errors: string[] = [];
 
       rawRows.forEach((r, idx) => {
-        const normalized = normalizeDttotRecord(r);
-        const parsed = schema.safeParse(normalized);
-        if (!parsed.success) {
-          errors.push(`Baris ${idx + 2}: ${parsed.error.issues[0]?.message}`);
-          return;
+        const normalized = normalizeDttotRecord(r, idx);
+        if (normalized.full_name) {
+          payloads.push(normalized);
         }
-        payloads.push(parsed.data);
       });
 
       if (payloads.length === 0) {
-        toast.error("Tidak ada baris DTTOT valid untuk diimpor", {
-          description: errors[0],
-        });
+        toast.error("Tidak ada baris DTTOT valid untuk diimpor");
         setImporting(false);
         return;
       }
