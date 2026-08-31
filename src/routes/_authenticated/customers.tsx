@@ -389,6 +389,7 @@ function CustomersPage() {
       branch_id: d.branch_id || null,
     };
 
+    let dttotFound = false;
     // Real-time screening against DTTOT list
     try {
       const custName = (d.full_name || "").toLowerCase().trim();
@@ -411,6 +412,7 @@ function CustomersPage() {
         });
 
         if (found) {
+          dttotFound = true;
           payload.is_blacklisted = true;
           payload.blacklist_reason = `Teridentifikasi DTTOT Bank Indonesia (Kode: ${found.reference_code || "DTTOT"})`;
           toast.error("PERINGATAN DTTOT BANK INDONESIA", {
@@ -437,7 +439,9 @@ function CustomersPage() {
       toast.error("Gagal menyimpan", { description: error.message });
       return;
     }
-    toast.success(editing ? "Nasabah diperbarui" : "Nasabah ditambahkan");
+    if (!dttotFound && !payload.is_blacklisted) {
+      toast.success(editing ? "Nasabah diperbarui" : "Nasabah ditambahkan");
+    }
     setOpen(false);
     load();
   }
