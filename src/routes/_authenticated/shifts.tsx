@@ -258,6 +258,7 @@ function OpenShiftDialog({
   const [branchId, setBranchId] = useState<string>(defaultBranchId ?? (lockBranch ? "" : branches[0]?.id ?? ""));
   const [shiftType, setShiftType] = useState<ShiftType>("pagi");
   const [openingCapital, setOpeningCapital] = useState<string>("");
+  const [additionalCapital, setAdditionalCapital] = useState<string>("");
   const [requestedCapital, setRequestedCapital] = useState<string>("");
   const [prevInfo, setPrevInfo] = useState<PrevShiftInfo | null>(null);
   const [loadingPrev, setLoadingPrev] = useState(false);
@@ -278,35 +279,30 @@ function OpenShiftDialog({
   );
 
   useEffect(() => {
-    if (shiftType === "siang" && branchId) {
+    // Cari riwayat saldo:
+    // 1. Jika Shif Siang di Cabang manapun (serah terima shif pagi)
+    // 2. Jika Shif Pagi di Kantor Pusat / Jimbaran (sisa saldo penutupan hari kemarin / carry over)
+    const shouldFetchPrev = (shiftType === "siang") || (isHq && shiftType === "pagi");
+
+    if (shouldFetchPrev && branchId) {
       (async () => {
         setLoadingPrev(true);
         try {
           const idrCur = currencies.find((c) => c.code.toUpperCase() === "IDR");
 
-          // 1. Cari shif pagi terakhir yang ditutup di cabang ini
-          const { data: morningShift } = await supabase
+          // 1. Cari shif terakhir yang ditutup di cabang ini
+          let latestShiftQuery = supabase
             .from("shifts")
             .select("id, closed_at, shift_type, notes")
             .eq("branch_id", branchId)
-            .eq("shift_type", "pagi")
             .eq("status", "closed")
-            .order("closed_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
+            .order("closed_at", { ascending: false });
 
-          let latestShift = morningShift;
-          if (!latestShift) {
-            const { data: anyShift } = await supabase
-              .from("shifts")
-              .select("id, closed_at, shift_type, notes")
-              .eq("branch_id", branchId)
-              .eq("status", "closed")
-              .order("closed_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            latestShift = anyShift;
+          if (shiftType === "siang") {
+            latestShiftQuery = latestShiftQuery.eq("shift_type", "pagi");
           }
+
+          const { data: latestShift } = await latestShiftQuery.limit(1).maybeSingle();
 
           let foundFromRecon = false;
           if (latestShift) {
@@ -343,6 +339,10 @@ function OpenShiftDialog({
                 shiftTime: latestShift.closed_at,
                 foreignCurrencies: valas,
               });
+
+              if (isHq && shiftType === "pagi" && idrVal > 0) {
+                setOpeningCapital(String(idrVal));
+              }
             }
           }
 
@@ -376,6 +376,10 @@ function OpenShiftDialog({
                 shiftTime: latestShift?.closed_at ?? null,
                 foreignCurrencies: valas,
               });
+
+              if (isHq && shiftType === "pagi" && idrVal > 0) {
+                setOpeningCapital(String(idrVal));
+              }
             } else {
               setPrevInfo(null);
             }
@@ -390,7 +394,7 @@ function OpenShiftDialog({
     } else {
       setPrevInfo(null);
     }
-  }, [shiftType, branchId, currencies]);
+  }, [shiftType, branchId, isHq, currencies]);
 
   async function submit() {
     if (!branchId) {
@@ -400,7 +404,9 @@ function OpenShiftDialog({
     if (!userId) { toast.error("Sesi tidak valid"); return; }
     
     const reqCapVal = Number(requestedCapital.replace(/[^\d]/g, "")) || 0;
-    const directCapVal = isHq && shiftType === "pagi" ? Number(openingCapital.replace(/[^\d]/g, "")) || 0 : 0;
+    const baseCapVal = isHq && shiftType === "pagi" ? (prevInfo?.idrAmount ?? 0) : 0;
+    const addCapVal = isHq && shiftType === "pagi" ? Number(additionalCapital.replace(/[^\d]/g, "")) || 0 : 0;
+    const totalHqCap = baseCapVal + addCapVal;
 
     setSaving(true);
     const { data: shiftData, error } = await supabase
@@ -409,7 +415,7 @@ function OpenShiftDialog({
         branch_id: branchId,
         user_id: userId,
         shift_type: shiftType,
-        opening_capital: directCapVal,
+        opening_capital: totalHqCap,
         notes: notes || null,
       })
       .select("id")
@@ -419,6 +425,27 @@ function OpenShiftDialog({
       setSaving(false);
       toast.error("Gagal membuka shif: " + error.message);
       return;
+    }
+
+    // Jika di Kantor Pusat ada penambahan modal kas fisik baru di pagi hari
+    if (isHq && shiftType === "pagi" && addCapVal > 0) {
+      try {
+        const idrCur = currencies.find((c) => c.code.toUpperCase() === "IDR");
+        if (idrCur) {
+          await supabase.from("cash_movements").insert({
+            branch_id: branchId,
+            created_by: userId,
+            currency_id: idrCur.id,
+            amount: addCapVal,
+            movement_type: "deposit",
+            reference_id: shiftData.id,
+            notes: `Tambahan modal awal shif pagi (${notes || "Suntikan dana kas pagi"})`,
+            reference_no: "MODAL-AWAL-TOPUP",
+          });
+        }
+      } catch (addErr) {
+        console.warn("Failed recording top up capital:", addErr);
+      }
     }
 
     // Jika cabang meminta modal ke Kantor Pusat
@@ -461,9 +488,13 @@ function OpenShiftDialog({
     onSaved();
   }
 
+  const baseCapNum = isHq && shiftType === "pagi" ? (prevInfo?.idrAmount ?? 0) : 0;
+  const addCapNum = Number(additionalCapital.replace(/[^\d]/g, "")) || 0;
+  const totalHqCapital = baseCapNum + addCapNum;
+
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
+      <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><LogIn className="h-4 w-4" /> Buka Shif</DialogTitle>
           <DialogDescription>Catat pembukaan shif kerja Anda.</DialogDescription>
@@ -499,6 +530,8 @@ function OpenShiftDialog({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Informasi Saldo Shif Pagi (Serah Terima Shif Siang) */}
           {shiftType === "siang" && (
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 space-y-2">
               <div className="flex items-center justify-between">
@@ -542,25 +575,80 @@ function OpenShiftDialog({
             </div>
           )}
 
+          {/* Informasi Sisa Saldo Hari Kemarin (Carry Over) untuk Kantor Pusat Shif Pagi */}
+          {isHq && shiftType === "pagi" && (
+            <div className="rounded-lg border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                  Sisa Saldo Kas Hari Sebelumnya (Bawaan)
+                </span>
+                {prevInfo?.shiftTime && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Ditutup: {formatDateTime(prevInfo.shiftTime)}
+                  </span>
+                )}
+              </div>
+
+              {loadingPrev ? (
+                <p className="text-xs text-muted-foreground animate-pulse">Mencari saldo penutupan hari kemarin...</p>
+              ) : prevInfo ? (
+                <div className="space-y-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Sisa Saldo Kas Rupiah (IDR):</div>
+                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatIDR(prevInfo.idrAmount)}
+                    </div>
+                  </div>
+
+                  {prevInfo.foreignCurrencies && prevInfo.foreignCurrencies.length > 0 && (
+                    <div className="pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50">
+                      <div className="text-[11px] text-muted-foreground mb-1">Stok Valuta Asing (Valas):</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {prevInfo.foreignCurrencies.map((f) => (
+                          <Badge key={f.code} variant="outline" className="text-xs font-mono bg-background">
+                            {f.code}: {new Intl.NumberFormat("id-ID").format(f.amount)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground">Belum ada riwayat saldo penutupan kemarin.</p>
+              )}
+            </div>
+          )}
+
           {/* Isian Modal / Permintaan Modal */}
           {isHq ? (
             shiftType === "pagi" && (
-              <div className="space-y-2">
-                <Label>Modal Awal (IDR) <span className="text-destructive">*</span></Label>
-                <Input
-                  type="text"
-                  inputMode="numeric"
-                  prefix="Rp"
-                  placeholder="Contoh: 50.000.000"
-                  value={openingCapital ? formatIDR(Number(openingCapital.replace(/[^\d]/g, ""))).replace("Rp", "").trim() : ""}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/[^\d]/g, "");
-                    setOpeningCapital(val);
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  Modal ini akan tercatat sebagai kas IDR Kantor Pusat.
-                </p>
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Tambahan Modal Baru (IDR) <span className="text-muted-foreground font-normal">(Opsional)</span></Label>
+                  <Input
+                    type="text"
+                    inputMode="numeric"
+                    prefix="Rp"
+                    placeholder="Contoh: 10.000.000 (Jika ada suntikan dana pagi)"
+                    value={additionalCapital ? formatIDR(Number(additionalCapital.replace(/[^\d]/g, ""))).replace("Rp", "").trim() : ""}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/[^\d]/g, "");
+                      setAdditionalCapital(val);
+                    }}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Sisa saldo kemarin otomatis menjadi modal awal. Jika ada penambahan modal fisik baru di pagi hari, kas Kantor Pusat otomatis ditambah sebesar nominal ini.
+                  </p>
+                </div>
+
+                {addCapNum > 0 && (
+                  <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2.5 flex items-center justify-between text-xs">
+                    <span className="font-medium text-foreground">Total Modal Awal Shif Pagi:</span>
+                    <span className="font-bold text-sm font-mono text-emerald-600 dark:text-emerald-400">
+                      {formatIDR(totalHqCapital)}
+                    </span>
+                  </div>
+                )}
               </div>
             )
           ) : (
