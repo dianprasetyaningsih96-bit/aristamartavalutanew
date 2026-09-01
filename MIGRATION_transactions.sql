@@ -79,19 +79,55 @@ drop trigger if exists transactions_set_updated_at on public.transactions;
 create trigger transactions_set_updated_at
   before update on public.transactions for each row execute function public.set_updated_at();
 
--- Nomor transaksi otomatis: TRX-YYYYMMDD-XXXX
+-- Nomor transaksi otomatis sesuai Cabang & Jenis Transaksi:
+-- Kantor Pusat:  Beli = AMVJ1-YYYYMMDD-001 | Jual = AMVJ2-YYYYMMDD-001
+-- Cabang Canggu: Beli = AMVC1-YYYYMMDD-001 | Jual = AMVC2-YYYYMMDD-001
+-- Cabang Legian: Beli = AMVL1-YYYYMMDD-001 | Jual = AMVL2-YYYYMMDD-001
 create or replace function public.generate_transaction_no()
 returns trigger language plpgsql as $$
 declare
+  v_branch_name text := '';
+  v_branch_code text := '';
+  v_branch_letter text := 'J';
+  v_type_num text := '1';
+  v_date_str text;
+  v_prefix text;
   next_seq int;
-  prefix text := 'TRX-' || to_char(now(),'YYYYMMDD') || '-';
 begin
-  if new.transaction_no is null or new.transaction_no = '' then
-    select coalesce(max(substring(transaction_no from '\d+$')::int),0) + 1
+  if new.transaction_no is null or new.transaction_no = '' or new.transaction_no like 'TRX-%' then
+    if new.transaction_type = 'sell' then
+      v_type_num := '2';
+    else
+      v_type_num := '1';
+    end if;
+
+    if new.branch_id is not null then
+      select name, code into v_branch_name, v_branch_code
+      from public.branches
+      where id = new.branch_id;
+
+      if v_branch_name ilike '%canggu%' or v_branch_code ilike '%canggu%' then
+        v_branch_letter := 'C';
+      elsif v_branch_name ilike '%legian%' or v_branch_code ilike '%legian%' then
+        v_branch_letter := 'L';
+      elsif v_branch_name ilike '%pusat%' or v_branch_name ilike '%jimbaran%' or v_branch_code ilike '%HQ%' then
+        v_branch_letter := 'J';
+      else
+        v_branch_letter := coalesce(nullif(upper(substring(v_branch_name from 1 for 1)), ''), 'J');
+      end if;
+    else
+      v_branch_letter := 'J';
+    end if;
+
+    v_date_str := to_char(coalesce(new.transaction_date, timezone('Asia/Makassar', now())), 'YYYYMMDD');
+    v_prefix := 'AMV' || v_branch_letter || v_type_num || '-' || v_date_str || '-';
+
+    select coalesce(max(substring(transaction_no from '\d+$')::int), 0) + 1
       into next_seq
       from public.transactions
-      where transaction_no like prefix || '%';
-    new.transaction_no := prefix || lpad(next_seq::text, 4, '0');
+      where transaction_no like v_prefix || '%';
+
+    new.transaction_no := v_prefix || lpad(next_seq::text, 3, '0');
   end if;
   return new;
 end $$;
