@@ -258,6 +258,7 @@ function OpenShiftDialog({
   const [branchId, setBranchId] = useState<string>(defaultBranchId ?? (lockBranch ? "" : branches[0]?.id ?? ""));
   const [shiftType, setShiftType] = useState<ShiftType>("pagi");
   const [openingCapital, setOpeningCapital] = useState<string>("");
+  const [requestedCapital, setRequestedCapital] = useState<string>("");
   const [prevInfo, setPrevInfo] = useState<PrevShiftInfo | null>(null);
   const [loadingPrev, setLoadingPrev] = useState(false);
   const [notes, setNotes] = useState("");
@@ -266,6 +267,15 @@ function OpenShiftDialog({
   useEffect(() => {
     if (!branchId && !lockBranch && branches.length) setBranchId(branches[0].id);
   }, [branches, branchId, lockBranch]);
+
+  const assignedBranch = branches.find((b) => b.id === branchId) ?? branches.find((b) => b.id === defaultBranchId);
+  const isHq = Boolean(
+    assignedBranch &&
+    ((assignedBranch as any).is_head_office ||
+      (assignedBranch as any).is_hq ||
+      assignedBranch.name.toLowerCase().includes("pusat") ||
+      assignedBranch.name.toLowerCase().includes("jimbaran"))
+  );
 
   useEffect(() => {
     if (shiftType === "siang" && branchId) {
@@ -287,7 +297,6 @@ function OpenShiftDialog({
 
           let latestShift = morningShift;
           if (!latestShift) {
-            // Fallback: cari shif tertutup terakhir apapun jenisnya di cabang ini
             const { data: anyShift } = await supabase
               .from("shifts")
               .select("id, closed_at, shift_type, notes")
@@ -301,7 +310,6 @@ function OpenShiftDialog({
 
           let foundFromRecon = false;
           if (latestShift) {
-            // 2. Ambil data rekonsiliasi kas (physical_balance / system_balance)
             const { data: reconData } = await supabase
               .from("shift_reconciliations")
               .select("currency_id, physical_balance, system_balance, currencies(code)")
@@ -338,7 +346,6 @@ function OpenShiftDialog({
             }
           }
 
-          // 3. Jika tidak ada rekonsiliasi tersimpan, fallback ke saldo kas cabang saat ini (cash_balances)
           if (!foundFromRecon) {
             const { data: cashData } = await supabase
               .from("cash_balances")
@@ -385,30 +392,72 @@ function OpenShiftDialog({
     }
   }, [shiftType, branchId, currencies]);
 
-  const assignedBranch = branches.find((b) => b.id === defaultBranchId);
-
   async function submit() {
     if (!branchId) {
       toast.error(lockBranch ? "Anda belum memiliki cabang penugasan. Hubungi admin." : "Pilih cabang");
       return;
     }
     if (!userId) { toast.error("Sesi tidak valid"); return; }
-    const capital = shiftType === "pagi" ? Number(openingCapital.replace(/[^\d]/g, "")) || 0 : 0;
-    if (shiftType === "pagi" && capital <= 0) {
-      toast.error("Modal awal shif pagi wajib diisi");
+    
+    const reqCapVal = Number(requestedCapital.replace(/[^\d]/g, "")) || 0;
+    const directCapVal = isHq && shiftType === "pagi" ? Number(openingCapital.replace(/[^\d]/g, "")) || 0 : 0;
+
+    setSaving(true);
+    const { data: shiftData, error } = await supabase
+      .from("shifts")
+      .insert({
+        branch_id: branchId,
+        user_id: userId,
+        shift_type: shiftType,
+        opening_capital: directCapVal,
+        notes: notes || null,
+      })
+      .select("id")
+      .single();
+
+    if (error) {
+      setSaving(false);
+      toast.error("Gagal membuka shif: " + error.message);
       return;
     }
-    setSaving(true);
-    const { error } = await supabase.from("shifts").insert({
-      branch_id: branchId,
-      user_id: userId,
-      shift_type: shiftType,
-      opening_capital: capital,
-      notes: notes || null,
-    });
+
+    // Jika cabang meminta modal ke Kantor Pusat
+    if (!isHq && reqCapVal > 0) {
+      try {
+        const idrCur = currencies.find((c) => c.code.toUpperCase() === "IDR");
+        const hqBranch =
+          branches.find(
+            (b) =>
+              (b as any).is_head_office ||
+              (b as any).is_hq ||
+              b.name.toLowerCase().includes("pusat") ||
+              b.name.toLowerCase().includes("jimbaran"),
+          ) || branches[0];
+
+        if (idrCur && hqBranch) {
+          const { error: trfErr } = await supabase.from("branch_transfers").insert({
+            branch_id: hqBranch.id, // Sumber: Kantor Pusat
+            target_branch_id: branchId, // Tujuan: Cabang pemohon
+            currency_id: idrCur.id,
+            amount: reqCapVal,
+            shift_id: shiftData.id,
+            status: "pending",
+            notes: `Permintaan modal buka shif ${shiftType === "pagi" ? "Pagi" : "Siang/Sore"} (${assignedBranch?.name ?? "Cabang"})`,
+          });
+
+          if (trfErr) {
+            toast.error("Gagal mengirim permintaan modal: " + trfErr.message);
+          } else {
+            toast.info(`Permintaan modal ${formatIDR(reqCapVal)} dikirim ke Kantor Pusat untuk persetujuan.`);
+          }
+        }
+      } catch (trfException) {
+        console.warn("Transfer request error:", trfException);
+      }
+    }
+
     setSaving(false);
-    if (error) { toast.error("Gagal membuka shif: " + error.message); return; }
-    toast.success("Shif dibuka");
+    toast.success("Shif berhasil dibuka");
     onSaved();
   }
 
@@ -492,26 +541,48 @@ function OpenShiftDialog({
               )}
             </div>
           )}
-          {shiftType === "pagi" && (
 
+          {/* Isian Modal / Permintaan Modal */}
+          {isHq ? (
+            shiftType === "pagi" && (
+              <div className="space-y-2">
+                <Label>Modal Awal (IDR) <span className="text-destructive">*</span></Label>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  prefix="Rp"
+                  placeholder="Contoh: 50.000.000"
+                  value={openingCapital ? formatIDR(Number(openingCapital.replace(/[^\d]/g, ""))).replace("Rp", "").trim() : ""}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/[^\d]/g, "");
+                    setOpeningCapital(val);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Modal ini akan tercatat sebagai kas IDR Kantor Pusat.
+                </p>
+              </div>
+            )
+          ) : (
             <div className="space-y-2">
-              <Label>Modal Awal (IDR) <span className="text-destructive">*</span></Label>
+              <Label>Permintaan Modal (IDR) ke Kantor Pusat</Label>
               <Input
                 type="text"
                 inputMode="numeric"
                 prefix="Rp"
                 placeholder="Contoh: 50.000.000"
-                value={openingCapital ? formatIDR(Number(openingCapital.replace(/[^\d]/g, ""))).replace("Rp", "").trim() : ""}
+                value={requestedCapital ? formatIDR(Number(requestedCapital.replace(/[^\d]/g, ""))).replace("Rp", "").trim() : ""}
                 onChange={(e) => {
                   const val = e.target.value.replace(/[^\d]/g, "");
-                  setOpeningCapital(val);
+                  setRequestedCapital(val);
                 }}
               />
               <p className="text-xs text-muted-foreground">
-                Modal ini akan tercatat sebagai setoran kas IDR ke cabang.
+                Permintaan modal ini akan dikirimkan ke Kantor Pusat untuk disetujui/ditolak.
               </p>
             </div>
           )}
+
           <div className="space-y-2">
             <Label>Catatan (opsional)</Label>
             <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
@@ -604,26 +675,41 @@ function CloseShiftDialog({
     }
 
     // Automatically transfer to Head Office if NOT Head Office and Siang/Sore shift
-    // Only transfer Foreign Currencies (NOT IDR)
+    // Transfer ALL remaining balances (IDR + Valas) to Head Office!
     if (branchInfo && !branchInfo.is_head_office && shift.shift_type === "siang") {
       setTransfering(true);
-      const transfers = rows
-        .filter(r => r.system_balance > 0 && r.code !== "IDR")
-        .map(r => ({
-          branch_id: shift.branch_id,
-          currency_id: r.currency_id,
-          amount: r.system_balance,
-          shift_id: shift.id,
-          status: "pending" as const
-        }));
+      try {
+        const { data: hqData } = await supabase
+          .from("branches")
+          .select("id")
+          .or("is_head_office.eq.true,is_hq.eq.true,name.ilike.%pusat%,name.ilike.%jimbaran%")
+          .limit(1)
+          .maybeSingle();
 
-      if (transfers.length > 0) {
-        const { error: txErr } = await supabase.from("branch_transfers").insert(transfers);
-        if (txErr) {
-          toast.error("Gagal membuat transfer otomatis: " + txErr.message);
-        } else {
-          toast.info(`${transfers.length} valuta asing otomatis ditransfer ke Kantor Pusat untuk persetujuan.`);
+        const targetHqId = hqData?.id ?? null;
+
+        const transfers = rows
+          .filter((r) => r.system_balance > 0)
+          .map((r) => ({
+            branch_id: shift.branch_id,
+            target_branch_id: targetHqId,
+            currency_id: r.currency_id,
+            amount: r.system_balance,
+            shift_id: shift.id,
+            status: "pending" as const,
+            notes: `Setoran sisa saldo kas & valas tutup shif sore ${shift.branch?.name || ""}`,
+          }));
+
+        if (transfers.length > 0) {
+          const { error: txErr } = await supabase.from("branch_transfers").insert(transfers);
+          if (txErr) {
+            toast.error("Gagal membuat transfer otomatis: " + txErr.message);
+          } else {
+            toast.info(`${transfers.length} saldo kas & valas otomatis ditransfer ke Kantor Pusat untuk persetujuan.`);
+          }
         }
+      } catch (err) {
+        console.warn("Auto transfer error:", err);
       }
       setTransfering(false);
     }

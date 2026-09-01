@@ -618,16 +618,15 @@ function TransactionsPage() {
             <>
               <Button
                 onClick={() => openCreate("buy")}
-                variant="outline"
-                className="gap-2"
+                className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
               >
-                <ArrowDownCircle className="h-4 w-4 text-emerald-600" />
+                <ArrowDownCircle className="h-4 w-4" />
                 Beli Valas
               </Button>
               {canSell && (
                 <Button
                   onClick={() => openCreate("sell")}
-                  className="gap-2"
+                  className="gap-2 bg-rose-600 hover:bg-rose-700 text-white shadow-sm"
                 >
                   <ArrowUpCircle className="h-4 w-4" />
                   Jual Valas
@@ -778,10 +777,12 @@ function TransactionsPage() {
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
-                          r.transaction_type === "buy" ? "default" : "secondary"
-                        }
-                        className="gap-1"
+                        className={cn(
+                          "gap-1 text-white shadow-none",
+                          r.transaction_type === "buy"
+                            ? "bg-emerald-600 hover:bg-emerald-600"
+                            : "bg-rose-600 hover:bg-rose-600",
+                        )}
                       >
                         {r.transaction_type === "buy" ? (
                           <ArrowDownCircle className="h-3 w-3" />
@@ -798,7 +799,7 @@ function TransactionsPage() {
                       {fmtNum(Number(r.foreign_amount))}
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">
-                      {fmtNum(Number(r.rate), 4)}
+                      {fmtNum(Number(r.rate), 2)}
                     </TableCell>
                     <TableCell className="text-right font-mono font-semibold">
                       {fmtIDR(Number(r.idr_amount))}

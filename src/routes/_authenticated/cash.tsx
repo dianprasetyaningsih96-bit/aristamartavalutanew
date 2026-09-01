@@ -51,6 +51,7 @@ interface Branch {
   id: string;
   code: string;
   name: string;
+  is_head_office?: boolean;
 }
 interface Currency {
   id: string;
@@ -124,6 +125,7 @@ function fmt(n: number, decimals = 2) {
 
 function CashPage() {
   const { roles, user, profile } = useCurrentUser();
+  const isSuperAdmin = hasAnyRole(roles, ["super_admin", "owner"]);
   const canWrite = hasAnyRole(roles, [
     "super_admin",
     "branch_manager",
@@ -152,10 +154,16 @@ function CashPage() {
     notes: "",
   });
 
+  // State untuk Permintaan Modal Cabang ke Kantor Pusat
+  const [capitalReqOpen, setCapitalReqOpen] = useState(false);
+  const [reqAmount, setReqAmount] = useState("");
+  const [reqNotes, setReqNotes] = useState("");
+  const [reqSaving, setReqSaving] = useState(false);
+
   async function loadRefs() {
     let branchQ = supabase
       .from("branches")
-      .select("id, code, name")
+      .select("id, code, name, is_head_office")
       .eq("is_active", true)
       .order("code");
     if (lockedBranchId) branchQ = branchQ.eq("id", lockedBranchId);
@@ -285,6 +293,74 @@ function CashPage() {
     loadData(branchId);
   }
 
+  async function submitCapitalRequest() {
+    const targetBId = lockedBranchId ?? (branchId === "__all__" ? (branches[0]?.id ?? "") : branchId);
+    if (!targetBId) {
+      toast.error("Pilih cabang pemohon modal");
+      return;
+    }
+    const amt = Number(reqAmount.replace(/[^\d]/g, "")) || 0;
+    if (amt <= 0) {
+      toast.error("Nominal permintaan modal wajib diisi");
+      return;
+    }
+
+    const idrCur = currencies.find((c) => c.code.toUpperCase() === "IDR");
+    const hqBranch =
+      branches.find(
+        (b) =>
+          b.is_head_office ||
+          (b as any).is_hq ||
+          b.name.toLowerCase().includes("pusat") ||
+          b.name.toLowerCase().includes("jimbaran"),
+      ) || branches[0];
+
+    if (!idrCur || !hqBranch) {
+      toast.error("Konfigurasi mata uang IDR atau Kantor Pusat tidak ditemukan");
+      return;
+    }
+
+    setReqSaving(true);
+    const requestingBranch = branches.find((b) => b.id === targetBId);
+    const { error } = await supabase.from("branch_transfers").insert({
+      branch_id: hqBranch.id, // Sumber: Kantor Pusat
+      target_branch_id: targetBId, // Tujuan: Cabang pemohon
+      currency_id: idrCur.id,
+      amount: amt,
+      status: "pending",
+      notes: `Permintaan tambahan modal tengah shif: ${reqNotes || "Tambahan modal operasional kas"} (${requestingBranch?.name || "Cabang"})`,
+    });
+    setReqSaving(false);
+
+    if (error) {
+      toast.error("Gagal mengirim permintaan modal: " + error.message);
+      return;
+    }
+
+    toast.success("Permintaan modal dikirim ke Kantor Pusat", {
+      description: `Nominal Rp ${fmt(amt, 0)} menunggu persetujuan Super Admin.`,
+    });
+    setCapitalReqOpen(false);
+    setReqAmount("");
+    setReqNotes("");
+  }
+
+  const activeBranch = branches.find(
+    (b) => b.id === (branchId === "__all__" ? (lockedBranchId ?? "") : branchId),
+  );
+  const isHeadOffice = Boolean(
+    activeBranch &&
+      (activeBranch.is_head_office ||
+        (activeBranch as any).is_hq ||
+        activeBranch.name.toLowerCase().includes("pusat") ||
+        activeBranch.name.toLowerCase().includes("jimbaran")),
+  );
+
+  // Tombol "Catat Mutasi" HANYA muncul untuk Super Admin / Kantor Pusat
+  const showCatatMutasi = (isSuperAdmin || isHeadOffice) && branches.length > 0;
+  // Tombol "Permintaan Modal" muncul untuk Cabang (non-HQ)
+  const showPermintaanModal = canWrite && !isHeadOffice && branches.length > 0;
+
   const totals = useMemo(() => {
     if (!balances) return { currencies: 0, idrEquiv: 0 };
     return {
@@ -298,30 +374,40 @@ function CashPage() {
     <div className="flex flex-col gap-6 p-6">
       <MasterPageHeader
         title="Kas & Inventaris"
-        description="Pantau saldo kas per mata uang di tiap cabang dan catat setoran / pengeluaran kas."
+        description="Pantau saldo kas per mata uang di tiap cabang dan kelola modal kas operasional."
         onAdd={openCreate}
         addLabel="Catat Mutasi"
-        canWrite={canWrite && branches.length > 0}
+        canWrite={showCatatMutasi}
         extra={
-          <Select
-            value={branchId}
-            onValueChange={setBranchId}
-            disabled={!!lockedBranchId}
-          >
-            <SelectTrigger className="w-[220px]">
-              <SelectValue placeholder="Pilih cabang" />
-            </SelectTrigger>
-            <SelectContent>
-              {!lockedBranchId && (
-                <SelectItem value="__all__">Semua Cabang</SelectItem>
-              )}
-              {branches.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.code} — {b.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            {showPermintaanModal && (
+              <Button
+                onClick={() => setCapitalReqOpen(true)}
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+              >
+                <ArrowUpCircle className="h-4 w-4" /> Permintaan Modal
+              </Button>
+            )}
+            <Select
+              value={branchId}
+              onValueChange={setBranchId}
+              disabled={!!lockedBranchId}
+            >
+              <SelectTrigger className="w-[220px]">
+                <SelectValue placeholder="Pilih cabang" />
+              </SelectTrigger>
+              <SelectContent>
+                {!lockedBranchId && (
+                  <SelectItem value="__all__">Semua Cabang</SelectItem>
+                )}
+                {branches.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.code} — {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         }
       />
 
@@ -692,6 +778,82 @@ function CashPage() {
             </Button>
             <Button onClick={save} disabled={saving}>
               {saving ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Permintaan Tambahan Modal Cabang ke Kantor Pusat */}
+      <Dialog open={capitalReqOpen} onOpenChange={setCapitalReqOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ArrowUpCircle className="h-5 w-5 text-emerald-600" /> Permintaan Tambahan Modal
+            </DialogTitle>
+            <DialogDescription>
+              Ajukan permohonan penambahan modal kas Rupiah (IDR) ke Kantor Pusat / Super Admin.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Cabang Pemohon</Label>
+              <Input
+                value={
+                  branches.find(
+                    (b) =>
+                      b.id ===
+                      (lockedBranchId ??
+                        (branchId === "__all__" ? branches[0]?.id : branchId)),
+                  )?.name ?? "Cabang"
+                }
+                disabled
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Nominal Modal Diminta (IDR) <span className="text-destructive">*</span></Label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                prefix="Rp"
+                placeholder="Contoh: 50.000.000"
+                value={
+                  reqAmount
+                    ? fmt(Number(reqAmount.replace(/[^\d]/g, "")), 0)
+                    : ""
+                }
+                onChange={(e) => {
+                  const val = e.target.value.replace(/[^\d]/g, "");
+                  setReqAmount(val);
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Permintaan ini akan otomatis masuk ke daftar persetujuan Super Admin.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label>Alasan / Kebutuhan (opsional)</Label>
+              <Textarea
+                rows={3}
+                placeholder="Contoh: Kas IDR menipis karena banyak nasabah jual valas hari ini..."
+                value={reqNotes}
+                onChange={(e) => setReqNotes(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCapitalReqOpen(false)}
+              disabled={reqSaving}
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={submitCapitalRequest}
+              disabled={reqSaving}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              {reqSaving ? "Mengirim..." : "Kirim Permintaan"}
             </Button>
           </DialogFooter>
         </DialogContent>
