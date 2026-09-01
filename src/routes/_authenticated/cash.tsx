@@ -75,10 +75,23 @@ interface Movement {
   amount: number;
   balance_after: number | null;
   reference_no: string | null;
+  reference_id?: string | null;
   notes: string | null;
   created_at: string;
   currencies?: { code: string } | null;
   branches?: { code: string; name: string } | null;
+}
+interface BranchTransferInfo {
+  id: string;
+  branch_id: string;
+  target_branch_id: string | null;
+  currency_id: string;
+  amount: number;
+  status: string;
+  notes: string | null;
+  created_at: string;
+  branch?: { code: string; name: string } | null;
+  target_branch?: { code: string; name: string } | null;
 }
 
 type MovementKind = "deposit" | "withdrawal" | "adjustment" | "opening";
@@ -127,6 +140,7 @@ function CashPage() {
   const [branchId, setBranchId] = useState<string>("");
   const [balances, setBalances] = useState<Balance[] | null>(null);
   const [movements, setMovements] = useState<Movement[] | null>(null);
+  const [transfers, setTransfers] = useState<BranchTransferInfo[]>([]);
 
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -178,12 +192,25 @@ function CashPage() {
       balQ = balQ.eq("branch_id", bId);
       mvQ = mvQ.eq("branch_id", bId);
     }
-    const [{ data: bal, error: e1 }, { data: mv, error: e2 }] =
-      await Promise.all([balQ, mvQ]);
+    const [
+      { data: bal, error: e1 },
+      { data: mv, error: e2 },
+      { data: trfs, error: e3 },
+    ] = await Promise.all([
+      balQ,
+      mvQ,
+      supabase
+        .from("branch_transfers")
+        .select(
+          "id, branch_id, target_branch_id, currency_id, amount, status, notes, created_at, branch:branches!branch_transfers_branch_id_fkey(code, name), target_branch:branches!branch_transfers_target_branch_id_fkey(code, name)",
+        )
+        .eq("status", "accepted"),
+    ]);
     if (e1) toast.error("Gagal memuat saldo", { description: e1.message });
     if (e2) toast.error("Gagal memuat mutasi", { description: e2.message });
     setBalances((bal as Balance[]) ?? []);
     setMovements((mv as Movement[]) ?? []);
+    setTransfers((trfs as unknown as BranchTransferInfo[]) ?? []);
   }
 
   useEffect(() => {
@@ -194,6 +221,21 @@ function CashPage() {
   useEffect(() => {
     if (branchId) loadData(branchId);
   }, [branchId]);
+
+  const transferSources = useMemo(() => {
+    const map = new Map<string, string[]>();
+    transfers.forEach((t) => {
+      if (t.target_branch_id && t.branch?.name) {
+        const key = `${t.target_branch_id}_${t.currency_id}`;
+        const existing = map.get(key) ?? [];
+        if (!existing.includes(t.branch.name)) {
+          existing.push(t.branch.name);
+        }
+        map.set(key, existing);
+      }
+    });
+    return map;
+  }, [transfers]);
 
   function openCreate() {
     setForm({
@@ -222,8 +264,6 @@ function CashPage() {
     }
     setSaving(true);
     const { kind, amount } = parsed.data;
-    // opening / adjustment bisa negatif jika pengurangan? Buat sederhana: adjustment bisa +/-
-    // Untuk kesederhanaan UI: deposit/opening = +, withdrawal = -, adjustment = user memasukkan positif namun pilih tanda via kind
     const signed =
       kind === "withdrawal" ? -Math.abs(amount) : Math.abs(amount);
 
@@ -373,25 +413,43 @@ function CashPage() {
                       b.currencies?.code ?? "",
                     ),
                   )
-                  .map((b) => (
-                    <TableRow key={b.id}>
-                      <TableCell className="font-mono font-semibold">
-                        {b.currencies?.code}
-                      </TableCell>
-                      <TableCell>{b.currencies?.name}</TableCell>
-                      <TableCell className="text-xs">
-                        {b.branches ? `${b.branches.code} — ${b.branches.name}` : "—"}
-                      </TableCell>
-                      <TableCell
-                        className={`text-right font-mono ${b.balance < 0 ? "text-destructive" : ""}`}
-                      >
-                        {fmt(b.balance, b.currencies?.decimals ?? 2)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs">
-                        {new Date(b.updated_at).toLocaleString("id-ID")}
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  .map((b) => {
+                    const srcBranches = transferSources.get(
+                      `${b.branch_id}_${b.currency_id}`,
+                    );
+                    return (
+                      <TableRow key={b.id}>
+                        <TableCell className="font-mono font-semibold">
+                          {b.currencies?.code}
+                        </TableCell>
+                        <TableCell>{b.currencies?.name}</TableCell>
+                        <TableCell className="text-xs">
+                          {srcBranches && srcBranches.length > 0 ? (
+                            <div className="flex flex-col">
+                              <span className="font-medium text-foreground">
+                                {srcBranches.join(", ")}
+                              </span>
+                              <span className="text-[11px] text-muted-foreground">
+                                ➔ {b.branches?.name ?? "Kantor Pusat"}
+                              </span>
+                            </div>
+                          ) : b.branches ? (
+                            `${b.branches.code} — ${b.branches.name}`
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell
+                          className={`text-right font-mono ${b.balance < 0 ? "text-destructive" : ""}`}
+                        >
+                          {fmt(b.balance, b.currencies?.decimals ?? 2)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {new Date(b.updated_at).toLocaleString("id-ID")}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
               )}
             </TableBody>
           </Table>
@@ -435,13 +493,70 @@ function CashPage() {
               ) : (
                 movements.map((m) => {
                   const isIn = m.amount >= 0;
+
+                  // Tentukan nama cabang asal / tujuan transfer secara akurat
+                  let sourceBranchLabel = m.branches ? `${m.branches.code}` : "—";
+                  let isTransferIn = m.movement_type === "transfer_in";
+                  let isTransferOut = m.movement_type === "transfer_out";
+
+                  if (isTransferIn) {
+                    const matchedTrf = transfers.find(
+                      (t) =>
+                        t.id === m.reference_id ||
+                        t.id === m.reference_no ||
+                        (m.reference_no && m.reference_no.includes(t.id)),
+                    );
+                    if (matchedTrf?.branch?.name) {
+                      sourceBranchLabel = matchedTrf.branch.name;
+                    } else if (m.notes && m.notes.toLowerCase().includes("dari")) {
+                      const extracted = m.notes
+                        .replace(/^.*dari\s+/i, "")
+                        .split(/[\(\[\,\.]/)[0]
+                        .trim();
+                      if (extracted) sourceBranchLabel = extracted;
+                    }
+                  } else if (isTransferOut) {
+                    const matchedTrf = transfers.find(
+                      (t) =>
+                        t.id === m.reference_id ||
+                        t.id === m.reference_no ||
+                        (m.reference_no && m.reference_no.includes(t.id)),
+                    );
+                    if (matchedTrf?.target_branch?.name) {
+                      sourceBranchLabel = `${m.branches?.code ?? "Cabang"} ➔ ${matchedTrf.target_branch.name}`;
+                    }
+                  }
+
+                  const cleanRefNo =
+                    m.reference_no &&
+                    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                      m.reference_no,
+                    )
+                      ? `[${m.reference_no}] `
+                      : "";
+                  const cleanNote = (m.notes ?? "—").replace(
+                    /^\[[0-9a-f-]{36}\]\s*/i,
+                    "",
+                  );
+
                   return (
                     <TableRow key={m.id}>
                       <TableCell className="text-xs text-muted-foreground">
                         {new Date(m.created_at).toLocaleString("id-ID")}
                       </TableCell>
                       <TableCell className="text-xs">
-                        {m.branches ? `${m.branches.code}` : "—"}
+                        {isTransferIn ? (
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-primary">
+                              {sourceBranchLabel}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground">
+                              ➔ {m.branches?.code ?? "HQ"}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>{sourceBranchLabel}</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -470,9 +585,8 @@ function CashPage() {
                           ? fmt(m.balance_after, 2)
                           : "—"}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-[240px] truncate">
-                        {m.reference_no ? `[${m.reference_no}] ` : ""}
-                        {m.notes ?? "—"}
+                      <TableCell className="text-xs text-muted-foreground max-w-[260px] truncate" title={cleanNote}>
+                        {cleanRefNo}{cleanNote}
                       </TableCell>
                     </TableRow>
                   );
