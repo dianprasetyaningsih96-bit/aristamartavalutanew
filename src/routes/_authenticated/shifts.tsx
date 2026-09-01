@@ -221,6 +221,7 @@ function ShiftsPage() {
           onClose={() => setOpenDialog(false)}
           onSaved={() => { setOpenDialog(false); load(); }}
           branches={branches}
+          currencies={currencies}
           defaultBranchId={profile?.branch_id ?? null}
           userId={user?.id ?? ""}
           lockBranch={!isManager}
@@ -240,17 +241,24 @@ function ShiftsPage() {
   );
 }
 
+interface PrevShiftInfo {
+  idrAmount: number;
+  source: "reconciliation" | "cash_balance";
+  shiftTime?: string | null;
+  foreignCurrencies?: { code: string; amount: number }[];
+}
+
 function OpenShiftDialog({
-  onClose, onSaved, branches, defaultBranchId, userId, lockBranch,
+  onClose, onSaved, branches, currencies, defaultBranchId, userId, lockBranch,
 }: {
   onClose: () => void; onSaved: () => void;
-  branches: Branch[]; defaultBranchId: string | null; userId: string;
+  branches: Branch[]; currencies: Currency[]; defaultBranchId: string | null; userId: string;
   lockBranch: boolean;
 }) {
   const [branchId, setBranchId] = useState<string>(defaultBranchId ?? (lockBranch ? "" : branches[0]?.id ?? ""));
   const [shiftType, setShiftType] = useState<ShiftType>("pagi");
   const [openingCapital, setOpeningCapital] = useState<string>("");
-  const [prevMorningBalance, setPrevMorningBalance] = useState<number | null>(null);
+  const [prevInfo, setPrevInfo] = useState<PrevShiftInfo | null>(null);
   const [loadingPrev, setLoadingPrev] = useState(false);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -263,41 +271,119 @@ function OpenShiftDialog({
     if (shiftType === "siang" && branchId) {
       (async () => {
         setLoadingPrev(true);
-        // 1. Get the latest closed morning shift for this branch
-        const { data: shiftData } = await supabase
-          .from("shifts")
-          .select("id")
-          .eq("branch_id", branchId)
-          .eq("shift_type", "pagi")
-          .eq("status", "closed")
-          .order("opened_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        try {
+          const idrCur = currencies.find((c) => c.code.toUpperCase() === "IDR");
 
-        if (shiftData) {
-          // 2. Get the IDR reconciliation for that shift
-          const { data: reconData } = await supabase
-            .from("shift_reconciliations")
-            .select("actual_amount, currencies!inner(code)")
-            .eq("shift_id", shiftData.id)
-            .eq("currencies.code", "IDR")
+          // 1. Cari shif pagi terakhir yang ditutup di cabang ini
+          const { data: morningShift } = await supabase
+            .from("shifts")
+            .select("id, closed_at, shift_type, notes")
+            .eq("branch_id", branchId)
+            .eq("shift_type", "pagi")
+            .eq("status", "closed")
+            .order("closed_at", { ascending: false })
+            .limit(1)
             .maybeSingle();
 
-          if (reconData) {
-            setPrevMorningBalance(Number(reconData.actual_amount));
-          } else {
-            setPrevMorningBalance(null);
+          let latestShift = morningShift;
+          if (!latestShift) {
+            // Fallback: cari shif tertutup terakhir apapun jenisnya di cabang ini
+            const { data: anyShift } = await supabase
+              .from("shifts")
+              .select("id, closed_at, shift_type, notes")
+              .eq("branch_id", branchId)
+              .eq("status", "closed")
+              .order("closed_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            latestShift = anyShift;
           }
-        } else {
-          setPrevMorningBalance(null);
+
+          let foundFromRecon = false;
+          if (latestShift) {
+            // 2. Ambil data rekonsiliasi kas (physical_balance / system_balance)
+            const { data: reconData } = await supabase
+              .from("shift_reconciliations")
+              .select("currency_id, physical_balance, system_balance, currencies(code)")
+              .eq("shift_id", latestShift.id);
+
+            if (reconData && reconData.length > 0) {
+              foundFromRecon = true;
+              const idrRow = reconData.find(
+                (r: any) =>
+                  r.currencies?.code?.toUpperCase() === "IDR" ||
+                  (idrCur && r.currency_id === idrCur.id),
+              );
+              const idrVal = idrRow
+                ? Number(idrRow.physical_balance ?? idrRow.system_balance ?? 0)
+                : 0;
+
+              const valas = reconData
+                .filter(
+                  (r: any) =>
+                    r.currencies?.code?.toUpperCase() !== "IDR" &&
+                    (Number(r.physical_balance) > 0 || Number(r.system_balance) > 0),
+                )
+                .map((r: any) => ({
+                  code: r.currencies?.code || "VALAS",
+                  amount: Number(r.physical_balance ?? r.system_balance ?? 0),
+                }));
+
+              setPrevInfo({
+                idrAmount: idrVal,
+                source: "reconciliation",
+                shiftTime: latestShift.closed_at,
+                foreignCurrencies: valas,
+              });
+            }
+          }
+
+          // 3. Jika tidak ada rekonsiliasi tersimpan, fallback ke saldo kas cabang saat ini (cash_balances)
+          if (!foundFromRecon) {
+            const { data: cashData } = await supabase
+              .from("cash_balances")
+              .select("currency_id, balance, currencies(code)")
+              .eq("branch_id", branchId);
+
+            if (cashData && cashData.length > 0) {
+              const idrCash = cashData.find(
+                (c: any) =>
+                  c.currencies?.code?.toUpperCase() === "IDR" ||
+                  (idrCur && c.currency_id === idrCur.id),
+              );
+              const idrVal = idrCash ? Number(idrCash.balance || 0) : 0;
+
+              const valas = cashData
+                .filter(
+                  (c: any) =>
+                    c.currencies?.code?.toUpperCase() !== "IDR" && Number(c.balance) > 0,
+                )
+                .map((c: any) => ({
+                  code: c.currencies?.code || "VALAS",
+                  amount: Number(c.balance || 0),
+                }));
+
+              setPrevInfo({
+                idrAmount: idrVal,
+                source: "cash_balance",
+                shiftTime: latestShift?.closed_at ?? null,
+                foreignCurrencies: valas,
+              });
+            } else {
+              setPrevInfo(null);
+            }
+          }
+        } catch (e) {
+          console.warn("Error fetching prev morning balance:", e);
+          setPrevInfo(null);
+        } finally {
+          setLoadingPrev(false);
         }
-        setLoadingPrev(false);
       })();
     } else {
-      setPrevMorningBalance(null);
+      setPrevInfo(null);
     }
-  }, [shiftType, branchId]);
-
+  }, [shiftType, branchId, currencies]);
 
   const assignedBranch = branches.find((b) => b.id === defaultBranchId);
 
@@ -365,14 +451,42 @@ function OpenShiftDialog({
             </Select>
           </div>
           {shiftType === "siang" && (
-            <div className="rounded-md bg-muted p-3">
-              <p className="text-sm font-medium">Informasi Saldo Shif Pagi</p>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-primary uppercase tracking-wider">
+                  Informasi Saldo Shif Pagi (Serah Terima)
+                </span>
+                {prevInfo?.shiftTime && (
+                  <span className="text-[11px] text-muted-foreground">
+                    Ditutup: {formatDateTime(prevInfo.shiftTime)}
+                  </span>
+                )}
+              </div>
+
               {loadingPrev ? (
-                <p className="text-xs text-muted-foreground">Mencari saldo terakhir...</p>
-              ) : prevMorningBalance !== null ? (
-                <p className="text-lg font-bold text-primary">
-                  {formatIDR(prevMorningBalance)}
-                </p>
+                <p className="text-xs text-muted-foreground animate-pulse">Mencari saldo terakhir...</p>
+              ) : prevInfo ? (
+                <div className="space-y-2">
+                  <div>
+                    <div className="text-xs text-muted-foreground">Saldo Kas Rupiah (IDR):</div>
+                    <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatIDR(prevInfo.idrAmount)}
+                    </div>
+                  </div>
+
+                  {prevInfo.foreignCurrencies && prevInfo.foreignCurrencies.length > 0 && (
+                    <div className="pt-2 border-t border-border/50">
+                      <div className="text-[11px] text-muted-foreground mb-1">Saldo Valuta Asing (Valas):</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {prevInfo.foreignCurrencies.map((f) => (
+                          <Badge key={f.code} variant="outline" className="text-xs font-mono bg-background">
+                            {f.code}: {new Intl.NumberFormat("id-ID").format(f.amount)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 <p className="text-xs text-muted-foreground">Tidak ditemukan riwayat saldo shif pagi sebelumnya.</p>
               )}
