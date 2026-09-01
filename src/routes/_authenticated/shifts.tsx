@@ -264,10 +264,40 @@ function OpenShiftDialog({
   const [loadingPrev, setLoadingPrev] = useState(false);
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [branchOpenShifts, setBranchOpenShifts] = useState<{ morningOpen: boolean; afternoonOpen: boolean }>({
+    morningOpen: false,
+    afternoonOpen: false,
+  });
 
   useEffect(() => {
     if (!branchId && !lockBranch && branches.length) setBranchId(branches[0].id);
   }, [branches, branchId, lockBranch]);
+
+  // Cek apakah ada shif yang sedang terbuka di cabang ini untuk mendisable opsi shif
+  useEffect(() => {
+    if (branchId) {
+      (async () => {
+        try {
+          const { data: openShifts } = await supabase
+            .from("shifts")
+            .select("shift_type, status")
+            .eq("branch_id", branchId)
+            .eq("status", "open");
+
+          const morningOpen = Boolean(openShifts?.some((s) => s.shift_type === "pagi"));
+          const afternoonOpen = Boolean(openShifts?.some((s) => s.shift_type === "siang"));
+          
+          setBranchOpenShifts({ morningOpen, afternoonOpen });
+
+          if (morningOpen && !afternoonOpen) {
+            setShiftType("siang");
+          }
+        } catch (err) {
+          console.warn("Failed checking open shifts:", err);
+        }
+      })();
+    }
+  }, [branchId]);
 
   const assignedBranch = branches.find((b) => b.id === branchId) ?? branches.find((b) => b.id === defaultBranchId);
   const isHq = Boolean(
@@ -525,8 +555,22 @@ function OpenShiftDialog({
             <Select value={shiftType} onValueChange={(v) => setShiftType(v as ShiftType)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="pagi">Shif Pagi (08.00–15.00 WITA)</SelectItem>
-                <SelectItem value="siang">Shif Siang/Sore (15.00–22.00 WITA)</SelectItem>
+                <SelectItem 
+                  value="pagi" 
+                  disabled={branchOpenShifts.morningOpen}
+                >
+                  {branchOpenShifts.morningOpen
+                    ? "Shif Pagi (08.00–15.00 WITA) — Sedang Terbuka"
+                    : "Shif Pagi (08.00–15.00 WITA)"}
+                </SelectItem>
+                <SelectItem 
+                  value="siang" 
+                  disabled={branchOpenShifts.afternoonOpen}
+                >
+                  {branchOpenShifts.afternoonOpen
+                    ? "Shif Siang/Sore (15.00–22.00 WITA) — Sedang Terbuka"
+                    : "Shif Siang/Sore (15.00–22.00 WITA)"}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
