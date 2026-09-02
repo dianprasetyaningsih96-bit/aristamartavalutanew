@@ -8,6 +8,11 @@ import {
   ArrowUpCircle,
   Scale,
   Wallet,
+  Coins,
+  CheckCircle2,
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
@@ -19,6 +24,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getCurrencyFlagUrl, getCurrencyInfo } from "@/lib/currency-flags";
 import {
   Select,
   SelectContent,
@@ -160,6 +166,10 @@ function CashPage() {
   const [reqNotes, setReqNotes] = useState("");
   const [reqSaving, setReqSaving] = useState(false);
 
+  // Pagination Mutasi Terbaru
+  const [movPage, setMovPage] = useState(1);
+  const MOV_PER_PAGE = 10;
+
   async function loadRefs() {
     let branchQ = supabase
       .from("branches")
@@ -195,7 +205,7 @@ function CashPage() {
       .from("cash_movements")
       .select("*, currencies(code), branches(code, name)")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(500);
     if (!isAll) {
       balQ = balQ.eq("branch_id", bId);
       mvQ = mvQ.eq("branch_id", bId);
@@ -219,6 +229,7 @@ function CashPage() {
     setBalances((bal as Balance[]) ?? []);
     setMovements((mv as Movement[]) ?? []);
     setTransfers((trfs as unknown as BranchTransferInfo[]) ?? []);
+    setMovPage(1); // reset halaman saat cabang berganti
   }
 
   useEffect(() => {
@@ -361,14 +372,39 @@ function CashPage() {
   // Tombol "Permintaan Modal" muncul untuk Cabang (non-HQ)
   const showPermintaanModal = canWrite && !isHeadOffice && branches.length > 0;
 
+  // Tampilkan Rekap Valas Siap Jual hanya untuk super_admin / owner / teller Jimbaran (HQ)
+  const showValasSummary =
+    isSuperAdmin ||
+    (hasAnyRole(roles, ["teller"]) && isHeadOffice);
+
   const totals = useMemo(() => {
-    if (!balances) return { currencies: 0, idrEquiv: 0 };
+    if (!balances) return { currencies: 0, idrEquiv: 0, valasSummary: [] as { code: string; name: string; balance: number; decimals: number }[] };
+    const valasSummary = balances
+      .filter((b) => b.currencies?.code !== "IDR" && (b.balance ?? 0) > 0)
+      .map((b) => ({
+        code: b.currencies?.code ?? "?",
+        name: b.currencies?.name ?? "",
+        balance: b.balance,
+        decimals: b.currencies?.decimals ?? 2,
+      }))
+      .sort((a, b) => a.code.localeCompare(b.code));
     return {
       currencies: balances.filter((b) => (b.balance ?? 0) !== 0).length,
       idrEquiv:
         balances.find((b) => b.currencies?.code === "IDR")?.balance ?? 0,
+      valasSummary,
     };
   }, [balances]);
+
+  // Pagination valas siap jual (computed)
+  const pagedMovements = useMemo(() => {
+    if (!movements) return [];
+    const start = (movPage - 1) * MOV_PER_PAGE;
+    return movements.slice(start, start + MOV_PER_PAGE);
+  }, [movements, movPage, MOV_PER_PAGE]);
+  const totalMovPages = movements ? Math.ceil(movements.length / MOV_PER_PAGE) : 1;
+
+
 
   return (
     <div className="flex flex-col gap-6 p-6">
@@ -443,7 +479,7 @@ function CashPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">
-              Total Mutasi (50 terakhir)
+              Total Mutasi
             </CardTitle>
             <Scale className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
@@ -452,11 +488,78 @@ function CashPage() {
               {movements?.length ?? 0}
             </div>
             <p className="text-xs text-muted-foreground mt-1">
-              Mutasi terbaru di cabang ini
+              Total mutasi tercatat di cabang ini
             </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* ============================================================
+          Rekap Valas Siap Jual — hanya untuk super_admin / teller HQ
+          ============================================================ */}
+      {showValasSummary && (
+        <Card>
+          <CardHeader className="flex flex-row items-center gap-2 pb-3">
+            <Coins className="h-5 w-5 text-amber-500" />
+            <CardTitle>Rekap Valas Siap Jual</CardTitle>
+            <span className="ml-auto text-xs text-muted-foreground">
+              Stok mata uang asing dengan saldo &gt; 0
+            </span>
+          </CardHeader>
+          <CardContent>
+            {balances === null ? (
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-20 rounded-xl" />
+                ))}
+              </div>
+            ) : totals.valasSummary.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                <AlertCircle className="h-8 w-8" />
+                <p className="text-sm">Tidak ada valas yang tersedia untuk dijual saat ini.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+                {totals.valasSummary.map((v) => {
+                  const flagUrl = getCurrencyFlagUrl(v.code);
+                  return (
+                    <div
+                      key={v.code}
+                      className="flex flex-col items-center justify-between gap-2 rounded-xl border bg-card p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-center gap-2 w-full">
+                        <img
+                          src={flagUrl}
+                          alt={v.code}
+                          className="h-5 w-7 rounded-sm object-cover shadow-sm flex-shrink-0"
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <div className="flex flex-col leading-tight">
+                          <span className="font-bold text-base font-mono">{v.code}</span>
+                          <span className="text-[10px] text-muted-foreground line-clamp-1">{v.name}</span>
+                        </div>
+                      </div>
+                      <div className="w-full flex items-center justify-between mt-1">
+                        <Badge variant="outline" className="text-emerald-600 border-emerald-300 bg-emerald-50 gap-1 text-xs font-mono px-2 py-0.5">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Siap Jual
+                        </Badge>
+                      </div>
+                      <div className="w-full text-right">
+                        <span className="text-lg font-bold font-mono tabular-nums">
+                          {fmt(v.balance, v.decimals)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
@@ -543,8 +646,13 @@ function CashPage() {
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Mutasi Terbaru</CardTitle>
+          {movements !== null && movements.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              {(movPage - 1) * MOV_PER_PAGE + 1}–{Math.min(movPage * MOV_PER_PAGE, movements.length)} dari {movements.length} mutasi
+            </span>
+          )}
         </CardHeader>
         <CardContent className="p-0">
           <Table>
@@ -577,7 +685,7 @@ function CashPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                movements.map((m) => {
+                pagedMovements.map((m) => {
                   const isIn = m.amount >= 0;
 
                   // Tentukan nama cabang asal / tujuan transfer secara akurat
@@ -680,6 +788,56 @@ function CashPage() {
               )}
             </TableBody>
           </Table>
+          {/* ── Pagination Controls ── */}
+          {movements !== null && totalMovPages > 1 && (
+            <div className="flex items-center justify-between px-4 py-3 border-t">
+              <span className="text-xs text-muted-foreground">
+                Halaman <span className="font-semibold">{movPage}</span> dari <span className="font-semibold">{totalMovPages}</span>
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={movPage === 1}
+                  onClick={() => setMovPage(1)}
+                  title="Halaman pertama"
+                >
+                  «
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1"
+                  disabled={movPage === 1}
+                  onClick={() => setMovPage((p) => Math.max(1, p - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Prev
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1"
+                  disabled={movPage === totalMovPages}
+                  onClick={() => setMovPage((p) => Math.min(totalMovPages, p + 1))}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 w-8 p-0"
+                  disabled={movPage === totalMovPages}
+                  onClick={() => setMovPage(totalMovPages)}
+                  title="Halaman terakhir"
+                >
+                  »
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
