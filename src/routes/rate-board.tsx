@@ -100,13 +100,23 @@ function getCompanyInitials(name?: string): string {
 
 export function RateBoardPage() {
   const { settings } = useAppSettings();
-  const { user } = useCurrentUser();
+  const { user, profile, roles } = useCurrentUser();
+  const isBranchLocked = !roles.includes("super_admin") && !roles.includes("owner") && Boolean(profile?.branch_id);
+
   const [currencies, setCurrencies] = useState<CurrencyItem[]>([]);
   const [rates, setRates] = useState<RateItem[]>([]);
   const [branches, setBranches] = useState<BranchItem[]>([]);
   const [selectedBranch, setSelectedBranch] = useState<string>(() => {
     return localStorage.getItem("rate_board_branch") || ALL_HQ;
   });
+
+  // Sync to user branch when logged in as branch teller/manager
+  useEffect(() => {
+    if (profile?.branch_id && isBranchLocked) {
+      setSelectedBranch(profile.branch_id);
+    }
+  }, [profile?.branch_id, isBranchLocked]);
+
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -146,7 +156,7 @@ export function RateBoardPage() {
             .from("branches")
             .select("id, code, name")
             .eq("is_active", true)
-            .order("name"),
+            .order("code", { ascending: true }),
           supabase
             .from("exchange_rates")
             .select("*, currencies(code, name), branches(code, name)")
@@ -155,7 +165,22 @@ export function RateBoardPage() {
         ]);
 
       if (curData) setCurrencies(curData as CurrencyItem[]);
-      if (branchData) setBranches(branchData as BranchItem[]);
+      if (branchData) {
+        const sorted = (branchData as BranchItem[]).sort((a, b) =>
+          a.code.localeCompare(b.code, undefined, { numeric: true, sensitivity: "base" })
+        );
+        setBranches(sorted);
+        // Auto default to first branch (HQ-01) if not set or if was ALL_HQ
+        setSelectedBranch((prev) => {
+          if (profile?.branch_id) return profile.branch_id;
+          const exists = sorted.find((b) => b.id === prev);
+          if (!exists && sorted.length > 0) {
+            localStorage.setItem("rate_board_branch", sorted[0].id);
+            return sorted[0].id;
+          }
+          return prev;
+        });
+      }
       if (rateData) setRates(rateData as RateItem[]);
       setLastUpdated(new Date());
     } catch (err) {
@@ -243,16 +268,11 @@ export function RateBoardPage() {
         );
       }
 
-      // If not found or selected is HQ, find rate with null branch_id or newest rate
+      // If not found or selected is HQ, find rate with null branch_id (HQ / Default)
       if (!curRate) {
         curRate = rates.find(
           (r) => r.currency_id === cur.id && r.branch_id === null,
         );
-      }
-
-      // If still not found, take the latest rate for this currency
-      if (!curRate) {
-        curRate = rates.find((r) => r.currency_id === cur.id);
       }
 
       const buyRate = curRate ? Number(curRate.buy_rate) : 0;
@@ -294,9 +314,13 @@ export function RateBoardPage() {
   const rightColumnRates = displayRates.slice(midIndex);
 
   const selectedBranchName = useMemo(() => {
-    if (selectedBranch === ALL_HQ) return "KANTOR PUSAT & SEMUA CABANG";
     const b = branches.find((br) => br.id === selectedBranch);
-    return b ? `${b.code} — ${b.name.toUpperCase()}` : "KANTOR PUSAT";
+    if (b) {
+      return `${b.code} — ${b.name.toUpperCase()}`;
+    }
+    return branches[0]
+      ? `${branches[0].code} — ${branches[0].name.toUpperCase()}`
+      : "HQ-01 — KANTOR PUSAT";
   }, [selectedBranch, branches]);
 
   const formatRate = (rate: number, decimals: number) => {
@@ -334,13 +358,16 @@ export function RateBoardPage() {
 
           <div className="flex flex-wrap items-center gap-2">
             <div className="w-48 sm:w-56">
-              <Select value={selectedBranch} onValueChange={handleBranchChange}>
+              <Select 
+                value={isBranchLocked ? (profile?.branch_id ?? selectedBranch) : selectedBranch} 
+                onValueChange={handleBranchChange}
+                disabled={isBranchLocked}
+              >
                 <SelectTrigger className="h-9 text-xs">
                   <Building2 className="mr-1.5 h-3.5 w-3.5 text-muted-foreground" />
                   <SelectValue placeholder="Pilih Cabang" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={ALL_HQ}>Kantor Pusat (HQ)</SelectItem>
                   {branches.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.code} — {b.name}
@@ -534,7 +561,7 @@ export function RateBoardPage() {
 
                   {/* We Sell */}
                   <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-emerald-400">
-                    {formatRate(r.sellRate, r.decimals)}
+                    -
                   </div>
                 </div>
               ))}
@@ -601,7 +628,7 @@ export function RateBoardPage() {
 
                   {/* We Sell */}
                   <div className="col-span-3 text-right pr-4 font-mono font-bold text-sm md:text-base tracking-tight text-emerald-400">
-                    {formatRate(r.sellRate, r.decimals)}
+                    -
                   </div>
                 </div>
               ))}

@@ -97,13 +97,13 @@ const primary: NavItem[] = [
     title: "Kurs Valuta",
     url: "/rates",
     icon: LineChart,
-    roles: ["super_admin", "branch_manager", "owner"],
+    roles: ["super_admin", "branch_manager", "owner", "teller"],
   },
   {
     title: "Riwayat Kurs",
     url: "/rates-history",
     icon: History,
-    roles: ["super_admin", "branch_manager", "owner", "auditor"],
+    roles: ["super_admin", "branch_manager", "owner", "auditor", "teller"],
   },
   {
     title: "Kurs Tengah",

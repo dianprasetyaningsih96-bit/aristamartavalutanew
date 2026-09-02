@@ -116,11 +116,13 @@ const fmt = (n: number) =>
   }).format(n);
 
 function RatesPage() {
-  const { roles } = useCurrentUser();
+  const { roles, profile } = useCurrentUser();
+  const isTeller = roles.includes("teller") && !hasAnyRole(roles, ["super_admin", "owner", "branch_manager"]);
   const canWrite = hasAnyRole(roles, [
     "super_admin",
     "owner",
     "branch_manager",
+    "teller",
   ]);
 
   const [rows, setRows] = useState<Rate[] | null>(null);
@@ -134,7 +136,6 @@ function RatesPage() {
   const [buyInput, setBuyInput] = useState("");
   const [sellInput, setSellInput] = useState("");
   const [branchFilter, setBranchFilter] = useState<string>(ALL);
-  // Multi-branch targets when creating (checkbox list). Value HQ = default (null).
   const [multiBranches, setMultiBranches] = useState<string[]>([HQ]);
 
   async function load() {
@@ -156,13 +157,13 @@ function RatesPage() {
           .from("branches")
           .select("id, code, name")
           .eq("is_active", true)
-          .order("code"),
+          .order("name"),
       ]);
     if (error) {
       toast.error("Gagal memuat kurs", { description: error.message });
       return;
     }
-    setRows((rateData as Rate[]) ?? []);
+    setRows(rateData ? (rateData as unknown as Rate[]) : []);
     setCurrencies((cur as CurrencyOpt[]) ?? []);
     setBranches((br as BranchOpt[]) ?? []);
   }
@@ -187,14 +188,25 @@ function RatesPage() {
 
   function openCreate() {
     setEditing(null);
-    setForm(empty());
+    const tellerBranch = profile?.branch_id ?? HQ;
+    setForm({
+      ...empty(),
+      branch_id: isTeller ? tellerBranch : (branchFilter === ALL ? HQ : branchFilter),
+    });
     setBuyInput("");
     setSellInput("");
-    setMultiBranches([branchFilter === ALL ? HQ : branchFilter]);
+    const defaultBranch = isTeller
+      ? tellerBranch
+      : (profile?.branch_id ?? (branchFilter === ALL ? HQ : branchFilter));
+    setMultiBranches([defaultBranch]);
     setOpen(true);
   }
 
   function openEdit(row: Rate) {
+    if (isTeller && row.branch_id !== profile?.branch_id && (row.branch_id || profile?.branch_id)) {
+      toast.error("Anda hanya dapat mengubah kurs pada cabang Anda.");
+      return;
+    }
     setEditing(row);
     const buyVal = Number(row.buy_rate);
     const sellVal = Number(row.sell_rate);
@@ -221,11 +233,33 @@ function RatesPage() {
       });
       return;
     }
-    if (!editing && multiBranches.length === 0) {
+    if (!editing && !isTeller && multiBranches.length === 0) {
       toast.error("Pilih minimal satu cabang tujuan");
       return;
     }
     setSaving(true);
+    const targetBranches = isTeller ? [profile?.branch_id ?? HQ] : multiBranches;
+
+    // Cek duplikasi kurs untuk mata uang yang sama pada cabang yang sama ATAU pada HQ/Default
+    if (!editing) {
+      for (const b of targetBranches) {
+        const branchToCheck = b === HQ ? null : b;
+        const duplicate = rows?.find(
+          (r) =>
+            r.currency_id === parsed.data.currency_id &&
+            (r.branch_id === branchToCheck || r.branch_id === null),
+        );
+        if (duplicate) {
+          const curObj = currencies.find((c) => c.id === parsed.data.currency_id);
+          toast.error(`Kurs untuk mata uang ${curObj?.code || ""} sudah ada (di Cabang atau HQ/Default).`, {
+            description: "Gunakan tombol Edit (Pensil) pada tabel jika ingin mengubah nilai kurs yang sudah ada.",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     const base = {
       currency_id: parsed.data.currency_id,
       buy_rate: parsed.data.buy_rate,
@@ -240,11 +274,11 @@ function RatesPage() {
           .update({
             ...base,
             branch_id:
-              parsed.data.branch_id === HQ ? null : parsed.data.branch_id,
+              (isTeller ? (profile?.branch_id ?? null) : (parsed.data.branch_id === HQ ? null : parsed.data.branch_id)),
           })
           .eq("id", editing.id)
       : await supabase.from("exchange_rates").insert(
-          multiBranches.map((b) => ({
+          targetBranches.map((b) => ({
             ...base,
             branch_id: b === HQ ? null : b,
           })),
@@ -257,7 +291,7 @@ function RatesPage() {
     toast.success(
       editing
         ? "Kurs diperbarui"
-        : `Kurs ditambahkan untuk ${multiBranches.length} cabang/target`,
+        : `Kurs ditambahkan untuk ${targetBranches.length} cabang/target`,
     );
     setOpen(false);
     load();
@@ -265,6 +299,10 @@ function RatesPage() {
 
   async function remove() {
     if (!deleting) return;
+    if (isTeller && deleting.branch_id !== profile?.branch_id) {
+        toast.error("Anda tidak memiliki izin menghapus kurs ini.");
+        return;
+    }
     const { error } = await supabase
       .from("exchange_rates")
       .delete()
@@ -400,7 +438,7 @@ function RatesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        {canWrite && (
+                        {canWrite && (!isTeller || (row.branch_id === profile?.branch_id) || (!row.branch_id && !profile?.branch_id)) && (
                           <div className="flex justify-end gap-1">
                             <Button
                               size="icon"
@@ -449,17 +487,43 @@ function RatesPage() {
                   <SelectValue placeholder="Pilih mata uang" />
                 </SelectTrigger>
                 <SelectContent>
-                  {currencies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.code} — {c.name}
-                    </SelectItem>
-                  ))}
+                  {currencies.map((c) => {
+                    const branchToCheck = isTeller
+                      ? (profile?.branch_id ?? null)
+                      : (form.branch_id === HQ ? null : form.branch_id);
+                    const alreadyExists =
+                      !editing &&
+                      rows?.some(
+                        (r) =>
+                          r.currency_id === c.id &&
+                          (r.branch_id === branchToCheck || r.branch_id === null),
+                      );
+                    return (
+                      <SelectItem
+                        key={c.id}
+                        value={c.id}
+                        disabled={alreadyExists}
+                      >
+                        {c.code} — {c.name}
+                        {alreadyExists ? " (Sudah ada di HQ/Cabang)" : ""}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2 col-span-1">
               <Label>Cabang</Label>
-              {editing ? (
+              {isTeller ? (
+                <div>
+                  <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted px-3 py-2 text-sm text-muted-foreground opacity-80 font-medium">
+                    {branches.find((b) => b.id === (profile?.branch_id ?? form.branch_id))?.code || "HQ"} — {branches.find((b) => b.id === (profile?.branch_id ?? form.branch_id))?.name || "Kantor Pusat (HQ)"}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Terkunci sesuai cabang penugasan Anda.
+                  </p>
+                </div>
+              ) : editing ? (
                 <Select
                   value={form.branch_id}
                   onValueChange={(v) => setForm({ ...form, branch_id: v })}
@@ -525,7 +589,7 @@ function RatesPage() {
                   )}
                 </div>
               )}
-              {!editing && (
+              {!editing && !isTeller && (
                 <p className="text-xs text-muted-foreground">
                   Kurs akan dibuat terpisah untuk tiap cabang yang dipilih.
                 </p>
