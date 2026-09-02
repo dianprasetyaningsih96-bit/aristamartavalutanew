@@ -43,25 +43,25 @@ BEGIN
         RAISE EXCEPTION 'Mata uang IDR tidak ditemukan';
     END IF;
 
-    -- 4. Update Saldo Kas Legian (Kurangi 35.711.250)
-    INSERT INTO public.branch_cash_balances (branch_id, currency_id, balance, updated_at)
+    -- 4. Update Saldo Kas Legian di cash_balances (Kurangi Rp 35.711.250)
+    INSERT INTO public.cash_balances (branch_id, currency_id, balance, updated_at)
     VALUES (v_legian_id, v_idr_id, 0, now())
     ON CONFLICT (branch_id, currency_id) 
     DO UPDATE SET 
-        balance = GREATEST(0, branch_cash_balances.balance - v_amount),
+        balance = GREATEST(0, cash_balances.balance - v_amount),
         updated_at = now()
     RETURNING balance INTO v_legian_current_balance;
 
-    -- 5. Update Saldo Kas Kantor Pusat / Jimbaran (Tambah 35.711.250)
-    INSERT INTO public.branch_cash_balances (branch_id, currency_id, balance, updated_at)
+    -- 5. Update Saldo Kas Kantor Pusat / Jimbaran di cash_balances (Tambah Rp 35.711.250)
+    INSERT INTO public.cash_balances (branch_id, currency_id, balance, updated_at)
     VALUES (v_hq_id, v_idr_id, v_amount, now())
     ON CONFLICT (branch_id, currency_id) 
     DO UPDATE SET 
-        balance = branch_cash_balances.balance + v_amount,
+        balance = cash_balances.balance + v_amount,
         updated_at = now()
     RETURNING balance INTO v_hq_current_balance;
 
-    -- 6. Catat Mutasi Kas Keluar di Cabang Legian
+    -- 6. Catat Mutasi Kas Keluar di Cabang Legian (Audit Trail)
     INSERT INTO public.cash_movements (
         id, branch_id, currency_id, amount, movement_type,
         notes, reference_no, reference_id, balance_after, created_at
@@ -78,7 +78,7 @@ BEGIN
         now()
     );
 
-    -- 7. Catat Mutasi Kas Masuk di Kantor Pusat / Jimbaran
+    -- 7. Catat Mutasi Kas Masuk di Kantor Pusat / Jimbaran (Audit Trail)
     INSERT INTO public.cash_movements (
         id, branch_id, currency_id, amount, movement_type,
         notes, reference_no, reference_id, balance_after, created_at
