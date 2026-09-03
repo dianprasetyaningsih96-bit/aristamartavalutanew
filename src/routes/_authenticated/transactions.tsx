@@ -271,6 +271,7 @@ function TransactionsPage() {
   const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [voidReason, setVoidReason] = useState("");
+  const [showAddCustomer, setShowAddCustomer] = useState(false);
   const { filterBranches, filterData } = useCangguExclusion();
 
   async function load() {
