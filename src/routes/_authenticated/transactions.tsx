@@ -859,16 +859,6 @@ function TransactionsPage() {
                             <Ban className="h-4 w-4 text-destructive" />
                           </Button>
                         )}
-                        {isSuperAdmin && (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => setDeleting(r)}
-                            title="Hapus transaksi"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
                       </div>
                     </TableCell>
                   </TableRow>
