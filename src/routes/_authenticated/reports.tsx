@@ -5,6 +5,7 @@ import { Download, FileText, AlertTriangle, Flag, Printer, FileSpreadsheet } fro
 import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
+import { useCangguExclusion } from "@/hooks/use-canggu-exclusion";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import {
   generateReportPdf,
@@ -164,6 +165,7 @@ function exportExcel(filename: string, rows: TrxRow[]) {
 
 function ReportsPage() {
   const { roles, user } = useCurrentUser();
+  const { filterBranches, filterData } = useCangguExclusion();
   const canFlag = hasAnyRole(roles, [
     "super_admin",
     "branch_manager",
@@ -264,8 +266,8 @@ function ReportsPage() {
       .from("branches")
       .select("id, code, name, address, city, phone")
       .order("code")
-      .then(({ data }) => setBranches((data as Branch[]) ?? []));
-  }, []);
+      .then(({ data }) => setBranches(filterBranches((data as Branch[]) ?? [])));
+  }, [filterBranches]);
 
   async function load() {
     setLoading(true);
@@ -300,7 +302,7 @@ function ReportsPage() {
       toast.error("Gagal memuat laporan", { description: error.message });
       return;
     }
-    setRows((data as unknown as TrxRow[]) ?? []);
+    setRows(filterData((data as unknown as TrxRow[]) ?? []));
 
     if (tab === "bulanan") {
       const monthDate = monthPeriod + "-01";

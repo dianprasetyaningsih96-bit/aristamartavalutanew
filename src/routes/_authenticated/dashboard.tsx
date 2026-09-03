@@ -62,6 +62,7 @@ import {
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useCangguExclusion } from "@/hooks/use-canggu-exclusion";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -154,6 +155,7 @@ function statusVariant(
 
 function DashboardPage() {
   const { roles, profile } = useCurrentUser();
+  const { filterBranches, filterData } = useCangguExclusion();
   const isTellerOnly =
     roles.length > 0 && roles.every((r) => r === "teller");
   const lockedBranchId = isTellerOnly ? profile?.branch_id ?? null : null;
@@ -174,8 +176,8 @@ function DashboardPage() {
   useEffect(() => {
     let q = supabase.from("branches").select("id, code, name").order("name");
     if (lockedBranchId) q = q.eq("id", lockedBranchId);
-    q.then(({ data }) => setBranches((data as Branch[]) ?? []));
-  }, [lockedBranchId]);
+    q.then(({ data }) => setBranches(filterBranches((data as Branch[]) ?? [])));
+  }, [lockedBranchId, filterBranches]);
 
   useEffect(() => {
     if (lockedBranchId) setBranchFilter(lockedBranchId);
@@ -243,7 +245,7 @@ function DashboardPage() {
     const codeOf = (id: string | null) => (id ? curMap.get(id) ?? "?" : "?");
 
     setTxs(
-      ((txR.data as any[]) ?? []).map((t) => ({
+      filterData((txR.data as any[]) ?? []).map((t) => ({
         id: t.id,
         transaction_number: t.transaction_no,
         transaction_date: t.transaction_date,
@@ -256,7 +258,7 @@ function DashboardPage() {
         customer_id: t.customer_id,
       })),
     );
-    setMonthlyTxs(((mR.data as any[]) ?? []) as TransactionRow[]);
+    setMonthlyTxs(filterData(((mR.data as any[]) ?? []) as TransactionRow[]));
     setRates(
       ((rR.data as any[]) ?? []).map((r) => ({
         currency_code: codeOf(r.currency_id),
@@ -266,7 +268,7 @@ function DashboardPage() {
       })),
     );
     setCash(
-      ((cR.data as any[]) ?? []).map((c) => ({
+      filterData((cR.data as any[]) ?? []).map((c) => ({
         currency_code: codeOf(c.currency_id),
         balance: Number(c.balance),
         branch_id: c.branch_id,

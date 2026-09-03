@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Pencil, Trash2, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
+import { useCangguExclusion } from "@/hooks/use-canggu-exclusion";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,12 +81,14 @@ const empty: BranchForm = {
 
 function BranchesPage() {
   const { roles } = useCurrentUser();
+  const { filterBranches } = useCangguExclusion();
   const canWrite = hasAnyRole(roles, ["super_admin", "owner"]);
 
   const [rows, setRows] = useState<Branch[] | null>(null);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Branch | null>(null);
   const [deleting, setDeleting] = useState<Branch | null>(null);
+  const [deletingBusy, setDeletingBusy] = useState(false);
   const [form, setForm] = useState<BranchForm>(empty);
   const [saving, setSaving] = useState(false);
 
@@ -93,12 +96,12 @@ function BranchesPage() {
     const { data, error } = await supabase
       .from("branches")
       .select("*")
-      .order("code");
+      .order("name", { ascending: true });
     if (error) {
       toast.error("Gagal memuat cabang", { description: error.message });
       return;
     }
-    setRows((data as Branch[]) ?? []);
+    setRows(filterBranches((data as Branch[]) ?? []));
   }
 
   useEffect(() => {

@@ -23,6 +23,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { CustomerForm } from "@/components/customers/customer-form";
 import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { useAppSettings } from "@/hooks/use-app-settings";
+import { useCangguExclusion } from "@/hooks/use-canggu-exclusion";
 import { COUNTRIES } from "@/lib/countries";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { generateReceiptPdf, printReceiptDirect, formatBirthDate } from "@/lib/pdf-receipt";
@@ -270,7 +271,7 @@ function TransactionsPage() {
   const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [deletingBusy, setDeletingBusy] = useState(false);
   const [voidReason, setVoidReason] = useState("");
-  const [showAddCustomer, setShowAddCustomer] = useState(false);
+  const { filterBranches, filterData } = useCangguExclusion();
 
   async function load() {
     let query = supabase
@@ -331,9 +332,9 @@ function TransactionsPage() {
       toast.error("Gagal memuat transaksi", { description: error.message });
       return;
     }
-    setRows((trx as Transaction[]) ?? []);
+    setRows(filterData((trx as Transaction[]) ?? []));
     setCurrencies((cur as CurrencyOpt[]) ?? []);
-    setBranches((br as BranchOpt[]) ?? []);
+    setBranches(filterBranches((br as BranchOpt[] ?? [])));
     setCustomers((cust as CustomerOpt[]) ?? []);
     setRates((rt as RateRow[]) ?? []);
     setActiveShift((sh as ActiveShift | null) ?? null);
