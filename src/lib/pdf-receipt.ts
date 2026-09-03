@@ -86,8 +86,8 @@ export function buildReceiptHtml(r: ReceiptData): string {
     }
     @media print {
       html, body {
-        width: 100% !important;
-        margin: 0 !important;
+        width: 76mm !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         background: #ffffff !important;
         color: #000000 !important;
@@ -97,8 +97,7 @@ export function buildReceiptHtml(r: ReceiptData): string {
       .receipt-wrapper {
         width: 58mm !important;
         max-width: 58mm !important;
-        margin-left: 9.5mm !important;
-        margin-right: auto !important;
+        margin: 0 auto !important;
         padding: 2mm 0 6mm 0 !important;
       }
     }
@@ -113,15 +112,15 @@ export function buildReceiptHtml(r: ReceiptData): string {
       line-height: 1.32;
       color: #000000;
       background: #ffffff;
-      -webkit-font-smoothing: none;
-      -moz-osx-font-smoothing: unset;
-      text-rendering: optimizeSpeed;
+      /* Enable standard font smoothing for crisp text in Chrome */
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
     }
     .receipt-wrapper {
       width: 58mm;
       max-width: 58mm;
-      margin-left: 9.5mm;
-      margin-right: auto;
+      margin: 0 auto;
       padding: 3mm 0 6mm 0;
     }
     .text-center { text-align: center; }
