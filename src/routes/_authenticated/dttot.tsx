@@ -9,7 +9,6 @@ import {
   ShieldAlert,
   Search,
   Upload,
-  Download,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -273,60 +272,6 @@ function DttotPage() {
   }
 
   const activeCount = rows?.filter((r) => r.is_active).length ?? 0;
-
-  function downloadTemplate() {
-    const headers = [
-      "reference_code",
-      "entity_type",
-      "full_name",
-      "aliases",
-      "identity_number",
-      "place_of_birth",
-      "date_of_birth",
-      "nationality",
-      "address",
-      "source",
-      "listed_at",
-      "notes",
-      "is_active",
-    ];
-    const sample = [
-      {
-        reference_code: "IDN-001",
-        entity_type: "individual",
-        full_name: "Contoh Nama",
-        aliases: "Alias1, Alias2",
-        identity_number: "1234567890",
-        place_of_birth: "Jakarta",
-        date_of_birth: "1980-01-31",
-        nationality: "Indonesia",
-        address: "Jl. Contoh No. 1",
-        source: "Perpol",
-        listed_at: "2024-01-15",
-        notes: "Catatan opsional",
-        is_active: true,
-      },
-      {
-        reference_code: "ORG-001",
-        entity_type: "organization",
-        full_name: "Contoh Organisasi",
-        aliases: "",
-        identity_number: "",
-        place_of_birth: "",
-        date_of_birth: "",
-        nationality: "",
-        address: "",
-        source: "DK-PBB",
-        listed_at: "2024-02-01",
-        notes: "",
-        is_active: true,
-      },
-    ];
-    const ws = XLSX.utils.json_to_sheet(sample, { header: headers });
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "DTTOT");
-    XLSX.writeFile(wb, "template-dttot.xlsx");
-  }
 
   // Helper to parse CSV lines handling semicolon/comma and multi-line quotes
   function parseCsvText(text: string): Record<string, string>[] {
@@ -665,9 +610,6 @@ function DttotPage() {
         canWrite={canWrite}
         extra={
           <>
-            <Button variant="outline" size="sm" onClick={downloadTemplate} className="gap-2">
-              <Download className="h-4 w-4" /> Template Excel
-            </Button>
             {canWrite && (
               <Button
                 variant="outline"
