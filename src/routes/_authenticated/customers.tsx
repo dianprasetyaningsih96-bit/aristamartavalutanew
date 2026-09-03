@@ -17,6 +17,7 @@ import { useCurrentUser, hasAnyRole } from "@/hooks/use-current-user";
 import { MasterPageHeader } from "@/components/master-data/page-header";
 import { CustomerDocumentsDialog } from "@/components/customers/customer-documents-dialog";
 import { COUNTRIES } from "@/lib/countries";
+import { screenAgainstDttot } from "@/lib/dttot-screening";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -253,6 +254,7 @@ function CustomersPage() {
   const [form, setForm] = useState<CustomerForm>(empty);
   const [saving, setSaving] = useState(false);
   const [docsCustomer, setDocsCustomer] = useState<Customer | null>(null);
+  const [dttotWarning, setDttotWarning] = useState<string | null>(null);
 
   async function load() {
     const [{ data: c, error }, { data: b }] = await Promise.all([
@@ -270,6 +272,31 @@ function CustomersPage() {
   useEffect(() => {
     load();
   }, []);
+
+  // Real-time screening deteksi DTTOT saat form diisi
+  useEffect(() => {
+    if (!open) {
+      setDttotWarning(null);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      const hasId = Boolean(form.id_number && form.id_number.trim().length >= 4);
+      const hasName = Boolean(form.full_name && form.full_name.trim().length >= 3);
+      if (hasId || hasName) {
+        const res = await screenAgainstDttot(form.full_name, form.id_number);
+        if (res.isMatch) {
+          setDttotWarning(
+            `Kecocokan ditemukan pada DTTOT: ${res.matchedEntry?.full_name} (${res.matchedEntry?.reference_code || "DTTOT"}). ${res.reason}. Sesuai regulasi Bank Indonesia, data nasabah ini TIDAK BISA disimpan.`
+          );
+        } else {
+          setDttotWarning(null);
+        }
+      } else {
+        setDttotWarning(null);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [form.id_number, form.full_name, open]);
 
   const filtered = useMemo(() => {
     if (!rows) return null;
@@ -389,39 +416,16 @@ function CustomersPage() {
       branch_id: d.branch_id || null,
     };
 
-    let dttotFound = false;
-    // Real-time screening against DTTOT list
-    try {
-      const custName = (d.full_name || "").toLowerCase().trim();
-      const custId = (d.id_number || "").toLowerCase().replace(/[^0-9a-z]/g, "");
-
-      const { data: dttotMatches } = await supabase
-        .from("dttot_list")
-        .select("reference_code, full_name, aliases, identity_number")
-        .eq("is_active", true);
-
-      if (dttotMatches) {
-        const found = dttotMatches.find((dt) => {
-          const dtName = (dt.full_name || "").toLowerCase().trim();
-          const dtAliases = (dt.aliases || "").toLowerCase();
-          const dtIds = (dt.identity_number || "").toLowerCase();
-
-          if (custId && custId.length >= 6 && dtIds && dtIds.includes(custId)) return true;
-          if (custName && dtName && (custName === dtName || dtName.includes(custName) || dtAliases.includes(custName))) return true;
-          return false;
-        });
-
-        if (found) {
-          dttotFound = true;
-          payload.is_blacklisted = true;
-          payload.blacklist_reason = `Teridentifikasi DTTOT Bank Indonesia (Kode: ${found.reference_code || "DTTOT"})`;
-          toast.error("PERINGATAN DTTOT BANK INDONESIA", {
-            description: `Nasabah cocok dengan data DTTOT (${found.full_name} - ${found.reference_code || ""}). Status DTTOT/Blacklist diaktifkan otomatis.`,
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("Screening error:", e);
+    // Real-time screening against DTTOT list (Pencegahan Mutlak)
+    const screening = await screenAgainstDttot(d.full_name, d.id_number);
+    if (screening.isMatch) {
+      setSaving(false);
+      const m = screening.matchedEntry;
+      toast.error("PENDAFTARAN DITOLAK: TERMASUK DAFTAR DTTOT!", {
+        description: `Nasabah DITOLAK karena teridentifikasi dalam DTTOT Bank Indonesia (${m?.full_name} - ${m?.reference_code || "DTTOT"}). ${screening.reason}. Sesuai regulasi BI, data nasabah DTTOT dilarang disimpan!`,
+        duration: 10000,
+      });
+      return; // STOP! JANGAN SIMPAN KE DATABASE!
     }
 
     if (!editing) {
@@ -439,9 +443,7 @@ function CustomersPage() {
       toast.error("Gagal menyimpan", { description: error.message });
       return;
     }
-    if (!dttotFound && !payload.is_blacklisted) {
-      toast.success(editing ? "Nasabah diperbarui" : "Nasabah ditambahkan");
-    }
+    toast.success(editing ? "Nasabah diperbarui" : "Nasabah ditambahkan");
     setOpen(false);
     load();
   }
@@ -663,6 +665,18 @@ function CustomersPage() {
               Lengkapi data KYC/CDD sesuai ketentuan Bank Indonesia untuk KUPVA BB.
             </DialogDescription>
           </DialogHeader>
+
+          {dttotWarning && (
+            <div className="rounded-lg border border-destructive/60 bg-destructive/10 p-3 text-destructive flex items-start gap-2.5 text-xs font-medium animate-in fade-in-50">
+              <ShieldAlert className="h-5 w-5 flex-shrink-0 text-destructive mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-bold text-sm block tracking-wide">
+                  ⛔ PENDAFTARAN DITOLAK: TERMASUK DAFTAR DTTOT
+                </span>
+                <p className="leading-relaxed text-destructive/90">{dttotWarning}</p>
+              </div>
+            </div>
+          )}
 
           <Tabs defaultValue="identity" className="w-full">
             <div className="-mx-1 overflow-x-auto sm:mx-0">
@@ -1112,8 +1126,19 @@ function CustomersPage() {
             <Button variant="outline" onClick={() => setOpen(false)}>
               Batal
             </Button>
-            <Button onClick={save} disabled={saving}>
-              {saving ? "Menyimpan..." : "Simpan"}
+            <Button
+              onClick={save}
+              disabled={saving || Boolean(dttotWarning)}
+              variant={dttotWarning ? "destructive" : "default"}
+              className={dttotWarning ? "bg-destructive text-destructive-foreground cursor-not-allowed" : ""}
+            >
+              {saving
+                ? "Menyimpan..."
+                : dttotWarning
+                ? "⛔ Ditolak (DTTOT)"
+                : editing
+                ? "Simpan Perubahan"
+                : "Simpan"}
             </Button>
           </DialogFooter>
         </DialogContent>

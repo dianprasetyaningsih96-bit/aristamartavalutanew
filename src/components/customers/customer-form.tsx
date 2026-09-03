@@ -16,8 +16,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ShieldAlert } from "lucide-react";
 import { COUNTRIES } from "@/lib/countries";
 import { up, upReq, UPPERCASE_FORM } from "@/lib/text-case";
+import { screenAgainstDttot } from "@/lib/dttot-screening";
 
 export type CustomerType = "individual" | "corporate";
 export type IdType = "ktp" | "passport" | "kitas" | "sim" | "npwp" | "other";
@@ -156,12 +158,34 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
   });
   const [saving, setSaving] = useState(false);
   const [branches, setBranches] = useState<{ id: string; name: string; code: string }[]>([]);
+  const [dttotWarning, setDttotWarning] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.from("branches").select("id, name, code").eq("is_active", true).order("code").then(({ data }) => {
       if (data) setBranches(data);
     });
   }, []);
+
+  // Real-time screening deteksi DTTOT saat form diisi
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      const hasId = Boolean(form.id_number && form.id_number.trim().length >= 4);
+      const hasName = Boolean(form.full_name && form.full_name.trim().length >= 3);
+      if (hasId || hasName) {
+        const res = await screenAgainstDttot(form.full_name, form.id_number);
+        if (res.isMatch) {
+          setDttotWarning(
+            `Kecocokan ditemukan pada DTTOT: ${res.matchedEntry?.full_name} (${res.matchedEntry?.reference_code || "DTTOT"}). ${res.reason}. Sesuai regulasi Bank Indonesia, data nasabah ini TIDAK BISA disimpan.`
+          );
+        } else {
+          setDttotWarning(null);
+        }
+      } else {
+        setDttotWarning(null);
+      }
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [form.id_number, form.full_name]);
 
   async function save() {
     const parsed = customerSchema.safeParse(form);
@@ -209,39 +233,16 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
       created_by: user?.id ?? null,
     };
 
-    let dttotFound = false;
-    // Real-time screening against DTTOT list
-    try {
-      const custName = (d.full_name || "").toLowerCase().trim();
-      const custId = (d.id_number || "").toLowerCase().replace(/[^0-9a-z]/g, "");
-
-      const { data: dttotMatches } = await supabase
-        .from("dttot_list")
-        .select("reference_code, full_name, aliases, identity_number")
-        .eq("is_active", true);
-
-      if (dttotMatches) {
-        const found = dttotMatches.find((dt) => {
-          const dtName = (dt.full_name || "").toLowerCase().trim();
-          const dtAliases = (dt.aliases || "").toLowerCase();
-          const dtIds = (dt.identity_number || "").toLowerCase();
-
-          if (custId && custId.length >= 6 && dtIds && dtIds.includes(custId)) return true;
-          if (custName && dtName && (custName === dtName || dtName.includes(custName) || dtAliases.includes(custName))) return true;
-          return false;
-        });
-
-        if (found) {
-          dttotFound = true;
-          payload.is_blacklisted = true;
-          payload.blacklist_reason = `Teridentifikasi DTTOT Bank Indonesia (Kode: ${found.reference_code || "DTTOT"})`;
-          toast.error("PERINGATAN DTTOT BANK INDONESIA", {
-            description: `Nasabah cocok dengan data DTTOT (${found.full_name} - ${found.reference_code || ""}). Status DTTOT/Blacklist diaktifkan otomatis.`,
-          });
-        }
-      }
-    } catch (e) {
-      console.warn("Screening error:", e);
+    // Real-time screening against DTTOT list (Pencegahan Mutlak)
+    const screening = await screenAgainstDttot(d.full_name, d.id_number);
+    if (screening.isMatch) {
+      setSaving(false);
+      const m = screening.matchedEntry;
+      toast.error("PENDAFTARAN DITOLAK: TERMASUK DAFTAR DTTOT!", {
+        description: `Nasabah DITOLAK karena teridentifikasi dalam DTTOT Bank Indonesia (${m?.full_name} - ${m?.reference_code || "DTTOT"}). ${screening.reason}. Sesuai regulasi BI, data nasabah DTTOT dilarang disimpan!`,
+        duration: 10000,
+      });
+      return; // STOP! JANGAN SIMPAN KE DATABASE!
     }
     
     if (d.kyc_status === "verified") {
@@ -260,9 +261,7 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
       toast.error("Gagal menyimpan", { description: error.message });
       return;
     }
-    if (!dttotFound && !payload.is_blacklisted) {
-      toast.success("Nasabah ditambahkan");
-    }
+    toast.success("Nasabah ditambahkan");
     onSuccess(data.id);
   }
 
@@ -270,6 +269,18 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
 
   return (
     <div className={`space-y-4 py-2 ${UPPERCASE_FORM}`}>
+      {dttotWarning && (
+        <div className="rounded-lg border border-destructive/60 bg-destructive/10 p-3 text-destructive flex items-start gap-2.5 text-xs font-medium animate-in fade-in-50">
+          <ShieldAlert className="h-5 w-5 flex-shrink-0 text-destructive mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-bold text-xs block tracking-wide">
+              ⛔ PENDAFTARAN DITOLAK: TERMASUK DAFTAR DTTOT
+            </span>
+            <p className="leading-relaxed text-destructive/90">{dttotWarning}</p>
+          </div>
+        </div>
+      )}
+
       <Tabs defaultValue="identity" className="w-full">
         <div className="-mx-1 overflow-x-auto sm:mx-0">
           <TabsList className="inline-flex w-max min-w-full gap-1 sm:grid sm:w-full sm:grid-cols-4 sm:gap-0">
@@ -482,8 +493,18 @@ export function CustomerForm({ onSuccess, onCancel, initialBranchId }: CustomerF
 
       <div className="flex justify-end gap-2 pt-2 border-t mt-4">
         <Button size="sm" variant="ghost" onClick={onCancel} disabled={saving}>Batal</Button>
-        <Button size="sm" onClick={save} disabled={saving}>
-          {saving ? "Menyimpan..." : "Simpan Nasabah"}
+        <Button
+          size="sm"
+          onClick={save}
+          disabled={saving || Boolean(dttotWarning)}
+          variant={dttotWarning ? "destructive" : "default"}
+          className={dttotWarning ? "bg-destructive text-destructive-foreground cursor-not-allowed" : ""}
+        >
+          {saving
+            ? "Menyimpan..."
+            : dttotWarning
+            ? "⛔ Ditolak (DTTOT)"
+            : "Simpan Nasabah"}
         </Button>
       </div>
     </div>

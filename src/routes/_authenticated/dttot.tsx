@@ -469,6 +469,27 @@ function DttotPage() {
         });
       }
 
+      // Kartu Identitas Nasional / National ID (e.g. Kartu identitas nasional Prancis 070275Q007873)
+      const idCardRegex = /(?:identitas|identifikasi|national\s*id|id\s*card|identity)[^\n\r]*?([0-9A-Za-z\.\-]{7,25})/gi;
+      let idMatch;
+      while ((idMatch = idCardRegex.exec(textToScan)) !== null) {
+        if (idMatch[1]) {
+          const clean = idMatch[1].replace(/^(?:nomor|no|an\.?|[\s:;,-])+/gi, "").trim();
+          if (clean.length >= 7 && !/^(prancis|indonesia|malaysia|singapura|amerika)$/i.test(clean)) {
+            extractedIds.push(clean);
+          }
+        }
+      }
+
+      // Format ID khusus alfanumerik (misal: 070275Q007873)
+      const mixedAlnumRegex = /\b([0-9]{4,8}[A-Za-z][0-9A-Za-z]{4,10})\b/g;
+      let mMatch;
+      while ((mMatch = mixedAlnumRegex.exec(textToScan)) !== null) {
+        if (mMatch[1] && mMatch[1].length >= 7) {
+          extractedIds.push(mMatch[1].trim());
+        }
+      }
+
       // Paspor matches (e.g. A00044599, A6889028, S835649, PA2564100)
       const pasporRegex = /(?:paspor|passport)[^\n\r]*?([A-Za-z][0-9]{6,8}|[A-Za-z0-9]{7,10})/gi;
       let pMatch;
