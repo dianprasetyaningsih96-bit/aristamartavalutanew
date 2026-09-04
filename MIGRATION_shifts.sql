@@ -108,33 +108,9 @@ create policy "Auth insert shift recon" on public.shift_reconciliations
   );
 
 -- =====================================================================
--- Trigger: saat shif dibuka dengan opening_capital > 0 → catat cash_movement 'deposit' (IDR)
+-- Catatan: Trigger shifts_apply_opening_capital dinonaktifkan / di-drop
+-- agar sisa saldo kas hari kemarin tidak mendobelkan saldo saat shif pagi dibuka.
+-- Tambahan kas fisik hanya dicatat bila ada penambahan modal baru secara eksplisit.
 -- =====================================================================
-create or replace function public.apply_shift_opening_capital()
-returns trigger language plpgsql
-security definer set search_path = public as $$
-declare
-  idr_id uuid;
-begin
-  if new.opening_capital is null or new.opening_capital <= 0 then
-    return new;
-  end if;
-  select id into idr_id from public.currencies where code = 'IDR' limit 1;
-  if idr_id is null then
-    return new;
-  end if;
-  insert into public.cash_movements (
-    branch_id, currency_id, movement_type, amount,
-    reference_id, reference_no, notes, created_by
-  ) values (
-    new.branch_id, idr_id, 'deposit', new.opening_capital,
-    new.id, 'SHIFT-' || substr(new.id::text,1,8),
-    'Modal awal shif ' || new.shift_type, new.user_id
-  );
-  return new;
-end $$;
-
 drop trigger if exists shifts_apply_opening_capital on public.shifts;
-create trigger shifts_apply_opening_capital
-  after insert on public.shifts
-  for each row execute function public.apply_shift_opening_capital();
+drop function if exists public.apply_shift_opening_capital();
