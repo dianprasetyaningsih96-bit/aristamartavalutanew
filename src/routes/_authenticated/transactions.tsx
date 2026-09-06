@@ -1631,9 +1631,9 @@ function TransactionsPage() {
                   />
                 )}
 
-                <div className="mt-6 flex justify-around text-center">
-                  <span>( {viewing.profiles?.full_name?.toUpperCase() || "CUSTOMER"} )</span>
-                  <span>( CASHIER )</span>
+                <div className="mt-6 flex justify-between gap-2 text-center text-[10px]">
+                  <span className="flex-1">( {viewing.profiles?.full_name?.toUpperCase() || "TELLER"} )</span>
+                  <span className="flex-1">( {viewing.customers?.full_name?.toUpperCase() || "CUSTOMER"} )</span>
                 </div>
 
                 <div className="mt-5 text-center">

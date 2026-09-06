@@ -90,7 +90,7 @@ export function buildReceiptHtml(r: ReceiptData): string {
   const idrStr = new Intl.NumberFormat("id-ID").format(Math.round(r.idr_amount));
   const outlet = (r.branch?.name || r.branch?.code || "-").toUpperCase();
   const payType = (r.payment_method || "Cash").toUpperCase();
-  const operator = (r.teller_name || "CUSTOMER").toUpperCase();
+  const operator = (r.teller_name || "TELLER").toUpperCase();
 
   return `<!DOCTYPE html>
 <html>
@@ -216,9 +216,14 @@ export function buildReceiptHtml(r: ReceiptData): string {
       margin-top: 14px;
       display: flex;
       justify-content: space-between;
-      padding: 0 4px;
+      gap: 6px;
+      padding: 0 2px;
+      font-size: 8.5px;
+    }
+    .signatures > span {
+      flex: 1;
       text-align: center;
-      font-size: 9px;
+      word-break: break-word;
     }
     .attention {
       margin-top: 10px;
@@ -293,7 +298,7 @@ export function buildReceiptHtml(r: ReceiptData): string {
 
     <div class="signatures">
       <span>( ${operator} )</span>
-      <span>( CASHIER )</span>
+      <span>( ${customerName} )</span>
     </div>
 
     <div class="attention">
@@ -459,11 +464,14 @@ export function generateReceiptPdf(r: ReceiptData) {
 
   if (r.teller_name) detail("Operator", r.teller_name.toUpperCase());
   y += 8;
-  centered(`( ${r.teller_name?.toUpperCase() || "CUSTOMER"} )   ( CASHIER )`, 7.5);
+  const tellerSig = `( ${r.teller_name?.toUpperCase() || "TELLER"} )`;
+  const customerSig = `( ${r.customer?.full_name?.toUpperCase() || "CUSTOMER"} )`;
+  text(tellerSig, left + 2, 7.2, "left");
+  text(customerSig, right - 2, 7.2, "right");
   y += 6;
   centered("ATTENTION #", 7.5, true);
   centered("Claim for shortage of cash after leaving", 7.5);
-  centered("out premises can not be considered", 7.5);
+  centered("our premises cannot be considered", 7.5);
 
   printPdf(doc, `struk-${r.transaction_no}.pdf`);
 }
